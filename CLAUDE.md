@@ -13,7 +13,7 @@ Anthropic or Google).
   the type and keyword checks (spec RN-30).
 - Repository content is public and professional. It describes the project only:
   no first person, no personal context, no references to how the work was
-  organized (specs/code_standards.md).
+  organized (specs/code-standards.md).
 
 ## Stack (decisions already made)
 - Backend (folder backend/): Python 3.12, Django, Django REST Framework.
@@ -64,8 +64,8 @@ Development commands. End users start the application with the launcher
   and fictional cards written by hand.
 
 ## Standards
-- Code and comments: specs/code_standards.md
-- Commits, branches and Git safety: specs/git_standards.md
+- Code and comments: specs/code-standards.md
+- Commits, branches and Git safety: specs/git-standards.md
 - Never commit, push, merge or switch branches unless the maintainer asks.
 
 ## Non-negotiable rules

@@ -30,8 +30,8 @@ Rules:
   hosting, billing or telemetry.
 - Do not implement anything outside the task and do not refactor on the side.
 - If you think a test is wrong, explain and stop.
-- Follow specs/codestandards.md (comments, structure). Do not commit, push or
-  switch branches: the maintainer does that (specs/git_standards.md).
+- Follow specs/code-standards.md (comments, structure). Do not commit, push or
+  switch branches: the maintainer does that (specs/git-standards.md).
 
 Language: write all files in English (code, comments, commit messages).
 

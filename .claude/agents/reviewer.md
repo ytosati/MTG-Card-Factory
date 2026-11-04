@@ -23,7 +23,7 @@ Read specs/spec.md and examine the recent changes (git diff). Look for, in this 
    telemetry).
 6. Frontend, when present: any trace of the API key, error and loading states,
    API contract respected.
-7. Standards: comments follow specs/codestandards.md (no history, no explained
+7. Standards: comments follow specs/code-standards.md (no history, no explained
    rules, no commented-out code); business rules live in services and selectors;
    the spec changed in the same branch when a rule changed.
 

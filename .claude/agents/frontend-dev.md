@@ -22,8 +22,8 @@ Rules:
 - Include basic accessibility: labels on fields, visible focus and contrast.
 - Strict TypeScript, no any.
 - All UI text is in English.
-- Follow specs/codestandards.md (comments, structure). Do not commit, push or
-  switch branches: the maintainer does that (specs/git_standards.md).
+- Follow specs/code-standards.md (comments, structure). Do not commit, push or
+  switch branches: the maintainer does that (specs/git-standards.md).
 - Do not add dependencies and do not implement anything outside the task.
 
 Language: write all files in English.

@@ -2,7 +2,7 @@
 
 Tasks derived from `specs/spec.md` (source of truth) and `specs/plan.md`.
 Branches and commits cite the task ID (for example `feat/t29-color-identity-validator`
-and `Refs: T29`), as described in `specs/git_standards.md`.
+and `Refs: T29`), as described in `specs/git-standards.md`.
 
 ## Process
 

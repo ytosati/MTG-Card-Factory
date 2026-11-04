@@ -15,8 +15,8 @@ files only: never code, tests, configuration, agent files or skill files.
 Keep the two apart: user documents do not expose internals.
 
 ## Read before writing
-CLAUDE.md, specs/spec.md, specs/plan.md, specs/tasks.md, specs/codestandards.md,
-specs/git_standards.md, the existing documentation, and the code that implements
+CLAUDE.md, specs/spec.md, specs/plan.md, specs/tasks.md, specs/code-standards.md,
+specs/git-standards.md, the existing documentation, and the code that implements
 whatever you are about to describe (commands, settings, screens, endpoints,
 error messages).
 

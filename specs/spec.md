@@ -27,8 +27,10 @@ and key for art. The person pays the providers directly for usage.
 - Data sources: Scryfall (card data and card images) and the Comprehensive
   Rules published by Wizards of the Coast.
 - Support card: an ordinary card of a deck that is not the commander.
-- Color identity: the set of colors of the mana symbols in a card's cost and
-  text, as defined by the game rules for Commander.
+- Color identity: the colors of the mana symbols in the card's mana cost and
+  rules text, excluding reminder text, as defined by the Comprehensive Rules for
+  Commander. A hybrid symbol counts all its colors; a Phyrexian symbol counts
+  its color.
 - Comparable: an existing card, legal in Commander, found by the text model in
   the local database and used as a reference.
 - Power level: casual, medium or strong. Chooses which comparables serve as
@@ -108,7 +110,8 @@ and key for art. The person pays the providers directly for usage.
   tokens. Each art generation records provider, model, number of images and
   image size. Every provider call that consumes tokens or images is recorded,
   including failed generations and refused art, and each call is a separate
-  record (a draft and its revision are two records). The person can see this
+  record (a draft and its revision are two records). A refused art call is
+  recorded with zero images. The person can see this
   usage, with text and art shown separately.
 - RN-10: Provider failures (outage, usage limit, invalid response) become clear
   messages and never leave a card half-created.
@@ -117,7 +120,8 @@ and key for art. The person pays the providers directly for usage.
 - RN-11: A request contains an idea or theme, a color identity and a power level
   and, optionally, a card language, a base card, and either a request for art
   with an optional art description or an uploaded image. The type is always a
-  support card.
+  support card. [DECIDE whether a support card may be legendary (for example
+  "Legendary Creature") or basic]
 - RN-12: Before writing the card, the system defines the design intent. The text
   model then searches the local database for cards related to the request (and
   to the base card, when chosen) and picks the comparables among them. The search
@@ -137,9 +141,18 @@ and key for art. The person pays the providers directly for usage.
 - RN-16: The card's color identity, considering cost and text, is within the
   requested identity.
 - RN-17: The mana cost is well formed and the stated mana value matches it.
+  [DECIDE whether the canonical symbol order is required; whether an empty cost
+  (a land) is accepted; how {X}, {C}, {S}, two-generic hybrid ({2/W}) and
+  Phyrexian ({G/P}) symbols count toward the mana value]
 - RN-18: The type line uses only card types, supertypes and subtypes that exist
-  in the game.
+  in the game. [DECIDE whether each subtype must belong to one of the card's
+  types (for example, "Instant — Elf" rejected)]
 - RN-19: Every keyword ability or keyword action used exists in the game.
+  Keywords are read from the card's structured list of keywords returned by the
+  text model and from lines of rules text that start with a capitalized term
+  followed by a cost, a number or the end of the line. Ability words (such as
+  the italic word before a dash) and reminder text in parentheses are not
+  keywords.
 - RN-20: The text respects limits on the number of abilities and on length.
   [DECIDE the limits]
 - RN-21: Removed.
@@ -172,7 +185,9 @@ and key for art. The person pays the providers directly for usage.
   the image provider, separately from text.
 - RN-43: The person can upload their own image as the art of a card, in the
   request or later. Uploading needs no image provider, calls no provider and
-  records no usage. Only PNG, JPEG and WebP files up to 10 MB are accepted,
+  records no usage. An image chosen in the request is uploaded after the card
+  is saved; if the generation fails, the image is discarded and the person is
+  told. Only PNG, JPEG and WebP files up to 10 MB are accepted,
   checked by content and not only by extension; any other or unreadable file is
   refused with the reason. An uploaded image is used as is, is stored like
   generated art (RN-33) and creates a new version like new art (RN-34).
@@ -207,7 +222,9 @@ and key for art. The person pays the providers directly for usage.
 
 ### Use and editing
 - RN-23: The person can edit any field of the card, and it is revalidated right
-  away, without calling the provider. The power indicator is kept and marked as
+  away, without calling the provider. [DECIDE the list of editable fields: in
+  particular whether the mana value, the language, the comparables and the
+  power indicator are editable] The power indicator is kept and marked as
   possibly outdated until the next quick adjustment or generation.
 - RN-24: Quick adjustments (stronger, weaker, cheaper, more expensive, simplify
   text) create a new version, also validated. A quick adjustment is a text
@@ -215,7 +232,8 @@ and key for art. The person pays the providers directly for usage.
   automatic revision (RN-15). If it fails, the current version stays unchanged
   and the cause is shown.
 - RN-25: Every change creates a version, and earlier versions can be restored.
-  Restoring a version also creates a new version.
+  Restoring a version also creates a new version. Favoriting is not a change of
+  the card and creates no version.
 - RN-26: Cards are saved locally and can be listed, favorited and deleted.
 
 ### Installation and first run
@@ -255,7 +273,9 @@ and key for art. The person pays the providers directly for usage.
 - RN-41: Starting the application opens the interface in the default browser.
   Starting it again while it runs opens a new tab of the running instance. The
   application stops on its own within one minute after the last tab is closed;
-  reloading a page does not stop it. Work in progress when it stops follows
+  reloading a page does not stop it. While the database build runs, the
+  application does not stop when the last tab closes; it stops within one
+  minute after the build ends with no tab open. Work in progress when it stops follows
   RN-03 and RN-10.
 - RN-42: A new version is installed by extracting the new zip and copying the
   data folder and the configuration file from the previous folder, as the user
@@ -264,14 +284,24 @@ and key for art. The person pays the providers directly for usage.
   automatically.
 - RN-28: On first start, if the reference database is not ready, the application
   tells the person and builds it, showing progress. The other screens, except
-  Status, are available only after it is ready. If the disk fills up during the
-  build, the build fails as in RN-03 and the person sees the cause.
+  Status, are available only after it is ready. Before building, the setup
+  screen states the expected download size and the free disk space needed, and
+  refuses to start the build when there is not enough free space. If the disk
+  fills up during the build, the build fails as in RN-03 and the person sees
+  the cause.
 - RN-29: The application runs entirely on the person's computer and is reachable
-  only from it by default. Outgoing connections go only to the data sources
+  only from it. Outgoing connections go only to the data sources
   (during the build, and to download the image of a chosen base card printing)
   and to the configured providers. The start file of a clone also downloads,
   when preparing, Python and the dependencies from their official distribution
   sources, and the built interface from the project's GitHub releases.
+
+### Legal notice and accessibility
+- RN-48: The README and the interface footer show the unofficial fan content
+  notice, with the exact text provided by the maintainer. [DECIDE the notice
+  text]
+- RN-49: Every screen is usable with the keyboard alone; every field has a
+  label; keyboard focus is always visible; text meets WCAG 2.1 AA contrast.
 
 ### Language
 - RN-30: The interface is in English. The generated card text is in English by
@@ -314,8 +344,9 @@ never use the network or a real provider.
   value, revalidation rejects it right away, without using the provider.
 - CA-13 (RN-25): When an earlier version is restored, the fields come back, the
   card is revalidated, and the restoration appears as a new version.
-- CA-14 (RN-07): The same card returned by three test providers produces the same
-  validation result.
+- CA-14 (RN-07): The same scripted card, shaped as each provider's recorded
+  response (OpenAI, Anthropic and Google), yields the same saved card and the
+  same validation result.
 - CA-15 (RN-10): When the provider returns an invalid response, the person sees a
   clear message and no card is saved.
 - CA-16 (RN-09): Each text generation records and shows the tokens used. A
@@ -330,8 +361,8 @@ never use the network or a real provider.
 - CA-19 (RN-29): After the database is built, the only outgoing connections go to
   the configured providers and, when a base card printing is chosen, to the
   data source for that printing's image.
-- CA-20 (RN-29, manual): By default, a request from another computer on the
-  network is not served, and starting the application triggers no firewall
+- CA-20 (RN-29, manual): A request from another computer on the network is not
+  served, and starting the application triggers no firewall
   prompt.
 - CA-21 (RN-30): Given a request with no language chosen, the card text and the
   interface labels are in English, even if the request was written in another
@@ -405,7 +436,9 @@ never use the network or a real provider.
   starts and the Status screen names the setting to fix.
 - CA-47 (RN-41, manual): Starting the application opens the browser. Starting it
   again opens a tab of the same instance. Closing the last tab stops the
-  application within one minute; reloading a page does not stop it.
+  application within one minute; reloading a page does not stop it. Closing the
+  last tab during the database build does not stop it; it stops within one
+  minute after the build ends.
 - CA-48 (RN-42): A new version started with the data folder and configuration
   file of an older version lists every saved card, version and image.
 - CA-49 (RN-43): Uploading a PNG image as art with no image provider set saves
@@ -438,6 +471,18 @@ never use the network or a real provider.
 - CA-56 (RN-12): Given a text model response that cites a comparable not
   returned by the search, or a banned card, that comparable is discarded; a
   response left with no valid comparable is handled as an invalid response.
+- CA-57 (RN-16): Given a green request, a {G/U} hybrid symbol in the cost or in
+  the rules text is rejected; a {U} symbol inside reminder text in parentheses
+  is not.
+- CA-58 (RN-48): The README and the footer of every screen show the fan content
+  notice.
+- CA-59 (RN-49): Every screen can be operated with the keyboard alone, every
+  field has a label, and focus is visible; automated component tests check the
+  labels and focus, and contrast is checked by hand.
+- CA-60 (RN-28): Given less free disk space than the build needs, the setup
+  screen names the space needed and the build does not start.
+- CA-61 (RN-43): Given a request with an uploaded image whose generation fails,
+  no image file is left and the person is told the image was discarded.
 
 ## Screens
 - First-run setup: database build with progress
@@ -460,8 +505,27 @@ never use the network or a real provider.
 - Adjustments and versions: editing, quick adjustments, new or uploaded art and
   restoration
 
+## Definition of done (v1)
+v1 is done when every RN has a passing automated test or a recorded manual check
+in `specs/manual-checks.md`, every CA passes, no [DECIDE] remains, the release
+zip and a fresh clone pass the manual checks on a clean Windows machine, and a
+card was generated end to end with each text provider using a real key.
+
 ## Open questions
 - What are the limits on abilities and text length? (RN-20)
 - If the source download fails, how many times does it retry?
-- Can the person refresh the database later, and how?
+- Can the person refresh the database later, and how (for example a button on
+  the Status screen)? Does a new application version require a rebuild (RN-42)?
 - Which license does the project use?
+- What is the exact fan content notice text (RN-48), and do the data source's
+  terms allow its card images to be sent to an image model as a template
+  (RN-38)?
+- Does full Portuguese validation stay in v1, given the size of the extra
+  download it needs (RN-30)?
+- Which languages does the card language selector list: every Scryfall language
+  or a fixed list?
+- Should casual, medium and strong align with the official Commander brackets?
+- What happens when a generated card has the same name as an existing card?
+- Are simultaneous generations allowed, and can a running generation be
+  cancelled?
+- What are the maximum lengths of the idea and of the art description?

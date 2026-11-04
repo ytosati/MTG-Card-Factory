@@ -21,10 +21,13 @@ backend/
   catalog/              reference data: ingest, search, rules lexicon
   providers/            provider adapters, factory, fake provider
   validators/           pure validation functions (no models)
-  generation/           text and art generation pipelines, prompts
+  generation/           text and art generation pipelines, retrieval of
+                        comparables and rules for the text model
+  generation/prompts/   prompt text files
   cards/                cards, versions, images, usage, library, editing
   api/                  DRF views, serializers, urls
   tests/                pytest suites, fictional fixtures
+  pytest.ini            pytest configuration (DJANGO_SETTINGS_MODULE)
   requirements.txt      runtime dependencies (pinned)
   requirements-dev.txt  test dependencies (pinned)
 frontend/
@@ -33,8 +36,10 @@ frontend/
   src/components/       shared components
   src/styles/           design tokens (single source)
   src/hooks/            heartbeat, job polling
-launcher/               start.pyw (zip and clone), Windows message boxes
-release/                release build script, pinned versions and hashes
+launcher/               start.pyw (zip and clone), Windows message boxes, tests
+release/                release build script, pinned versions and hashes,
+                        repository content check, tests
+.github/workflows/      CI: test suites on push and pull request; release artifacts
 start.cmd               clone start file (RN-45)
 VERSION                 application version, matches the GitHub release tag
 data/                   runtime only, never committed (see section 7)
@@ -119,6 +124,10 @@ Fields listed are the ones the spec needs; types are left to the tasks.
 ## 6. Endpoints
 
 All under `/api/`, JSON, local only. Long operations return `202` with a job id.
+Response shapes are the serializers in `backend/api/serializers.py`; the
+frontend client types mirror them. Every error response uses one envelope:
+`{"error": {"code": str, "message": str, "setting": str | null}}`, where
+`setting` names the configuration setting to fix when there is one (RN-08).
 
 | Method and path | Purpose | RN |
 |---|---|---|
@@ -127,15 +136,16 @@ All under `/api/`, JSON, local only. Long operations return `202` with a job id.
 | GET `setup` / POST `setup/build` | build progress / start build | 28, 03 |
 | GET `catalog/cards?q=` | base card search by name | 36 |
 | GET `catalog/cards/{oracle_id}/printings` | printings and faces | 36 |
+| POST `catalog/printings/{scryfall_id}/image` | downloads the printing image, or returns the cached one; a failure returns the cause | 39 |
 | POST `generations` | request → job | 11–15 |
 | GET `jobs/{id}` | job progress, result, error | 10 |
 | GET `cards?favorite=` / GET `cards/{id}` | library / card with current version | 26 |
-| PATCH `cards/{id}` | edit fields (new version) or favorite | 23, 26 |
+| PATCH `cards/{id}` | edit fields (new version) or favorite (no version) | 23, 25, 26 |
 | DELETE `cards/{id}` | delete card and image files | 26, 33 |
 | POST `cards/{id}/adjustments` | quick adjustment → job | 24 |
 | GET `cards/{id}/versions` / POST `…/versions/{n}/restore` | versions / restore | 25 |
 | POST `cards/{id}/art` | generate art → job | 31–32, 38 |
-| POST `cards/{id}/art/upload` | multipart upload | 43 |
+| POST `cards/{id}/art/upload` | multipart upload; an image chosen in the request is uploaded here after the generation job saves the card | 43 |
 | GET `images/{id}` | serves the stored file unchanged | 33, 44 |
 | GET `usage?card=` | usage records | 09 |
 | POST `heartbeat` / GET `instance` | tab liveness / identifies Card Factory on the port | 41, 47 |
@@ -152,8 +162,22 @@ data/
   images/cards/{card_id}/{image_id}.{png|jpg|webp}
   images/base/{printing_id}-{face}.png
   downloads/               source files during a build, deleted after import
-  backups/                 copy of the database before each migration
+  backups/                 copy of the database before pending migrations
+                           (only the last backup is kept)
+  logs/app.log             application log, rotated (section 8)
 ```
+
+**Application home.** The application home is the folder that holds `.env` and
+`data/`. The launcher sets the environment variable `CARDFACTORY_HOME`; in
+development it defaults to the repository root. `core.paths` is the only place
+that resolves it, and every other path (`data/`, `.env`, images, logs) is
+derived from it. In the zip the home is the extracted folder; in a clone it is
+the repository root.
+
+**Concurrency.** SQLite runs in WAL mode with a busy timeout, because job
+threads write while waitress threads read. Job and build progress is kept in
+memory by the runner and persisted only at state changes (queued, running,
+done, failed), so the long import transaction never blocks progress reads.
 
 **All-or-nothing build (RN-03).** Two phases.
 1. Download each source to `data/downloads/` and check size and checksum. A
@@ -171,14 +195,17 @@ the Scryfall `id`; both survive a rebuild. User cards and images use UUID4.
 Versions are numbered per card. A version stores a snapshot of its base card and
 comparables, so a rebuild never breaks a saved card.
 
-**Upgrades (RN-42).** On start, the launcher copies the database to
-`data/backups/` and runs pending migrations. If the database is newer than the
+**Upgrades (RN-42).** On start, when migrations are pending, the launcher
+copies the database to `data/backups/` (replacing the previous backup) and runs
+them. If the database is newer than the
 application (unknown migrations), it stops with a message instead of migrating.
 
 ## 8. Configuration, secret and status (topic 3)
 
-- **Loading `.env`.** `core.config` is the only reader. A small parser in the
-  standard library reads `KEY=VALUE` lines, ignores comments and blank lines,
+- **Loading `.env`.** `core.config` is the only reader. It takes the file path as
+  a parameter (the default is `.env` in the application home), so tests use
+  temporary files with a cleared environment and never read the repository
+  `.env`. A small parser in the standard library reads `KEY=VALUE` lines, ignores comments and blank lines,
   strips quotes, spaces and the UTF-8 byte-order mark that Notepad may add, and
   lets process environment variables override for development. It returns a
   frozen config object; keys are `Secret` objects whose text form is `***`.
@@ -196,8 +223,20 @@ application (unknown migrations), it stops with a message instead of migrating.
   values as a second line of defense. Serializers list fields explicitly; the
   status serializer has booleans only. A test sends every endpoint through a
   fake configuration and asserts the key never appears.
-- **Settings.** `DEBUG` off outside development, `ALLOWED_HOSTS` limited to
-  `127.0.0.1` and `localhost`, server bound to `127.0.0.1` (RN-29).
+- **Settings.** `DEBUG` is on only when the environment variable
+  `CARDFACTORY_DEBUG=1` is set (development; it is not in `.env.example`).
+  `ALLOWED_HOSTS` is limited to `127.0.0.1` and `localhost`. The server always
+  binds to `127.0.0.1`; there is no setting to change it in v1 (RN-29). Until
+  the secret key task exists, settings use a development placeholder secret.
+- **Cross-site requests.** Any web page open in the browser can send requests
+  to `127.0.0.1`. Non-GET requests are refused unless `Origin` (or, when absent,
+  `Referer`) is the application's own origin. DRF parsers are JSON only, except
+  multipart on the upload endpoint, so a form post from another site is refused
+  before it reaches a provider.
+- **Logs.** With `pythonw.exe` there is no console, so the application logs to
+  `data/logs/app.log` with size-based rotation. The key redaction filter applies
+  to every handler. Logs record events, causes and identifiers, never card
+  contents, prompts or keys.
 
 ## 9. Topics with alternatives
 
@@ -211,10 +250,11 @@ application (unknown migrations), it stops with a message instead of migrating.
    counterexamples), roles, types and mana value, then ranks with FTS5 BM25 over
    name, type line and rules text. Power level shapes the candidate set: strong
    includes Game Changer cards and ranks by EDHREC rank; casual excludes Game
-   Changer cards.
-3. If fewer than a minimum number of results come back, the selector widens the
-   filters deterministically (drop mana value, then types). No second model
-   call.
+   Changer cards; medium allows Game Changer cards without prioritizing them
+   and ranks by BM25 alone. User text passed to `MATCH` is quoted per token.
+3. If fewer than a minimum number of results come back (a named constant,
+   10), the selector widens the filters deterministically (drop mana value,
+   then types). No second model call.
 4. The model writes the card and cites comparables from the candidates; cited
    cards not returned as legal are discarded (RN-12).
 5. `search_rules` uses FTS5 over `RuleSection` with the same keywords and adds
@@ -227,7 +267,7 @@ application (unknown migrations), it stops with a message instead of migrating.
 | Keywords generated by the model | bridges the person's wording and card wording | one more model output to check |
 | Embeddings | semantic matches | needs a vector store or extension (dependency), an embedding provider (Anthropic has none, which breaks RN-07), a heavier build |
 
-**T5: search quality evaluation.** The task that decides on embeddings. Twenty
+**T26: search quality evaluation.** The task that decides on embeddings. Twenty
 written requests covering the main roles, every color and the three power
 levels, run against a real local database (a manual script outside the test
 suite, since tests never use real data). For each request a person marks the
@@ -237,8 +277,10 @@ which requests failed and why, and proposes either better role patterns and
 keywords or an embeddings option for approval. Only the request texts and the
 counts are committed, never card data (RN-02).
 
-Check in T5 as well that the Python build in the zip has FTS5 enabled; if not,
-the fallback is a `LIKE` search with the same filters.
+FTS5 availability is checked early: T14 tests it in the running Python, and the
+Milestone 0 review confirms it in the embeddable Python planned for the zip. If
+it is missing, the fallback is a `LIKE` search with the same filters. Base card
+search by part of a name (RN-36) uses a case-insensitive `LIKE`, not FTS.
 
 ### 9.2 Provider factory and adapters (topic 2)
 
@@ -247,7 +289,12 @@ the fallback is a `LIKE` search with the same filters.
   `generate_image(prompt, template_image | None, size) -> (bytes, mime, usage)`;
   `capabilities` (text, image, image_template).
 - `providers.factory` is the only place that reads `LLM_PROVIDER` and
-  `IMAGE_PROVIDER`. It returns the fake adapter in tests.
+  `IMAGE_PROVIDER`, which accept only `openai`, `anthropic` and `google`
+  (`IMAGE_PROVIDER`: `openai` and `google`). Tests replace the factory
+  functions with a pytest fixture that returns the fake adapter; the fake is
+  never selectable from `.env`.
+- Keys travel only in request headers, never in URLs (for Google, the
+  `x-goog-api-key` header), because URLs appear in exception text.
 - Each adapter maps its errors to one set: `AuthError`, `QuotaError`,
   `ProviderUnavailable`, `InvalidResponse`, `ContentRefused`,
   `TemplateUnsupported`. Messages never include the key.
@@ -264,8 +311,10 @@ the fallback is a `LIKE` search with the same filters.
 | Direct HTTP with one HTTP client package | nicer timeouts and multipart | one more dependency |
 
 Direct HTTP fits the small surface (one text endpoint and one or two image
-endpoints per provider) and the install weight goal. Fixed timeouts and one
-retry on 5xx and network errors.
+endpoints per provider) and the install weight goal. Timeouts are named
+constants: connect 10 s, text read 180 s, image read 300 s; one retry on 5xx and
+network errors. While a provider call runs, the job reports "waiting for the
+provider" with the elapsed time.
 
 ### 9.3 Configuration, secret and status
 Covered in section 8.
@@ -343,14 +392,15 @@ no match keep an empty list and are still found by FTS.
 | Community tags from Scryfall | curated | not in the bulk files; would need many API calls |
 | No roles, FTS only | simplest | weak filtering by role |
 
-T5 measures whether the patterns plus keywords are good enough.
+The T26 evaluation measures whether the patterns plus keywords are good enough.
 
 ## 10. Data sources and Portuguese terms
 
 - Scryfall bulk files: Oracle Cards (one record per card), Default Cards
   (printings in English, for base card printings and images), All Cards
-  (streamed, keeping only Portuguese printings for terms). Bulk files hold one
-  record per line, so they are read line by line with the standard library.
+  (streamed, keeping only Portuguese printings for terms). Bulk files are large JSON arrays, so they are read as a stream, one
+  record at a time, with the standard library, never loaded whole (the exact
+  layout is verified against a real file in T16).
   Requests send a descriptive User-Agent and Accept header, as Scryfall asks.
 - Comprehensive Rules: the text file linked from the Wizards rules page; the
   importer finds the link and stores the sections. Keyword abilities (702),
@@ -408,41 +458,58 @@ T5 measures whether the patterns plus keywords are good enough.
 | 44 | generation.art size request; frontend fitted display; images endpoint | size and display tests |
 | 45 | start.cmd, `runtime/prepared.json` | manual check |
 | 46 | README user guide | review |
+| 48 | README and interface footer | review, component test |
+| 49 | frontend components and screens | component tests, manual check |
 
-Tests block outgoing connections globally (a fixture that fails any socket
+Cross-site requests are refused by an origin check (section 8), tested on
+every non-GET endpoint. Tests block outgoing connections globally (a fixture that fails any socket
 connection), so CA-19 and the "tests never touch the network" rule hold.
 
 ## 12. Agents and folders they may change
 
 | Agent | May change | Never changes |
 |---|---|---|
-| backend-dev | `backend/**`, `.env.example` | `frontend/`, `specs/`, `launcher/`, `release/` |
-| frontend-dev | `frontend/**` | `backend/`, `specs/`, release files |
-| release-dev | `launcher/**`, `release/**`, `start.cmd`, `VERSION`, `.github/workflows/**`, `.gitignore` | application code under `backend/` and `frontend/` |
-| docs-writer | `README.md`, `docs/**` | code, `specs/` |
-| spec-reviewer | nothing (read only) | everything |
+| backend-dev | `backend/**` except `providers/` and `generation/`; `.env.example` | `frontend/`, `specs/`, `launcher/`, `release/`, tests |
+| llm-engineer | `backend/providers/**`, `backend/generation/**` (adapters, factory, prompts, retrieval for the text model, generation pipelines, the search evaluation script) | models, catalog, validators, cards, api, tests |
+| qa | test files: `backend/**/tests/**`, `backend/**/conftest.py`, `backend/pytest.ini`, `frontend/**/*.test.ts(x)`, `launcher/tests/**`, `release/tests/**`, test fixtures and helpers | production code |
+| frontend-dev | `frontend/**` except tests | `backend/`, `specs/` |
+| release-dev | `launcher/**`, `release/**` (except tests), `start.cmd`, `VERSION`, `.github/workflows/**`, `.gitignore`, `.gitattributes` | `backend/`, `frontend/` |
+| docs-writer | `README.md`, `docs/**`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `.github/ISSUE_TEMPLATE/**`, `specs/manual-checks.md` | code, other `specs/` files |
+| reviewer, spec-reviewer, architect | nothing (read only) | everything |
 
-`specs/` and `CLAUDE.md` change only with the maintainer's approval. Each agent
-reads `CLAUDE.md`, the spec and this plan; a task names exactly one agent.
+`specs/` (except `specs/manual-checks.md`) and `CLAUDE.md` change only with the
+maintainer's approval. Any implementing agent may append rows to
+`docs/DECISIONS.md`. Each agent reads `CLAUDE.md`, the spec and this plan; a
+task names exactly one agent.
 
 ## 13. Dependencies
 
 - Runtime (approved): Django, Django REST Framework, waitress; embeddable Python
   for the zip.
-- Development: pytest, pytest-django (backend); Vite, TypeScript, React, Vitest
-  (frontend). Further frontend testing helpers (for example a DOM testing
-  library) need approval in the task that first needs them.
+- Development: pytest, pytest-django (backend); Vite, TypeScript, React, Vitest,
+  jsdom and @testing-library/react (frontend, approved for T9). Further testing
+  helpers need approval in the task that first needs them.
+- Versions: Python 3.12 (development and the embeddable package); Django 5.2
+  LTS.
 - Not added: SDKs of the providers, `python-dotenv`, an image library, a router
   library (the frontend uses a small hash-based switch), a task queue (jobs run
   in a thread pool inside the process).
+
+### Tooling
+
+- Type check: `npx tsc -b` (frontend).
+- Tests: `pytest -q` (backend), `pytest launcher release` (launcher and release
+  scripts, from the repository root), `npm run test` (frontend).
+- Python formatter and linter: none in v1 until one is approved (ruff is the
+  proposed option). No ESLint in v1.
 
 ## 14. Suggested task order
 
 Milestones for `specs/tasks.md`, which assigns the final IDs.
 
 1. Foundations: backend skeleton, config and secret, network guard for tests,
-   frontend skeleton.
-2. Reference data: catalog models and ingest, roles, search, T5 evaluation,
+   origin check, logging, CI for the test suites, frontend skeleton.
+2. Reference data: catalog models and ingest, roles, search, T26 evaluation,
    Portuguese terms.
 3. Validation: validators and lexicon.
 4. Generation: provider protocol and fake, adapters, text pipeline, jobs,
@@ -456,7 +523,9 @@ Milestones for `specs/tasks.md`, which assigns the final IDs.
 
 - Backend: `pytest -q` with the fake provider and the network guard; every test
   names the RN or CA it covers.
-- Frontend: `npm run test`.
+- Frontend: `npm run test` and `npx tsc -b`.
 - Manual checks on a clean Windows machine: the CAs marked manual (zip start,
-  clone start, port in use, firewall prompt, browser close).
-- T5 report attached to its task before generation work relies on the search.
+  clone start, port in use, firewall prompt, browser close), listed in
+  `specs/manual-checks.md`, plus one end-to-end generation with a real key per
+  text provider.
+- T26 counts recorded in the Milestone A review (T27) before generation work relies on the search.

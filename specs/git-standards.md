@@ -24,7 +24,7 @@ Rules:
 - Subject: imperative, concise, up to 72 characters, no trailing period.
 - Use a scope when it improves clarity (for example `backend`, `frontend`,
   `providers`, `validators`, `ingest`, `generation`, `api`, `agents`).
-- Cite the task in a footer: `Refs: T6`.
+- Cite the task in a footer: `Refs: T29`.
 - Use the body, when needed, to explain why rather than what.
 - Keep commits atomic and logically cohesive: one logical change per commit.
 - Mark breaking changes with `!` and explain compatibility implications in a
@@ -38,7 +38,7 @@ Example:
 
     feat(validators): reject cards outside the requested color identity
 
-    Refs: T6
+    Refs: T29
 
 ## 2. Branch naming
 
@@ -62,7 +62,7 @@ Examples:
 
 - `milestone/m0-foundation`, `milestone/ma-data`, `milestone/mb-validators`,
   `milestone/mc-generation`, `milestone/md-api-interface`, `milestone/me-release`
-- `feat/t6-color-identity-validator`
+- `feat/t29-color-identity-validator`
 - `fix/session-key-leak`
 - `chore/update-dependencies`
 
@@ -79,6 +79,9 @@ Examples:
 - No commits are made directly on a milestone branch; it changes only by
   merging task branches. Work outside the milestones (for example spec or
   tooling changes) branches from `main` as before.
+- The findings of a milestone review task are committed on
+  `chore/<review task id>-milestone-review`, created from the milestone branch
+  and merged back into it before the milestone merges into `main`.
 
 ## 3. Before starting work
 
@@ -117,7 +120,7 @@ Do not create a branch for every prompt, file, commit or minor adjustment.
    then the code, in the same branch. If user-visible behavior changes, update
    the user documentation too.
 5. Implement within the agreed scope.
-6. Run the tests, formatter, linter and type check.
+6. Run the tests and the type check (`specs/plan.md`, section 13, Tooling).
 7. Review the diff for correctness and unintended changes (the maintainer reads it).
 8. Create logically cohesive commits.
 9. Report what changed, the validation results and the remaining issues.
@@ -128,7 +131,15 @@ Do not create a branch for every prompt, file, commit or minor adjustment.
 Pull request: the title follows the commit format. The description states what
 and why, the tasks, RN and CA covered, how to test, and the risks.
 
-## 6. Decision rules
+## 6. Versioning
+
+- `VERSION` holds the application version in Semantic Versioning
+  (`MAJOR.MINOR.PATCH`).
+- A release tag is `v` followed by `VERSION` (for example `v1.2.0`), and the
+  `frontend-dist` asset of that release carries the same version (spec RN-45).
+- `VERSION` changes in the commit that prepares a release, never on its own.
+
+## 7. Decision rules
 
 - Same task: same branch.
 - New independent task: new branch.

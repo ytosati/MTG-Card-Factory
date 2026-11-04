@@ -53,17 +53,17 @@ when new documents appear (for example `docs/ARCHITECTURE.md`).
 - Provider differences (formats, parameter names, errors) stay inside each
   adapter. Only the factory looks at the configured provider.
 - The frontend talks to the backend only through the API contract in
-  `specs/plan.md`. It never receives the API key.
-- The API key is read from configuration in one place. It is never stored or
-  logged.
+  `specs/plan.md`. It never receives an API key.
+- The API keys (text and image) are read from configuration in one place. They
+  are never stored or logged.
 - A change to a business rule changes `specs/spec.md` first, then the tests,
   then the code, in the same branch.
 
 ## Tests
 
 - Each test cites the RN or CA it protects, in its name or docstring.
-- Tests use fictional cards written by hand and the fake provider. They never
-  use the network.
+- Tests use fictional cards written by hand and the fake provider, which stands
+  in for text and image generation. They never use the network.
 
 ## Writing for a public repository
 

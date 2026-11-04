@@ -218,3 +218,15 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Node
+node_modules/
+
+# db
+data/
+*.sqlite3
+*.db
+
+# Claude
+.claude/settings.local.json
+CLAUDE.local.md

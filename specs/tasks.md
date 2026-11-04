@@ -9,6 +9,12 @@ and `Refs: T29`), as described in `specs/git-standards.md`.
 - One task at a time. Nothing outside the current task.
 - A milestone starts only when the previous milestone is complete, with every
   test suite passing (`pytest -q` and `npm run test`).
+- Each milestone has its own branch, created from `main` (`milestone/m0-foundation`,
+  `milestone/ma-data`, `milestone/mb-validators`, `milestone/mc-generation`,
+  `milestone/md-api-interface`, `milestone/me-release`). Each task of the
+  milestone has its own branch, created from the milestone branch, and merges
+  back into it. The milestone branch merges into `main` after its review task
+  (`specs/git-standards.md`, section 2).
 - Each milestone ends with a review task: run the test suites, check that every
   RN and CA listed for the milestone is covered by a passing test or a recorded
   manual check, and record the findings as new tasks or spec questions.

@@ -32,6 +32,8 @@ Rules:
 - If you think a test is wrong, explain and stop.
 - Follow specs/code-standards.md (comments, structure). Do not commit, push or
   switch branches: the maintainer does that (specs/git-standards.md).
+- Work only on the task branch, created from its milestone branch. If the
+  current branch is `main` or a `milestone/` branch, stop and say so.
 
 Language: write all files in English (code, comments, commit messages).
 

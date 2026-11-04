@@ -19,13 +19,16 @@ finding.
    strings. Confirm it never reaches the browser: no endpoint returns it, and
    the frontend code, browser storage and source maps never contain it.
 4. Configuration: debug off by default; the server listens only on the local
-   machine by default; .env.example contains no real values; secrets are read
+   machine; .env.example contains no real values; secrets are read
    only from the environment.
 5. History: search the Git history for key-like text and for committed .env or
    data files.
 6. Network: list the network calls the app makes. The only destinations must be
-   the official data sources (during the database build) and the configured
-   provider, and the key goes only to the provider.
+   the official data sources (during the database build, and Scryfall for the
+   image of a chosen base card printing), the configured text provider and
+   image provider, and, in `start.cmd`, python.org, PyPI and the project's
+   GitHub releases (spec RN-29). Each key goes only to its provider, in a
+   header, never in a URL.
 7. Data: confirm that no Scryfall data and no rules text is committed.
 8. Report findings by severity, with file and line, why it matters and the fix.
    If everything is clean, say what you checked and what you could not check.

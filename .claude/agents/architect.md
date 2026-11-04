@@ -1,6 +1,6 @@
 ---
 name: architect
-description: Software architect for Card Factory. Use for decisions about structure, data modeling, API contracts and LLM provider integration, before implementing. Does not write code.
+description: Software architect for Card Factory. Use only when the maintainer asks for a design decision (structure, data modeling, API contracts) before a plan change. Does not write code; implementation of provider integration belongs to llm-engineer.
 tools: Read, Grep, Glob
 ---
 

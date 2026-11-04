@@ -2,10 +2,10 @@
 name: run-task
 description: Run the full implementation cycle for one task from specs/tasks.md (tests, implementation, review) with the project agents, stopping for the maintainer at checkpoints. Use only when the maintainer asks to run a task.
 disable-model-invocation: true
-argument-hint: [task id, e.g. T6] [auto]
+argument-hint: [task id, e.g. T29] [auto]
 ---
 
-Run the implementation cycle for the task in $ARGUMENTS (for example `T6`).
+Run the implementation cycle for the task in $ARGUMENTS (for example `T29`).
 If the second word is `auto`, skip checkpoint A. Checkpoint B is never skipped.
 
 ## 0. Pre-flight
@@ -19,9 +19,10 @@ If the second word is `auto`, skip checkpoint A. Checkpoint B is never skipped.
    Do not create or switch branches here; offer /new-branch.
 3. Read the RN and CA the task cites in specs/spec.md. If any is marked
    [DECIDE], stop and ask.
-4. Pick the implementing agent by area: backend-dev (backend), frontend-dev
-   (interface), llm-engineer (providers, prompts, generation flow). If the task
-   spans areas, say so and ask how to split it.
+4. Use the implementing agent named in the task's `Agent:` field. If it is
+   `maintainer`, stop: the task is not run by this skill. If it is `qa`, step 1
+   is the whole implementation: skip step 2 and go to review. If the agent file
+   does not exist in `.claude/agents/`, stop and say so.
 
 ## 1. Tests first
 Use the qa agent to write the tests for the task. Show the maintainer the list of

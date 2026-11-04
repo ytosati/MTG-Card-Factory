@@ -15,7 +15,8 @@ Prepare the branch for $ARGUMENTS following specs/git-standards.md (section 2,
    milestone, propose reusing it.
 3. Milestone branch (argument is a milestone id):
    - Check in specs/tasks.md that the previous milestone's review task is done
-     and its branch is merged into `main`. If not, stop and say why.
+     and its branch is merged into `main`. If not, stop and say why. For `m0`,
+     skip this check: it is the first milestone.
    - Switch to `main`, update it with a fast-forward pull, confirm the working
      tree is clean, and create `milestone/<id>-<name>`, for example
      `milestone/m0-foundation`.
@@ -26,5 +27,5 @@ Prepare the branch for $ARGUMENTS following specs/git-standards.md (section 2,
    - Switch to the milestone branch, update it with a fast-forward pull, confirm
      the working tree is clean, and create
      `<type>/<task id>-<kebab-case description>` (types: feat, fix, refactor,
-     chore), for example `feat/t6-color-identity-validator`.
+     chore), for example `feat/t29-color-identity-validator`.
 5. Report the branch name, the branch it starts from and the commit.

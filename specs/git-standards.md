@@ -49,6 +49,8 @@ Prefixes:
 - `refactor/`: internal restructuring
 - `chore/`: maintenance, documentation, tests and CI
 
+- `milestone/`: one branch per milestone of `specs/tasks.md`
+
 Rules:
 
 - English, lowercase kebab-case, short and descriptive.
@@ -58,9 +60,25 @@ Rules:
 
 Examples:
 
+- `milestone/m0-foundation`, `milestone/ma-data`, `milestone/mb-validators`,
+  `milestone/mc-generation`, `milestone/md-api-interface`, `milestone/me-release`
 - `feat/t6-color-identity-validator`
 - `fix/session-key-leak`
 - `chore/update-dependencies`
+
+### Milestone and task branches
+
+- Each milestone has one branch, created from an updated `main` when the
+  milestone starts.
+- Each task of a milestone has its own branch, created from the updated
+  milestone branch, never from `main`.
+- A finished task branch merges into its milestone branch, never into `main`.
+  The next task starts from the milestone branch after that merge.
+- The milestone branch merges into `main` only after its review task passes,
+  with every test suite green.
+- No commits are made directly on a milestone branch; it changes only by
+  merging task branches. Work outside the milestones (for example spec or
+  tooling changes) branches from `main` as before.
 
 ## 3. Before starting work
 
@@ -69,7 +87,8 @@ Examples:
 3. Check whether an appropriate task branch already exists.
 4. Reuse it when the task belongs to it.
 5. Create a new branch only for an independent task.
-6. Branch from an updated `main` with a clean working tree.
+6. Branch with a clean working tree: a milestone branch from an updated `main`,
+   a task branch from its updated milestone branch.
 7. If there are local changes, conflicts or unclear branch ownership, stop and
    ask. Never discard existing work.
 
@@ -78,7 +97,9 @@ Do not create a branch for every prompt, file, commit or minor adjustment.
 ## 4. Protection and authorization
 
 - Never commit directly to `main`, except the very first scaffold commit that
-  bootstraps the repository.
+  bootstraps the repository. Never commit directly to a milestone branch.
+- Never merge a task branch into `main`; it merges into its milestone branch.
+  Merging into a milestone branch also needs authorization.
 - Never force-push. Never delete branches without authorization.
 - Never merge into `main` without authorization.
 - Never overwrite or discard uncommitted changes. Never modify unrelated work.
@@ -100,7 +121,8 @@ Do not create a branch for every prompt, file, commit or minor adjustment.
 7. Review the diff for correctness and unintended changes (the maintainer reads it).
 8. Create logically cohesive commits.
 9. Report what changed, the validation results and the remaining issues.
-10. Open a pull request when authorized.
+10. Open a pull request when authorized: a task branch targets its milestone
+    branch; a milestone branch targets `main`.
 11. Merge only after checks and review.
 
 Pull request: the title follows the commit format. The description states what
@@ -113,7 +135,10 @@ and why, the tasks, RN and CA covered, how to test, and the risks.
 - Bug related to the current implementation: current branch.
 - Unrelated bug: separate task and branch.
 - Changes requested during PR review: the existing PR branch.
-- Merged task: start the next independent task from updated `main`.
+- Merged task: start the next task of the milestone from the updated milestone
+  branch.
+- Milestone review passed and merged: start the next milestone branch from the
+  updated `main`.
 - Unclear scope or conflicting Git state: ask before any destructive or
   irreversible action.
 

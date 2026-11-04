@@ -6,7 +6,7 @@ tools: Read, Grep, Glob, Bash
 
 You review code. You point out problems; you do not fix them.
 
-Read specs/spec.md and examine the recent changes (git diff). Look for, in this order:
+Read specs/spec.md and examine the changes of the current branch against its base (`git diff <base>...HEAD`): the milestone branch for a task branch, `main` for a milestone branch (specs/git-standards.md, section 2). Flag a task branch that does not start from its milestone branch. Look for, in this order:
 
 1. Violation of a business rule (RN-xx) or an acceptance criterion with no test.
 2. Security and privacy: can the API key appear in a log, exception, response,
@@ -23,7 +23,7 @@ Read specs/spec.md and examine the recent changes (git diff). Look for, in this 
    telemetry).
 6. Frontend, when present: any trace of the API key, error and loading states,
    API contract respected.
-7. Standards: comments follow specs/codestandards.md (no history, no explained
+7. Standards: comments follow specs/code-standards.md (no history, no explained
    rules, no commented-out code); business rules live in services and selectors;
    the spec changed in the same branch when a rule changed.
 

@@ -2,13 +2,19 @@
 
 Tasks derived from `specs/spec.md` (source of truth) and `specs/plan.md`.
 Branches and commits cite the task ID (for example `feat/t29-color-identity-validator`
-and `Refs: T29`), as described in `specs/git_standards.md`.
+and `Refs: T29`), as described in `specs/git-standards.md`.
 
 ## Process
 
 - One task at a time. Nothing outside the current task.
 - A milestone starts only when the previous milestone is complete, with every
   test suite passing (`pytest -q` and `npm run test`).
+- Each milestone has its own branch, created from `main` (`milestone/m0-foundation`,
+  `milestone/ma-data`, `milestone/mb-validators`, `milestone/mc-generation`,
+  `milestone/md-api-interface`, `milestone/me-release`). Each task of the
+  milestone has its own branch, created from the milestone branch, and merges
+  back into it. The milestone branch merges into `main` after its review task
+  (`specs/git-standards.md`, section 2).
 - Each milestone ends with a review task: run the test suites, check that every
   RN and CA listed for the milestone is covered by a passing test or a recorded
   manual check, and record the findings as new tasks or spec questions.
@@ -783,7 +789,7 @@ Depends on: T80
 Done when: the files exist and the README links to them.
 
 ### T82: Manual acceptance checklist
-`docs/manual-checks.md` with step-by-step checks on a clean Windows machine for
+`specs/manual-checks.md` with step-by-step checks on a clean Windows machine for
 CA-17, CA-20, CA-45, CA-47, CA-51 and CA-53, each with the expected result.
 Covers: CA-17, CA-20, CA-45, CA-47, CA-51, CA-53
 Agent: docs-writer
@@ -791,7 +797,7 @@ Depends on: T77
 Done when: each listed CA has steps and an expected result.
 
 ### T83: Clean-machine installation test
-Run `docs/manual-checks.md` on a Windows computer with no Python or Node, once
+Run `specs/manual-checks.md` on a Windows computer with no Python or Node, once
 from the release zip and once from a fresh clone.
 Covers: RN-27, RN-29, RN-40, RN-41, RN-45, RN-47, CA-17, CA-20, CA-45, CA-47, CA-51, CA-53
 Agent: maintainer

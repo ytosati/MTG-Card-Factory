@@ -78,8 +78,8 @@ when new documents appear (for example `docs/ARCHITECTURE.md`).
 
 ## Tooling
 
-The formatter, linter and type checker are chosen in `specs/plan.md`. Run them
-before every commit.
+The tests, the type checker and, once approved, the formatter and linter are
+listed in `specs/plan.md` (section 13, Tooling). Run them before every commit.
 
 ## Checking a comment cleanup
 

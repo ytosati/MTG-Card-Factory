@@ -14,7 +14,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -25,12 +24,6 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-
-# PyInstaller
-#   Usually these files are written by a python script from a template
-#   before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
 
 # Installer logs
 pip-log.txt
@@ -151,6 +144,8 @@ activemq-data/
 
 # Environments
 .env
+.env.*
+!.env.example
 .envrc
 .venv
 env/
@@ -222,10 +217,12 @@ __marimo__/
 # Node
 node_modules/
 
-# db
+# Card Factory runtime and release output
 data/
+runtime/
 *.sqlite3
 *.db
+*.zip
 
 # Claude
 .claude/settings.local.json

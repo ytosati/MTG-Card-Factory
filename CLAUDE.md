@@ -9,6 +9,8 @@ Anthropic or Google).
   plan, tasks), commit messages, UI text, error messages, LLM prompts, and agent
   and skill files.
 - Generated cards are in any language available in ScryFall (English Default).
+  English and Portuguese cards get full rules validation; other languages skip
+  the type and keyword checks (spec RN-30).
 - Repository content is public and professional. It describes the project only:
   no first person, no personal context, no references to how the work was
   organized (specs/code_standards.md).
@@ -23,12 +25,33 @@ Anthropic or Google).
 - LLM: LLM_PROVIDER (openai, anthropic or google), LLM_API_KEY and LLM_MODEL are
   set in .env. One factory returns the adapter for the chosen provider; call
   sites never branch on the provider.
+- Images (optional): IMAGE_PROVIDER (openai or google), IMAGE_API_KEY and
+  IMAGE_MODEL in .env. Without IMAGE_PROVIDER, art uses the LLM provider when it
+  is image-capable. IMAGE_API_KEY may be empty when art uses the LLM provider;
+  LLM_API_KEY is then used. The same factory rule applies to image adapters.
+- Port: APP_PORT in .env, default 47821. The server binds to 127.0.0.1 only.
+- Startup never calls a provider; keys are tried by the Status connection test
+  and by generation.
+- Images are stored as local files under data/; the SQLite database keeps their
+  references.
 - Tests: pytest with pytest-django (backend), Vitest (frontend). A fake provider
-  stands in for the LLM.
+  stands in for text and image generation.
 - Distribution: free and open source, local only. No hosting, accounts, billing
-  or telemetry.
+  or telemetry. The Windows release is a zip with a portable Python, the built
+  frontend, a .env with a comment for each setting, and a double-click launcher
+  that opens the browser. Building the release requires Node; running it does
+  not. The GitHub repository is the download page (releases), the user guide
+  (README) and the source code. A clone has a Windows start file that prepares
+  everything on the first run, downloading the built frontend from the matching
+  GitHub release (spec RN-45).
+- Approved for distribution: the official embeddable Python package, waitress as
+  the server, and a launcher run with pythonw.exe (no console window). Django
+  serves the built frontend's static files. No image library: providers
+  generate images and the browser displays them.
 
 ## Commands
+Development commands. End users start the application with the launcher
+(spec RN-27).
 - Backend: python manage.py runserver  |  pytest -q
 - Frontend: npm run dev  |  npm run test
 - Build the database: management command defined in the plan
@@ -46,13 +69,20 @@ Anthropic or Google).
 - Never commit, push, merge or switch branches unless the maintainer asks.
 
 ## Non-negotiable rules
-- The user's API key is read from .env in one place. It is never written to the
-  database, a file, a log, an error message or a response, and it is never sent
-  to the browser.
+- The user's API keys (text and image) are read from .env in one place. They are
+  never written to the database, a file, a log, an error message or a response,
+  and they are never sent to the browser.
 - The server listens only on the local machine by default.
-- The repository contains no Scryfall data and no Comprehensive Rules text.
-- Card validators are deterministic code and never call a provider.
+- The repository contains no Scryfall data, no Comprehensive Rules text, and no
+  card images or frames.
+- Card validators are deterministic code and never call a provider. The power
+  indicator is an assessment by the text model, not a validator.
 - All data access goes through the ORM or parameters. Never SQL built from text.
-- The application contacts only the official data sources and the configured
-  provider.
+- The application contacts only the data sources (Scryfall and the
+  Comprehensive Rules) and the configured providers. After the database build,
+  Scryfall is contacted only to download the image of a chosen base card. The
+  start file of a clone also downloads, when preparing and only what is missing
+  or changed (spec RN-45), Python and the dependencies from their official
+  sources and the built frontend from the project's GitHub releases.
+- The browser loads images only from the local application.
 - No new dependency without approval: every dependency weighs on the install.

@@ -789,7 +789,7 @@ Depends on: T80
 Done when: the files exist and the README links to them.
 
 ### T82: Manual acceptance checklist
-`docs/manual-checks.md` with step-by-step checks on a clean Windows machine for
+`specs/manual-checks.md` with step-by-step checks on a clean Windows machine for
 CA-17, CA-20, CA-45, CA-47, CA-51 and CA-53, each with the expected result.
 Covers: CA-17, CA-20, CA-45, CA-47, CA-51, CA-53
 Agent: docs-writer
@@ -797,7 +797,7 @@ Depends on: T77
 Done when: each listed CA has steps and an expected result.
 
 ### T83: Clean-machine installation test
-Run `docs/manual-checks.md` on a Windows computer with no Python or Node, once
+Run `specs/manual-checks.md` on a Windows computer with no Python or Node, once
 from the release zip and once from a fresh clone.
 Covers: RN-27, RN-29, RN-40, RN-41, RN-45, RN-47, CA-17, CA-20, CA-45, CA-47, CA-51, CA-53
 Agent: maintainer

@@ -147,7 +147,8 @@ image settings checked separately. Provider values are trimmed and compared
 case-insensitively, so `OpenAI` is `openai`. The image key falls back to the
 text key. Empty image settings only make art unavailable; set but invalid ones
 (an unknown or non-image-capable image provider) are settings to fix; an image
-key with no image provider is ignored with a notice. `APP_PORT` defaults to
+key with no image provider is ignored with a notice, and so is an image model
+with no image provider when the text provider is not image-capable. `APP_PORT` defaults to
 47821, and an invalid value falls back to it as a setting to fix.
 `get_config()` reads the file again when its modification time changed; the
 port is read once at startup. Update `.env.example` with a comment for each

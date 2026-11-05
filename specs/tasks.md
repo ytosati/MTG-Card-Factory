@@ -1,8 +1,8 @@
 # Tasks: Card Factory
 
 Tasks derived from `specs/spec.md` (source of truth) and `specs/plan.md`.
-Branches and commits cite the task ID (for example `feat/t29-color-identity-validator`
-and `Refs: T29`), as described in `specs/git-standards.md`.
+Commits cite the task ID in a footer (for example `Refs: T29`), as described in
+`specs/git-standards.md`.
 
 ## Process
 
@@ -12,8 +12,8 @@ and `Refs: T29`), as described in `specs/git-standards.md`.
 - Each milestone has its own branch, created from `main` (`milestone/m0-foundation`,
   `milestone/ma-data`, `milestone/mb-validators`, `milestone/mc-generation`,
   `milestone/md-api-interface`, `milestone/me-release`). Each task of the
-  milestone has its own branch, created from the milestone branch, and merges
-  back into it. The milestone branch merges into `main` after its review task
+  milestone is committed and pushed on the milestone branch, with no branch of
+  its own. The milestone branch merges into `main` after its review task
   (`specs/git-standards.md`, section 2).
 - Each milestone ends with a review task: run the test suites, check that every
   RN and CA listed for the milestone is covered by a passing test or a recorded

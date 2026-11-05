@@ -6,13 +6,14 @@ argument-hint: [optional: base branch, file or task id]
 allowed-tools: Read, Grep, Glob, Bash(git status), Bash(git diff *), Bash(git log *)
 ---
 
-Explain the changes for $ARGUMENTS (default: the current branch compared with
-its base: the milestone branch for a task branch, `main` for a milestone branch
-or any other branch). Read-only: edit nothing.
+Explain the changes for $ARGUMENTS (default: the uncommitted changes of the
+current task, compared with `HEAD`, including new files; a task id means that
+task's commits, found by its `Refs:` footer; a branch means that branch compared
+with `main`). Read-only: edit nothing.
 
-1. Find the base (specs/git-standards.md, section 2). Run
-   `git diff <base>...HEAD --stat`, then read the diff and the surrounding
-   code. State the purpose in two sentences, tied to the task and to the rules
+1. Find the changes (specs/git-standards.md, section 2). Run
+   `git status` and `git diff HEAD --stat` (or `git diff <base>...HEAD --stat`),
+   then read the diff, the new files and the surrounding code. State the purpose in two sentences, tied to the task and to the rules
    (RN, CA) it serves.
 2. Walk through the changes in a sensible order (data model, services, API,
    interface). For each part: what it does in plain language, why it is written

@@ -54,60 +54,57 @@ Prefixes:
 Rules:
 
 - English, lowercase kebab-case, short and descriptive.
-- Start the description with the task ID when there is one.
-- One branch per independent unit of work (normally one task from
-  `specs/tasks.md`).
+- One branch per milestone, or per independent unit of work outside the
+  milestones. Tasks have no branches of their own.
 
 Examples:
 
 - `milestone/m0-foundation`, `milestone/ma-data`, `milestone/mb-validators`,
   `milestone/mc-generation`, `milestone/md-api-interface`, `milestone/me-release`
-- `feat/t29-color-identity-validator`
 - `fix/session-key-leak`
 - `chore/update-dependencies`
 
-### Milestone and task branches
+### Milestone branches and task commits
 
 - Each milestone has one branch, created from an updated `main` when the
   milestone starts.
-- Each task of a milestone has its own branch, created from the updated
-  milestone branch, never from `main`.
-- A finished task branch merges into its milestone branch, never into `main`.
-  The next task starts from the milestone branch after that merge.
+- Tasks of a milestone are commits on the milestone branch. A finished task
+  becomes one or more commits there, each citing the task in its `Refs:`
+  footer. The next task continues on the same branch.
+- A task is committed only after its tests pass and the maintainer has read
+  the diff. The milestone branch is then pushed, never force-pushed.
+- The findings of a milestone review task are committed on the milestone
+  branch.
 - The milestone branch merges into `main` only after its review task passes,
   with every test suite green.
-- No commits are made directly on a milestone branch; it changes only by
-  merging task branches. Work outside the milestones (for example spec or
-  tooling changes) branches from `main` as before.
-- The findings of a milestone review task are committed on
-  `chore/<review task id>-milestone-review`, created from the milestone branch
-  and merged back into it before the milestone merges into `main`.
+- Work outside the milestones (for example spec or tooling changes) branches
+  from `main`.
 
 ## 3. Before starting work
 
 1. Inspect the current branch and the working tree.
 2. Identify the task scope.
-3. Check whether an appropriate task branch already exists.
-4. Reuse it when the task belongs to it.
-5. Create a new branch only for an independent task.
-6. Branch with a clean working tree: a milestone branch from an updated `main`,
-   a task branch from its updated milestone branch.
-7. If there are local changes, conflicts or unclear branch ownership, stop and
+3. A task of a milestone works on that milestone's branch. Work outside the
+   milestones checks whether an appropriate branch already exists and reuses it.
+4. Create a new branch only for a new milestone or for independent work outside
+   the milestones.
+5. Branch with a clean working tree: a milestone branch from an updated `main`.
+6. If there are local changes, conflicts or unclear branch ownership, stop and
    ask. Never discard existing work.
 
-Do not create a branch for every prompt, file, commit or minor adjustment.
+Do not create a branch for a task, prompt, file, commit or minor adjustment.
 
 ## 4. Protection and authorization
 
 - Never commit directly to `main`, except the very first scaffold commit that
-  bootstraps the repository. Never commit directly to a milestone branch.
-- Never merge a task branch into `main`; it merges into its milestone branch.
-  Merging into a milestone branch also needs authorization.
+  bootstraps the repository. Task commits go on their milestone branch.
 - Never force-push. Never delete branches without authorization.
 - Never merge into `main` without authorization.
 - Never overwrite or discard uncommitted changes. Never modify unrelated work.
 - AI agents commit only after the maintainer has reviewed the diff or asked for the
-  commit. Push, pull request creation and merge always need authorization.
+  commit. Push, pull request creation and merge always need authorization; the
+  maintainer asking for a task commit authorizes its commit and the push of
+  the milestone branch.
 - Enforce what you can outside the text: Claude Code permissions in
   `.claude/settings.json` and branch protection on GitHub.
 
@@ -115,17 +112,18 @@ Do not create a branch for every prompt, file, commit or minor adjustment.
 
 1. Inspect the repository status and the current branch.
 2. Identify the task, its rules (RN) and its acceptance criteria (CA).
-3. Select or create the branch.
+3. Select the branch: the milestone branch for a task, or a branch for work
+   outside the milestones.
 4. If a business rule changes, update `specs/spec.md` first, then the tests,
-   then the code, in the same branch. If user-visible behavior changes, update
+   then the code, on the same branch. If user-visible behavior changes, update
    the user documentation too.
 5. Implement within the agreed scope.
 6. Run the tests and the type check (`specs/plan.md`, section 13, Tooling).
 7. Review the diff for correctness and unintended changes (the maintainer reads it).
 8. Create logically cohesive commits.
 9. Report what changed, the validation results and the remaining issues.
-10. Open a pull request when authorized: a task branch targets its milestone
-    branch; a milestone branch targets `main`.
+10. Open a pull request when authorized: a milestone branch, or a branch of work
+    outside the milestones, targets `main`.
 11. Merge only after checks and review.
 
 Pull request: the title follows the commit format. The description states what
@@ -141,17 +139,15 @@ and why, the tasks, RN and CA covered, how to test, and the risks.
 
 ## 7. Decision rules
 
-- Same task: same branch.
-- New independent task: new branch.
+- Task of a milestone: the milestone branch, one or more commits.
+- Next task of the same milestone: the same milestone branch.
 - Bug related to the current implementation: current branch.
-- Unrelated bug: separate task and branch.
+- Unrelated bug: separate task.
 - Changes requested during PR review: the existing PR branch.
-- Merged task: start the next task of the milestone from the updated milestone
-  branch.
 - Milestone review passed and merged: start the next milestone branch from the
   updated `main`.
 - Unclear scope or conflicting Git state: ask before any destructive or
   irreversible action.
 
-Core principle: a branch represents one unit of work. A commit represents one
-logical change.
+Core principle: a branch represents one milestone or one unit of work outside
+the milestones. A commit represents one logical change.

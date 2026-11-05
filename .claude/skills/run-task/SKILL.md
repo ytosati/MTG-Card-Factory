@@ -1,7 +1,6 @@
 ---
 name: run-task
-description: Run the full implementation cycle for one task from specs/tasks.md (tests, implementation, review) with the project agents, stopping for the maintainer at checkpoints. Use only when the maintainer asks to run a task.
-disable-model-invocation: true
+description: Run the full implementation cycle for one task from specs/tasks.md (tests, implementation, review) with the project agents, stopping for the maintainer at checkpoints. Use only when the maintainer asks to run a task, or when /commit starts the next task.
 argument-hint: [task id, e.g. T29] [auto]
 ---
 
@@ -11,12 +10,12 @@ If the second word is `auto`, skip checkpoint A. Checkpoint B is never skipped.
 ## 0. Pre-flight
 1. Read specs/tasks.md and find the task. If it does not exist or is ambiguous,
    stop and ask.
-2. Run `git status` and show the current branch. Stop and ask
-   (specs/git-standards.md, section 2) if the working tree is dirty, if the
-   branch does not match the task, if the current branch is `main` or a
-   `milestone/` branch, or if the task branch was not created from its
-   milestone branch (`git merge-base --is-ancestor milestone/<id>-<name> HEAD`).
-   Do not create or switch branches here; offer /new-branch.
+2. Run `git status` and show the current branch. Tasks have no branches of
+   their own: the work happens on the branch of the task's milestone
+   (`milestone/<id>-<name>`, specs/git-standards.md, section 2). Stop and ask
+   if the working tree is dirty or if the current branch is not that milestone
+   branch. Do not create or switch branches here; if the milestone branch does
+   not exist, offer /new-branch.
 3. Read the RN and CA the task cites in specs/spec.md. If any is marked
    [DECIDE], stop and ask.
 4. Use the implementing agent named in the task's `Agent:` field. If it is
@@ -35,21 +34,22 @@ fail, give the agent the failing output and retry, at most 3 rounds. If they
 still fail, stop and report. Never change tests to make them pass.
 
 ## 3. Review
-Use the reviewer agent on the changes. High and medium findings go back to the
-implementing agent (at most 2 rounds). Low findings are listed for the maintainer.
+Use the reviewer agent on the uncommitted changes. High and medium findings go
+back to the implementing agent (at most 2 rounds). Low findings are listed for
+the maintainer.
 
 ## 4. Report
 Summarize: task, files changed, test results, review findings fixed and still
 open, doubts, which parts of the diff to read first (the riskiest), and what
 still needs manual testing.
 Checkpoint B: stop. Do not commit, push, merge or switch branches. Offer
-/explain-diff for the riskiest parts, and suggest /commit after the maintainer
-has read the diff. Remind that the task branch merges into its milestone branch,
-never into `main`. If the task is the milestone review, remind that the
+/explain-diff for the riskiest parts, and suggest `/commit <task id>` after the
+maintainer has read the diff: it commits on the milestone branch, pushes it and
+starts the next task. If the task is the milestone review, remind that the
 milestone branch merges into `main` only after the review passes.
 
 ## Rules
-- One task per run. Suggest /clear before the next one.
+- One task per run.
 - Never edit specs/spec.md during the cycle. If the spec is wrong, stop and say
   which rule.
 - Never ask an agent to edit files outside its ownership.

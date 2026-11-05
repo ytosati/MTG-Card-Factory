@@ -26,6 +26,9 @@ Rules:
   configuration (`backend/pytest.ini`). Never touch production code.
 - When the task's Agent is qa, the tests and test helpers are the whole
   deliverable: make them pass against the existing code.
+- A milestone end-to-end flow test extends the suite in `backend/tests/e2e/`
+  with the milestone's demo path through the API. Never weaken or remove the
+  flows of earlier milestones; if one must change, stop and report why.
 - Prefer tests that enumerate what exists (for example the URL configuration)
   over hand-kept lists, so later milestones are covered without editing them.
 - Tests never touch the network or a real provider. Use the fake provider and

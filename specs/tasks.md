@@ -24,7 +24,7 @@ are still cheap to change.
   that contributes to it; it is complete when its last task is done. Behavior of
   a rule that is not delivered yet is absent, never faked. Until the full set
   of validators exists, "approved" means that the validators delivered so far
-  passed. The definition of done of the spec applies in full at Milestone 9.
+  passed. The definition of done of the spec applies in full at Milestone 10.
 - **The review closes the loop.** The review task of a milestone runs the test
   suites, checks the coverage of the parts the milestone delivered, runs the
   demo, and records the findings: a change of rule goes through `/spec-change`,
@@ -33,6 +33,20 @@ are still cheap to change.
 - **Closed milestones stay closed.** A finding that changes the work of a merged
   milestone becomes a task in the next milestone. Done tasks keep their ID and
   their text.
+- **End-to-end test per milestone.** From Milestone 2 on, a `qa` task of each
+  milestone adds its demo path to the end-to-end suite in `backend/tests/e2e/`:
+  the API called in the order of the demo through the Django test client, with
+  the fake provider, fictional source files served by a fake transport and a
+  temporary data folder. The suite grows with each milestone, and the flows of
+  earlier milestones keep passing. It catches what tests of one layer with
+  mocks miss; the manual demo stays for what only a person can judge.
+- **Demos.** Milestone 1 and Milestone 10 run their demo on a Windows computer
+  with no Python or Node installed. The other milestones run it from the
+  locally built zip on the development machine.
+- **Migrations during development.** Data folders made by development builds
+  are disposable. Before the first public release, the migrations are replaced
+  by one initial migration per app (T125); the upgrade guarantee of RN-42
+  applies from the first public release on.
 - **Inside a slice.** Tasks run in dependency order. The backend task that adds
   an endpoint comes before the screen that consumes it, and the API contract in
   `specs/plan.md`, section 6, is the boundary between them.
@@ -46,9 +60,9 @@ are still cheap to change.
 - Each milestone has its own branch, created from `main`
   (`milestone/m0-foundation`, `milestone/m1-double-click-start`,
   `milestone/m2-reference-database`, `milestone/m3-first-card`,
-  `milestone/m4-rules-validation`, `milestone/m5-library-and-versions`,
-  `milestone/m6-art`, `milestone/m7-base-card`,
-  `milestone/m8-portuguese-cards`, `milestone/m9-public-release`). Each task of
+  `milestone/m4-text-providers`, `milestone/m5-rules-validation`, `milestone/m6-library-and-versions`,
+  `milestone/m7-art`, `milestone/m8-base-card`,
+  `milestone/m9-portuguese-cards`, `milestone/m10-public-release`). Each task of
   the milestone is committed and pushed on the milestone branch, with no branch
   of its own. The milestone branch merges into `main` after its review task
   (`specs/git-standards.md`, section 2).
@@ -76,7 +90,7 @@ frontend, open the application, and see the Status screen name the missing
 setting with no key value anywhere; add the key and reopen the screen without a
 restart.
 Later: the double-click start (M1), data sources in Status (M2), connection
-test (M3), art availability (M6).
+test (M3), art availability (M7).
 Done before the change to vertical slices: T1, T2, T3.
 
 ### T1: Backend project skeleton
@@ -234,7 +248,7 @@ again (a new tab of the same instance), close every tab and see it stop within
 four minutes; start it with the port in use by another program and see the
 message.
 Later: the license and third-party notices in the zip, the `frontend-dist`
-asset, CI release artifacts and the clone start file (M9).
+asset, CI release artifacts and the clone start file (M10).
 
 ### T7: Local server entry point
 Provide a backend function that starts waitress on `127.0.0.1` and `APP_PORT`,
@@ -343,8 +357,8 @@ Demo: from the zip with an empty data folder, see the Setup screen with the
 download size and the free space needed, start the build, watch the progress,
 interrupt one build (close the application) and see the next start rebuild
 without duplicates, then see the Status screen list the source with its date.
-Later: printings (M7), the Comprehensive Rules and terms (M4), Portuguese
-printings (M8). Each of those milestones adds its source to the build.
+Later: printings (M8), the Comprehensive Rules and terms (M5), Portuguese
+printings (M9). Each of those milestones adds its source to the build.
 
 ### T13: Job model and in-process runner
 Add the `Job` model and the runner: a thread pool with `submit`, `get_job`, and
@@ -461,33 +475,46 @@ Agent: frontend-dev
 Depends on: T62
 Done when: Vitest tests pass for the listed sources with their date and origin, and for a database that is not ready.
 
+### T116: Milestone 2 end-to-end flow test
+Create the end-to-end suite in `backend/tests/e2e/` with its shared fixtures
+(temporary home, fake transport serving fictional bulk files, fake adapter) and
+the demo path of this milestone: status before the build, `GET /api/setup`,
+`POST /api/setup/build`, the job followed to its end, an interrupted build
+rerun without duplicates, the readiness gate before and after, and the source
+in status.
+Covers: RN-01, RN-03, RN-28, CA-07, CA-08, CA-18
+Agent: qa
+Depends on: T22
+Done when: the end-to-end suite passes with the flows of earlier milestones unchanged.
+
 ### T89: Milestone 2 review
 Run every test suite. Check the coverage of the RN and CA parts of this
 milestone. Run the demo from the zip: a real `build_catalog` through the Setup
 screen reaches ready, an interrupted build is redone without duplicates, and
 the Status screen lists the source. Record the build time, the download size
-and the database size. Record the findings, and check the Milestone 3 tasks
-against the spec.
+and the database size. Answer the open question on whether a new application
+version requires a rebuild of the database (spec, open questions; RN-42), since
+Milestones 5, 8 and 9 add sources to the build. Record the findings, and check
+the Milestone 3 tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T13–T16, T20, T21, T22, T62, T63, T64
-Done when: every suite passes, the demo works, the measurements and findings are recorded, and the blocking items of Milestone 3 are listed.
+Depends on: T13–T16, T20, T21, T22, T62, T63, T64, T116
+Done when: every suite passes, the demo works, the measurements and findings are recorded, the rebuild question is answered in the spec, and the blocking items of Milestone 3 are listed.
 
 ## Milestone 3 — First card
 
 Goal: a person writes a request (idea, color identity, power level) and gets a
-card generated end to end with any of the three text providers: design intent,
+card generated end to end with OpenAI as text provider: design intent,
 comparables from the local database, draft, mana cost and color identity
 validation, at most one automatic revision, and the saved result on the Result
 screen with its usage.
-Demo: with each text provider and a real key, run the connection test on the
-Status screen, send a request, watch the job, and read the Result screen:
-card text, approved or rejected with causes, design intent, rationale,
-comparables, power indicator with its justification, artist credit and text
-usage. Run the T26 evaluation against the real database.
-Later: the type line, keyword and limits validators and the rules sections in
-the draft call (M4), editing and versions (M5), art (M6), base card (M7),
-Portuguese (M8).
+Demo: with OpenAI and a real key, send a request, watch the job, and read the
+Result screen: card text, approved or rejected with causes, design intent,
+rationale, comparables, power indicator with its justification, artist credit
+and text usage. Run the T26 evaluation against the real database.
+Later: Anthropic, Google and the connection test (M4), the type line, keyword
+and limits validators and the rules sections in the draft call (M5), editing
+and versions (M6), art (M7), base card (M8), Portuguese (M9).
 
 ### T35: Provider protocol, error set and fake adapter
 Define the adapter protocol (`complete_json`, `generate_image`,
@@ -517,47 +544,18 @@ Agent: llm-engineer
 Depends on: T39
 Done when: tests with recorded fictional responses pass for success, rejected key, usage limit and invalid JSON.
 
-### T41: Anthropic text adapter
-The same contract as T40, for Anthropic.
-Covers: RN-07, RN-08, RN-10, CA-06, CA-25
-Agent: llm-engineer
-Depends on: T39
-Done when: the T40 test set passes against the Anthropic adapter with its own recorded fictional responses.
-
-### T42: Google text adapter
-The same contract as T40, for Google. The key travels in the
-`x-goog-api-key` header, never in the URL.
-Covers: RN-07, RN-08, RN-10, CA-06, CA-25
-Agent: llm-engineer
-Depends on: T39
-Done when: the T40 test set passes against the Google adapter with its own recorded fictional responses.
-
 ### T36: Provider factory for text
 Implement `providers.factory`, the only reader of `LLM_PROVIDER` and the only
-caller of `Secret.reveal()`. It provides `text_adapter()`. Tests replace the
-factory functions with a pytest fixture that returns the fake adapter; the fake
-is never selectable from `.env`. The image side of the factory comes with T90.
+caller of `Secret.reveal()`. It provides `text_adapter()`, with the OpenAI
+adapter; T41 and T42 register theirs. Until then, `anthropic` or `google` as
+`LLM_PROVIDER` returns no adapter and names `LLM_PROVIDER` as the setting to
+fix. Tests replace the factory functions with a pytest fixture that returns the
+fake adapter; the fake is never selectable from `.env`. The image side of the
+factory comes with T90.
 Covers: RN-05, RN-06, RN-07, RN-08
 Agent: llm-engineer
-Depends on: T35, T40, T41, T42
-Done when: tests pass for each text provider value returning its adapter, an invalid configuration returning no adapter with the setting named, and the key revealed only inside the factory.
-
-### T45: Connection test endpoint (text key)
-`POST /api/status/connection-test` tries the text key and reports the result,
-naming the setting to fix when it fails. Trying the image key is added by T91.
-TODO: decide how the connection test records usage while the build holds the SQLite write lock (defer the record until the build ends, or keep it in memory) (RN-09, RN-28).
-Covers: RN-08, CA-25
-Agent: backend-dev
-Depends on: T36, T38
-Done when: tests with the fake adapter pass for a working text key and for a rejected text key with the setting named.
-
-### T92: Status screen: connection test
-Add the connection test button to the Status screen, with the result of the
-text key and the setting to fix when it fails.
-Covers: RN-08, RN-49, CA-25
-Agent: frontend-dev
-Depends on: T45
-Done when: Vitest tests pass for a working key, a rejected key with the setting named, and the button operable with the keyboard.
+Depends on: T35, T40
+Done when: tests pass for `openai` returning its adapter, an invalid configuration returning no adapter with the setting named, and the key revealed only inside the factory.
 
 ### T37: Card models and version service
 Add `Card`, `CardVersion` (immutable, numbered per card) and `UsageRecord` with
@@ -663,10 +661,10 @@ Validate the draft with the validators delivered so far. Allow at most one
 revision. Save the result as approved or rejected with its causes, and save the
 first draft as rejected when the revision call fails. Record usage for every
 call, including failures. Invalid responses save no card.
-Covers: RN-09, RN-10, RN-14, RN-15, CA-10, CA-11, CA-14, CA-15, CA-16
+Covers: RN-09, RN-10, RN-14, RN-15, CA-10, CA-11, CA-15, CA-16
 Agent: llm-engineer
-Depends on: T29, T38, T40, T41, T42, T47b
-Done when: tests pass for CA-10, CA-11 (both cases), CA-14 (the same scripted card shaped as each provider's recorded response yields the same saved card and validation result), CA-15 and CA-16 (two records for a draft and its revision, a record for a failure with no card).
+Depends on: T29, T38, T40, T47b
+Done when: tests pass for CA-10, CA-11 (both cases), CA-15 and CA-16 (two records for a draft and its revision, a record for a failure with no card).
 
 ### T49: Generation endpoint and request serializer
 `POST /api/generations` validates the request (idea, color identity and power
@@ -687,7 +685,7 @@ from the URL configuration, so endpoints added by later milestones are swept
 without editing the test; each later review confirms that they are.
 Covers: RN-06, RN-29, CA-06, CA-19
 Agent: qa
-Depends on: T45, T49
+Depends on: T49
 Done when: both sweep tests pass over every endpoint in the URL configuration.
 
 ### T65: Request screen (idea, color identity, power level)
@@ -712,6 +710,82 @@ Agent: frontend-dev
 Depends on: T62, T49
 Done when: Vitest tests pass for an approved card, a rejected card with its causes, a "too strong" indicator on an approved card, the artist credit shown (CA-58) and the text usage shown.
 
+### T117: Milestone 3 end-to-end flow test
+Extend the end-to-end suite with the demo path of this milestone: a request
+sent through `POST /api/generations`, the job followed to its end, and the card,
+its usage and its validation read back through the API, with the fake adapter
+scripted as an approved draft, a rejected draft fixed by the revision, a draft
+rejected twice and an invalid response.
+Covers: RN-10, RN-11, RN-14, RN-15, CA-10, CA-11, CA-15, CA-27
+Agent: qa
+Depends on: T49, T61
+Done when: the end-to-end suite passes with the Milestone 2 flow unchanged.
+
+### T94: Milestone 3 review
+Run every test suite and confirm that the sweep of T61 covers every endpoint.
+Check the coverage of the RN and CA parts of this milestone. Run the demo from
+the zip with OpenAI and a real key. Run the T26 script, mark
+the relevant cards in each top ten, and apply the pass rule: at least 16 of 20
+requests with five or more relevant cards. On a fail, list the failed requests
+with a proposal for approval (better role patterns and keywords, or
+embeddings). Commit only the counts. Confirm that only the factory reveals keys. Record the
+findings, and check the Milestone 4 tasks against the spec.
+Covers: none (review)
+Agent: maintainer
+Depends on: T23, T26, T28, T29, T35–T40, T46–T49, T61, T65, T67, T117
+Done when: every suite passes, a card was generated with OpenAI, the T26 counts are recorded with the pass rule applied, the findings are recorded, and the blocking items of Milestone 4 are listed.
+
+## Milestone 4 — Text providers
+
+Goal: the same request yields the same kind of card with OpenAI, Anthropic and
+Google, and the Status screen tests the text key.
+Demo: with each text provider and a real key, run the connection test on the
+Status screen, then send a request and read the Result screen.
+Later: the image key in the connection test (M7).
+
+### T41: Anthropic text adapter
+The same contract as T40, for Anthropic, registered in the factory (T36).
+Covers: RN-07, RN-08, RN-10, CA-06, CA-25
+Agent: llm-engineer
+Depends on: T94
+Done when: the T40 test set passes against the Anthropic adapter with its own recorded fictional responses.
+
+### T42: Google text adapter
+The same contract as T40, for Google, registered in the factory (T36). The key travels in the
+`x-goog-api-key` header, never in the URL.
+Covers: RN-07, RN-08, RN-10, CA-06, CA-25
+Agent: llm-engineer
+Depends on: T94
+Done when: the T40 test set passes against the Google adapter with its own recorded fictional responses.
+
+### T118: Same card across text providers
+An end-to-end test over the Milestone 3 flow, parametrized by provider: the same
+scripted card, shaped as each provider's recorded fictional response and passed
+through its real adapter with a fake transport, yields the same saved card and
+the same validation result. It also checks that no module outside the factory
+reads the provider setting.
+Covers: RN-07, CA-14
+Agent: qa
+Depends on: T41, T42
+Done when: the test passes for OpenAI, Anthropic and Google.
+
+### T45: Connection test endpoint (text key)
+`POST /api/status/connection-test` tries the text key and reports the result,
+naming the setting to fix when it fails. Trying the image key is added by T91.
+TODO: decide how the connection test records usage while the build holds the SQLite write lock (defer the record until the build ends, or keep it in memory) (RN-09, RN-28).
+Covers: RN-08, CA-25
+Agent: backend-dev
+Depends on: T94
+Done when: tests with the fake adapter pass for a working text key and for a rejected text key with the setting named.
+
+### T92: Status screen: connection test
+Add the connection test button to the Status screen, with the result of the
+text key and the setting to fix when it fails.
+Covers: RN-08, RN-49, CA-25
+Agent: frontend-dev
+Depends on: T45
+Done when: Vitest tests pass for a working key, a rejected key with the setting named, and the button operable with the keyboard.
+
 ### T93: Manual checks: real-key generation
 Append to `specs/manual-checks.md` one end-to-end generation with a real key for
 each text provider (OpenAI, Anthropic, Google), run from the zip, with the
@@ -721,22 +795,18 @@ Agent: docs-writer
 Depends on: T65, T67
 Done when: each provider has steps and an expected result.
 
-### T94: Milestone 3 review
-Run every test suite and confirm that the sweep of T61 covers every endpoint.
-Check the coverage of the RN and CA parts of this milestone. Run the demo from
-the zip with each text provider and a real key (T93). Run the T26 script, mark
-the relevant cards in each top ten, and apply the pass rule: at least 16 of 20
-requests with five or more relevant cards. On a fail, list the failed requests
-with a proposal for approval (better role patterns and keywords, or
-embeddings). Commit only the counts. Confirm that call sites never branch on the
-provider and that only the factory reveals keys. Record the findings, and check
-the Milestone 4 tasks against the spec.
+### T119: Milestone 4 review
+Run every test suite and confirm that the sweep of T61 covers the connection
+test endpoint. Check the coverage of the RN and CA parts of this milestone. Run
+the demo from the zip with each text provider and a real key (T93). Confirm that
+call sites never branch on the provider. Record the findings, and check the
+Milestone 5 tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T23, T26, T28, T29, T35–T42, T45–T49, T61, T65, T67, T92, T93
-Done when: every suite passes, a card was generated with each text provider, the T26 counts are recorded with the pass rule applied, the findings are recorded, and the blocking items of Milestone 4 are listed.
+Depends on: T41, T42, T45, T92, T93, T118
+Done when: every suite passes, a card was generated with each text provider, the findings are recorded, and the blocking items of Milestone 5 are listed.
 
-## Milestone 4 — Rules validation
+## Milestone 5 — Rules validation
 
 Goal: generated cards go through every English validator: type line, keywords
 and text limits, using terms built from the Comprehensive Rules, and the draft
@@ -744,7 +814,7 @@ call receives the rules sections of the keywords it uses.
 Demo: generate cards that use keywords, ability words and subtypes; see an
 invented keyword or a wrong subtype rejected with its cause, and see the
 revision fix it when it can.
-Later: Portuguese terms and language-aware validation (M8).
+Later: Portuguese terms and language-aware validation (M9).
 
 ### T18: Comprehensive Rules import and English terms
 Add `RuleSection`, `Term` and the FTS5 table `rules_fts` (migration with fixed
@@ -758,10 +828,10 @@ are absent. Each subtype is stored with every card type it belongs to (creature
 types belong to Creature and Kindred; spell types to Instant and Sorcery), and
 card types and supertypes are marked with the fixed Commander list in plan
 section 4.
-TODO: answer the open question on whether a new application version requires a rebuild (RN-42); this is the first task that adds a source to a database built by an earlier milestone.
+The source is added as the T89 answer to the rebuild question states.
 Covers: RN-01, RN-18, RN-19, CA-65
 Agent: backend-dev
-Depends on: T94
+Depends on: T119
 Done when: tests with a fictional rules page and a fictional rules text extract the link, the sections, the expected terms, the card types of each subtype (including a creature type under Kindred and a spell type under both Instant and Sorcery) and the types and supertypes not allowed in a Commander deck, and the build stores them in the same transaction as the cards.
 
 ### T24: Rules search and English lexicon selector
@@ -814,17 +884,27 @@ Agent: llm-engineer
 Depends on: T24, T30, T31, T32
 Done when: tests with the fake adapter pass for the rules sections sent with the draft, a draft rejected by the keyword validator and fixed by the revision, and a draft rejected by the type line validator twice and saved as rejected.
 
-### T96: Milestone 4 review
+### T120: Milestone 5 end-to-end flow test
+Extend the end-to-end suite with the demo path of this milestone: a build
+that includes the fictional rules text, then a generation whose draft uses an
+invented keyword and is fixed by the revision, and one whose type line is
+rejected twice and saved as rejected with the cause.
+Covers: RN-15, RN-18, RN-19, CA-03, CA-04
+Agent: qa
+Depends on: T95, T117
+Done when: the end-to-end suite passes with the flows of earlier milestones unchanged.
+
+### T96: Milestone 5 review
 Run every test suite. Check the coverage of the RN and CA parts of this
 milestone. Confirm that validators import no Django models and make no network
 or provider call. Run the demo from the zip with a rebuilt database and a real
-key. Record the findings, and check the Milestone 5 tasks against the spec.
+key. Record the findings, and check the Milestone 6 tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T18, T24, T30, T31, T32, T95
-Done when: every suite passes, the demo works, the findings are recorded, and the blocking items of Milestone 5 are listed.
+Depends on: T18, T24, T30, T31, T32, T95, T120
+Done when: every suite passes, the demo works, the findings are recorded, and the blocking items of Milestone 6 are listed.
 
-## Milestone 5 — Library and versions
+## Milestone 6 — Library and versions
 
 Goal: saved cards are listed, favorited and deleted; a person edits a card with
 immediate revalidation, applies quick adjustments, and restores earlier
@@ -832,7 +912,7 @@ versions.
 Demo: after a restart, find a card in the library, favorite it, edit its cost
 to a malformed value and see it rejected without a provider call, fix it, apply
 "cheaper", restore the first version, and delete another card.
-Later: art in versions and the library (M6).
+Later: art in versions and the library (M7).
 
 ### T54: Library API
 `GET /api/cards?favorite=`, `GET /api/cards/{id}` (current version and usage),
@@ -899,17 +979,28 @@ Agent: frontend-dev
 Depends on: T54
 Done when: Vitest tests pass for the list, the favorites filter and the removal after deletion.
 
-### T97: Milestone 5 review
+### T121: Milestone 6 end-to-end flow test
+Extend the end-to-end suite with the demo path of this milestone: a generated
+card listed in the library, favorited with no new version, edited to a
+malformed cost and rejected with no provider call, fixed, adjusted, an earlier
+version restored, and another card deleted.
+Covers: RN-23, RN-24, RN-25, RN-26, CA-12, CA-13, CA-30, CA-31
+Agent: qa
+Depends on: T57, T117
+Done when: the end-to-end suite passes with the flows of earlier milestones unchanged.
+
+### T97: Milestone 6 review
 Run every test suite. Check the coverage of the RN and CA parts of this
-milestone. Run the demo from the zip, including an upgrade from the zip of the
-previous milestone with its data folder (RN-42). Record the findings, and check
-the Milestone 6 tasks against the spec.
+milestone. Run the demo from the zip, including a start of this milestone's zip with the
+data folder of the previous milestone's zip, to exercise the upgrade service
+(RN-42) on real data. Record the findings, and check
+the Milestone 7 tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T52, T54, T55, T56, T57, T69, T70
-Done when: every suite passes, the demo works, the upgrade keeps every card and version, the findings are recorded, and the blocking items of Milestone 6 are listed.
+Depends on: T52, T54, T55, T56, T57, T69, T70, T121
+Done when: every suite passes, the demo works, the upgrade keeps every card and version, the findings are recorded, and the blocking items of Milestone 7 are listed.
 
-## Milestone 6 — Art
+## Milestone 7 — Art
 
 Goal: a person asks for art in the request or later, generated by an
 image-capable provider or uploaded, and sees the card image beside the card
@@ -918,7 +1009,7 @@ Demo: with OpenAI and with Google as image provider and a real key, request a
 card with art and see one version with text and art; generate new art for an
 existing card, upload an image, open it at full resolution, restore the earlier
 art; with Anthropic and no image provider, see art unavailable with the reason.
-Later: the base card template (M7).
+Later: the base card template (M8).
 
 ### T90: Art availability in the factory and in status
 Extend `providers.factory` with `image_adapter()` and `art_availability()`
@@ -1070,17 +1161,28 @@ Agent: docs-writer
 Depends on: T98, T99, T68
 Done when: each image provider has steps and an expected result.
 
-### T102: Milestone 6 review
+### T122: Milestone 7 end-to-end flow test
+Extend the end-to-end suite with the demo path of this milestone: a request
+with art that ends with one version holding text and art, the image served
+unchanged, new art and an upload that add versions, a restore that brings the
+earlier art back, a refused art call, and art unavailable with no image
+provider.
+Covers: RN-31, RN-32, RN-33, RN-34, RN-43, CA-32, CA-37, CA-39, CA-49, CA-69
+Agent: qa
+Depends on: T58, T59, T115
+Done when: the end-to-end suite passes with the flows of earlier milestones unchanged.
+
+### T102: Milestone 7 review
 Run every test suite and confirm that the sweep of T61 covers the new
 endpoints. Check the coverage of the RN and CA parts of this milestone. Run the
 demo and the checks of T113 from the zip. Record the findings, and check the
-Milestone 7 tasks against the spec.
+Milestone 8 tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T43, T44, T50, T51, T58, T59, T68, T90, T91, T98–T101, T113, T115
-Done when: every suite passes, art was generated with each image provider, the findings are recorded, and the blocking items of Milestone 7 are listed.
+Depends on: T43, T44, T50, T51, T58, T59, T68, T90, T91, T98–T101, T113, T115, T122
+Done when: every suite passes, art was generated with each image provider, the findings are recorded, and the blocking items of Milestone 8 are listed.
 
-## Milestone 7 — Base card
+## Milestone 8 — Base card
 
 Goal: a person picks an existing card as a base: its name and rules text guide
 the new card's design, and the image of the chosen printing is the template of
@@ -1165,18 +1267,29 @@ Agent: docs-writer
 Depends on: T66, T105
 Done when: each image provider has steps and an expected result.
 
-### T106: Milestone 7 review
+### T123: Milestone 8 end-to-end flow test
+Extend the end-to-end suite with the demo path of this milestone: a base card
+found by part of its name, a printing and a face chosen, its image fetched once
+through the fake transport, and a generation with art that sends the base card
+to the text model and the template to the image model; then the same with the
+image fetch failing.
+Covers: RN-36, RN-37, RN-38, RN-39, CA-41, CA-42, CA-43, CA-44
+Agent: qa
+Depends on: T60, T103, T104
+Done when: the end-to-end suite passes with the flows of earlier milestones unchanged.
+
+### T106: Milestone 8 review
 Run every test suite and confirm that the sweep of T61 covers the new endpoints
 and the base image fetch. Check the coverage of the RN and CA parts of this
 milestone. Run the demo and the checks of T114 from the zip with a rebuilt
-database. Record the findings, and check the Milestone 8 tasks against the
+database. Record the findings, and check the Milestone 9 tasks against the
 spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T17, T25, T60, T66, T103, T104, T105, T114
-Done when: every suite passes, the demo works, the findings are recorded, and the blocking items of Milestone 8 are listed.
+Depends on: T17, T25, T60, T66, T103, T104, T105, T114, T123
+Done when: every suite passes, the demo works, the findings are recorded, and the blocking items of Milestone 9 are listed.
 
-## Milestone 8 — Portuguese cards
+## Milestone 9 — Portuguese cards
 
 Goal: a person chooses Portuguese (Brazil) as the card language; the card text
 is in Portuguese and goes through every validation with the official
@@ -1235,16 +1348,25 @@ Agent: frontend-dev
 Depends on: T33
 Done when: Vitest tests pass for English as the default with Portuguese as the only other option, labels in English for a Portuguese card (CA-22), and the skipped checks shown (CA-54).
 
-### T110: Milestone 8 review
+### T124: Milestone 9 end-to-end flow test
+Extend the end-to-end suite with the demo path of this milestone: a build that
+includes fictional Portuguese printings, then a Portuguese request whose card
+is validated with the Portuguese lexicon and lists a skipped keyword check.
+Covers: RN-30, CA-22, CA-54
+Agent: qa
+Depends on: T33, T108
+Done when: the end-to-end suite passes with the flows of earlier milestones unchanged.
+
+### T110: Milestone 9 review
 Run every test suite. Check the coverage of the RN and CA parts of this
 milestone. Run the demo from the zip with a rebuilt database and a real key.
-Record the findings, and check the Milestone 9 tasks against the spec.
+Record the findings, and check the Milestone 10 tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T19, T33, T107, T108, T109
-Done when: every suite passes, the demo works, the findings are recorded, and the blocking items of Milestone 9 are listed.
+Depends on: T19, T33, T107, T108, T109, T124
+Done when: every suite passes, the demo works, the findings are recorded, and the blocking items of Milestone 10 are listed.
 
-## Milestone 9 — Public release
+## Milestone 10 — Public release
 
 Goal: the first public release: the zip and the `frontend-dist` asset are built
 by CI on a version tag, a fresh clone starts with its start file, the README
@@ -1260,6 +1382,16 @@ Covers: RN-27, RN-45
 Agent: release-dev
 Depends on: T80
 Done when: running the script on a Windows machine produces both archives with the expected layout and the version written into both.
+
+### T125: Migration baseline for the first release
+Replace the development migrations with one initial migration per app, so the
+first public release starts from a clean migration history. A data folder made
+by a development build has migrations the release does not know, so the
+upgrade service refuses it as a newer database (T72) with its message.
+Covers: RN-42, CA-48
+Agent: backend-dev
+Depends on: T110
+Done when: migrations apply on an empty database, every suite passes, and a test shows that a database with an unknown development migration is refused with the data unchanged.
 
 ### T76: Clone start file: runtime preparation
 `start.cmd` prepares `runtime/` in `runtime/.staging/`: the pinned embeddable
@@ -1334,22 +1466,22 @@ Agent: maintainer
 Depends on: T78, T79, T81, T112
 Done when: every check in the checklist is recorded as passed, or failures are recorded as new tasks.
 
-### T84: Milestone 9 review
+### T84: Milestone 10 review
 Run every test suite and the repository content check. Repeat CA-48 with a data
-folder that holds cards, versions and images from the zip of an earlier
-milestone. Confirm that every RN and CA in the coverage table has a passing test
+folder that holds cards, versions and images, made by the release candidate and
+upgraded by a build with one more fictional migration. Confirm that every RN and CA in the coverage table has a passing test
 or a recorded manual check, and that the definition of done of the spec holds.
 Record the findings.
 Covers: none (review)
 Agent: maintainer
-Depends on: T76–T83, T111, T112
+Depends on: T76–T83, T111, T112, T125
 Done when: every suite and the content check pass, and the coverage table has no open entry.
 
 ## Reserved
 
 Interface quality tasks (design guidelines, accessibility, the generation wait
 experience, screen review passes, a final consistency pass) will be appended
-with the next free IDs, starting at T116. Design guidelines and accessibility
+with the next free IDs, starting at T126. Design guidelines and accessibility
 basics fit in Milestone 2, before the first screens beyond Status. The wait
 experience fits in Milestone 3. A screen review pass fits in each milestone that
 changes screens, before its review task, and the final consistency pass before
@@ -1359,113 +1491,113 @@ T84; those review tasks then add the new IDs to their dependencies.
 
 IDs that are never reused: T27, T34, T53 and T71 (review tasks of the earlier
 horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
-9).
+10).
 
 ## Coverage
 
 | RN / CA | Tasks |
 |---|---|
-| RN-01 | T14, T15, T16, T21, T22, T64, T18 |
+| RN-01 | T14, T15, T16, T21, T22, T64, T116, T18 |
 | RN-02 | T2, T75 |
-| RN-03 | T13, T14, T15, T21 |
+| RN-03 | T13, T14, T15, T21, T116 |
 | RN-04 | T14, T16, T23, T26 |
 | RN-05 | T4, T36, T90 |
 | RN-06 | T4, T5, T6, T87, T39, T36, T61 |
-| RN-07 | T4, T35, T40, T41, T42, T36, T93, T90, T115, T58, T101, T98 |
-| RN-08 | T4, T6, T9, T40, T41, T42, T36, T45, T92, T49, T90, T91, T101 |
+| RN-07 | T4, T35, T40, T36, T41, T42, T118, T93, T90, T115, T58, T101, T98 |
+| RN-08 | T4, T6, T9, T40, T36, T49, T41, T42, T45, T92, T90, T91, T101 |
 | RN-09 | T38, T48, T67, T52, T50, T51, T68 |
-| RN-10 | T13, T35, T39, T40, T41, T42, T48 |
-| RN-11 | T49, T65, T115, T33 |
+| RN-10 | T13, T35, T39, T40, T48, T117, T41, T42 |
+| RN-11 | T49, T65, T117, T115, T33 |
 | RN-12 | T20, T23, T26, T46, T47a, T47b, T67, T24, T95, T103 |
 | RN-13 | T46, T47b, T67 |
-| RN-14 | T37, T48, T67, T95 |
-| RN-15 | T48, T67, T95 |
+| RN-14 | T37, T48, T67, T117, T95 |
+| RN-15 | T48, T67, T117, T95, T120 |
 | RN-16 | T29, T65 |
 | RN-17 | T28 |
-| RN-18 | T18, T24, T30, T107, T33 |
-| RN-19 | T20, T18, T24, T31, T95, T107 |
+| RN-18 | T18, T24, T30, T120, T107, T33 |
+| RN-19 | T20, T18, T24, T31, T95, T120, T107 |
 | RN-20 | T32 |
 | RN-22 | T46, T47b, T67 |
-| RN-23 | T55, T52, T69, T68 |
-| RN-24 | T52, T57, T69 |
-| RN-25 | T37, T54, T55, T56, T69, T50 |
-| RN-26 | T37, T54, T70, T100 |
+| RN-23 | T55, T52, T69, T121, T68 |
+| RN-24 | T52, T57, T69, T121 |
+| RN-25 | T37, T54, T55, T56, T69, T121, T50 |
+| RN-26 | T37, T54, T70, T121, T100 |
 | RN-27 | T4, T10, T75, T111, T78, T79, T83 |
-| RN-28 | T15, T21, T22, T62, T63 |
+| RN-28 | T15, T21, T22, T62, T63, T116 |
 | RN-29 | T1, T3, T85, T7, T74, T15, T39, T61, T60, T76, T83 |
-| RN-30 | T9, T19, T107, T33, T108, T109 |
-| RN-31 | T43, T44, T51, T58, T113 |
-| RN-32 | T43, T44, T50, T51, T58, T68 |
-| RN-33 | T10, T50, T58, T99, T100 |
-| RN-34 | T50, T68, T100 |
+| RN-30 | T9, T19, T107, T33, T108, T109, T124 |
+| RN-31 | T43, T44, T51, T58, T113, T122 |
+| RN-32 | T43, T44, T50, T51, T58, T68, T122 |
+| RN-33 | T10, T50, T58, T99, T100, T122 |
+| RN-34 | T50, T68, T100, T122 |
 | RN-35 | T98, T68 |
-| RN-36 | T17, T25, T60, T66 |
-| RN-37 | T103, T105 |
-| RN-38 | T43, T44, T17, T104, T105, T114 |
-| RN-39 | T60, T104, T66 |
+| RN-36 | T17, T25, T60, T66, T123 |
+| RN-37 | T103, T105, T123 |
+| RN-38 | T43, T44, T17, T104, T105, T114, T123 |
+| RN-39 | T60, T104, T66, T123 |
 | RN-40 | T6, T9, T73, T83 |
 | RN-41 | T8, T11, T74, T13, T21, T83 |
-| RN-42 | T72, T74, T79 |
-| RN-43 | T50, T115, T59, T98, T68, T100 |
+| RN-42 | T72, T74, T125, T79 |
+| RN-43 | T50, T115, T59, T98, T68, T100, T122 |
 | RN-44 | T43, T44, T51, T58, T59, T99, T68 |
 | RN-45 | T111, T76, T77, T78, T79, T112, T83 |
 | RN-46 | T79 |
 | RN-47 | T4, T7, T8, T73, T83 |
 | RN-48 | T67, T51 |
-| RN-49 | T9, T62, T63, T64, T92, T65, T67, T69, T70, T101, T98, T99, T68, T100, T66, T105, T109, T112 |
+| RN-49 | T9, T62, T63, T64, T65, T67, T92, T69, T70, T101, T98, T99, T68, T100, T66, T105, T109, T112 |
 | CA-01 | T29 |
 | CA-02 | T28 |
-| CA-03 | T30 |
-| CA-04 | T31 |
+| CA-03 | T30, T120 |
+| CA-04 | T31, T120 |
 | CA-05 | T4, T49 |
-| CA-06 | T5, T6, T87, T40, T41, T42, T61 |
-| CA-07 | T21 |
-| CA-08 | T21, T22, T64 |
-| CA-10 | T48 |
-| CA-11 | T48 |
-| CA-12 | T55, T69 |
-| CA-13 | T56, T69 |
-| CA-14 | T48 |
-| CA-15 | T48 |
+| CA-06 | T5, T6, T87, T40, T61, T41, T42 |
+| CA-07 | T21, T116 |
+| CA-08 | T21, T22, T64, T116 |
+| CA-10 | T48, T117 |
+| CA-11 | T48, T117 |
+| CA-12 | T55, T69, T121 |
+| CA-13 | T56, T69, T121 |
+| CA-14 | T118 |
+| CA-15 | T48, T117 |
 | CA-16 | T38, T48, T67 |
 | CA-17 | T73, T82, T83 |
-| CA-18 | T22, T62, T63 |
+| CA-18 | T22, T62, T63, T116 |
 | CA-19 | T3, T61, T60 |
 | CA-20 | T7, T74, T82, T83 |
 | CA-21 | T46, T108, T109 |
-| CA-22 | T108, T109 |
+| CA-22 | T108, T109, T124 |
 | CA-23 | T2, T75 |
 | CA-24 | T23, T47a |
-| CA-25 | T40, T41, T42, T45, T92, T49 |
+| CA-25 | T40, T49, T41, T42, T45, T92 |
 | CA-26 | T49, T65 |
-| CA-27 | T47b, T67 |
+| CA-27 | T47b, T67, T117 |
 | CA-28 | T32 |
 | CA-29 | T47b, T67 |
-| CA-30 | T52, T57, T69 |
-| CA-31 | T54, T70, T50 |
-| CA-32 | T90, T58, T101, T98 |
+| CA-30 | T52, T57, T69, T121 |
+| CA-31 | T54, T70, T121, T50 |
+| CA-32 | T90, T58, T101, T98, T122 |
 | CA-33 | T90, T51 |
 | CA-34 | T91, T101 |
 | CA-35 | T50, T51, T68 |
 | CA-36 | T51 |
-| CA-37 | T51, T58, T68 |
+| CA-37 | T51, T58, T68, T122 |
 | CA-38 | T10, T58, T99 |
-| CA-39 | T50, T68, T100 |
+| CA-39 | T50, T68, T100, T122 |
 | CA-40 | T98, T68 |
-| CA-41 | T25, T60, T66 |
-| CA-42 | T103 |
-| CA-43 | T104 |
-| CA-44 | T60, T104, T66 |
+| CA-41 | T25, T60, T66, T123 |
+| CA-42 | T103, T123 |
+| CA-43 | T104, T123 |
+| CA-44 | T60, T104, T66, T123 |
 | CA-45 | T75, T82, T83 |
 | CA-46 | T6, T9 |
 | CA-47 | T8, T11, T74, T82, T83 |
-| CA-48 | T72, T74 |
-| CA-49 | T59, T100 |
+| CA-48 | T72, T74, T125 |
+| CA-49 | T59, T100, T122 |
 | CA-50 | T43, T44, T58, T59, T99, T68 |
 | CA-51 | T76, T77, T112, T83 |
 | CA-52 | T79 |
 | CA-53 | T73, T82, T83 |
-| CA-54 | T33, T109 |
+| CA-54 | T33, T109, T124 |
 | CA-55 | T55, T52, T69 |
 | CA-56 | T47b |
 | CA-57 | T29 |
@@ -1480,7 +1612,7 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | CA-66 | T28 |
 | CA-67 | T90 |
 | CA-68 | T90 |
-| CA-69 | T50, T51 |
+| CA-69 | T50, T51, T122 |
 | CA-70 | T13 |
 | CA-71 | T104, T105 |
 | CA-72 | T29 |

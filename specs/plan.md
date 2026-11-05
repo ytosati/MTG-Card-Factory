@@ -545,35 +545,46 @@ sources.
 | M0 Foundation | Status screen shows the configuration and the settings to fix | config, status endpoint, origin check, log, frontend skeleton served by Django, CI |
 | M1 Double-click start | the locally built zip starts with a double click and stops after the last tab closes | server entry point, instance and heartbeat, watchdog, upgrade service, launcher, release zip, manual checklist |
 | M2 Reference database | Setup screen builds the database from Oracle Cards; Status lists the source | jobs, catalog models, downloader, Oracle import, roles, build, setup endpoints and gate, Setup screen |
-| M3 First card | a request becomes a validated, saved card shown on the Result screen, with each text provider | provider protocol, three text adapters, factory, connection test, card models, usage, mana cost and color identity validators, comparables search, generation pipeline, Request and Result screens, key-leak sweep |
-| M4 Rules validation | type line, keyword and limits validators with terms from the Comprehensive Rules | rules import, terms, lexicon, rules search in the draft call |
-| M5 Library and versions | library, favorites, deletion, editing, quick adjustments, restore | library, edit, versions and adjustment endpoints and screens |
-| M6 Art | generated and uploaded art, shown beside the card text | image adapters, art availability, image storage and serving, art pipeline, upload, art screens |
-| M7 Base card | a chosen printing guides the design and is the art template | printings import, base card search, base image cache, template |
-| M8 Portuguese cards | cards in Portuguese with every validation | Portuguese terms and lexicon, card language |
-| M9 Public release | release zip and clone start for the public | release assets, clone start file, CI release, README, license, community files |
+| M3 First card | a request becomes a validated, saved card shown on the Result screen, with OpenAI | provider protocol, OpenAI text adapter, factory, card models, usage, mana cost and color identity validators, comparables search, generation pipeline, Request and Result screens, key-leak sweep |
+| M4 Text providers | the same request works with OpenAI, Anthropic and Google; Status tests the text key | Anthropic and Google text adapters, cross-provider test, connection test |
+| M5 Rules validation | type line, keyword and limits validators with terms from the Comprehensive Rules | rules import, terms, lexicon, rules search in the draft call |
+| M6 Library and versions | library, favorites, deletion, editing, quick adjustments, restore | library, edit, versions and adjustment endpoints and screens |
+| M7 Art | generated and uploaded art, shown beside the card text | image adapters, art availability, image storage and serving, art pipeline, upload, art screens |
+| M8 Base card | a chosen printing guides the design and is the art template | printings import, base card search, base image cache, template |
+| M9 Portuguese cards | cards in Portuguese with every validation | Portuguese terms and lexicon, card language |
+| M10 Public release | release zip and clone start for the public | release assets, clone start file, CI release, README, license, community files |
 
-**Build sources by milestone.** M2 builds from Oracle Cards; M4 adds the
-Comprehensive Rules, M7 Default Cards and M8 All Cards. During development, a
+**Build sources by milestone.** M2 builds from Oracle Cards; M5 adds the
+Comprehensive Rules, M8 Default Cards and M9 All Cards. During development, a
 milestone that adds a source rebuilds the database by hand; whether a new
 application version requires a rebuild (spec, open questions) is answered
-before the first task that adds a source (T18).
+in the Milestone 2 review (T89), before any milestone adds a source.
 
 **Decisions that are expensive to change late** are exercised early: the
 embeddable Python and FTS5 in M1, the SQLite concurrency between jobs and the
-server in M2, the provider protocol across the three text providers and the
-search quality evaluation in M3, and the upgrade of a data folder from an
-earlier zip in M5.
+server in M2, the generation pipeline and the search quality evaluation in M3,
+the provider protocol across the three text providers in M4, and the upgrade of
+a data folder from an earlier zip in M6.
+
+**End-to-end suite.** `backend/tests/e2e/` runs the demo path of every
+milestone from M2 on through the API, with the fake provider, fictional source
+files behind a fake transport and a temporary data folder. Each milestone adds
+its flow; earlier flows keep passing.
+
+**Migrations.** Development data folders are disposable. Before the first
+public release, the migrations are replaced by one initial migration per app
+(T125); the upgrade path of section 7 applies from that release on.
 
 ## 15. Verification
 
 - Backend: `pytest -q` with the fake provider and the network guard; every test
-  names the RN or CA it covers.
+  names the RN or CA it covers. It includes the end-to-end suite of section 14.
 - Frontend: `npm run test` and `npx tsc -b`.
 - Manual checks on a Windows machine: the CAs marked manual (zip start,
   clone start, port in use, firewall prompt, browser close), listed in
   `specs/manual-checks.md` from Milestone 1 on and extended by later
   milestones, plus one end-to-end generation with a real key per text provider.
 - Each milestone review runs its demo from the locally built zip (from
-  Milestone 1 on).
+  Milestone 1 on): on a Windows computer with no Python or Node for Milestones
+  1 and 10, on the development machine for the others.
 - T26 counts recorded in the Milestone 3 review (T94), with the first generated cards.

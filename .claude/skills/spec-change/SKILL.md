@@ -25,5 +25,5 @@ then the code.
 Rules:
 - Never change code or tests in this skill.
 - If the change contradicts a non-negotiable rule in CLAUDE.md, stop and say so.
-- Suggest a `docs(spec): ...` commit on the task branch
-  (specs/git-standards.md). Do not commit.
+- Suggest a `docs(spec): ...` commit on the current milestone branch, or on a
+  branch outside the milestones (specs/git-standards.md). Do not commit.

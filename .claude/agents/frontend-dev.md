@@ -24,8 +24,9 @@ Rules:
 - All UI text is in English.
 - Follow specs/code-standards.md (comments, structure). Do not commit, push or
   switch branches: the maintainer does that (specs/git-standards.md).
-- Work only on the task branch, created from its milestone branch. If the
-  current branch is `main` or a `milestone/` branch, stop and say so.
+- Work only on the branch of the task's milestone (`milestone/<id>-<name>`);
+  tasks have no branches of their own. If the current branch is `main`, stop
+  and say so.
 - Do not add dependencies and do not implement anything outside the task.
 
 Language: write all files in English.

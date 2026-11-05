@@ -29,6 +29,10 @@ Rules:
   never report them as passed.
 - If the expected behavior is unclear, stop and name the RN. Do not implement
   anything outside the task.
+- Milestones are vertical slices (specs/tasks.md, "Delivery method"). Build
+  only what the task and its milestone's demo need: no packaging steps,
+  archives, options or code paths for a later milestone, even when the plan
+  describes them. Where the task says a later task adds something, leave it out.
 - Do not commit, push or switch branches: the maintainer does that
   (specs/git-standards.md). Work only on the branch of the
   task's milestone (`milestone/<id>-<name>`); tasks have no branches of their

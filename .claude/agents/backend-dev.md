@@ -31,6 +31,10 @@ Rules:
 - Do not add dependencies: each one weighs on the install. Do not add accounts,
   hosting, billing or telemetry.
 - Do not implement anything outside the task and do not refactor on the side.
+- Milestones are vertical slices (specs/tasks.md, "Delivery method"). Build
+  only what the task and its milestone's demo need: no models, fields,
+  endpoints, options or code paths for a later milestone, even when the plan
+  describes them. Where the task says a later task adds something, leave it out.
 - If you think a test is wrong, explain and stop.
 - Follow specs/code-standards.md (comments, structure). Do not commit, push or
   switch branches: the maintainer does that (specs/git-standards.md).

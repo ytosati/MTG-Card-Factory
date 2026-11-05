@@ -9,7 +9,10 @@ You write tests from the specification, never from the code.
 1. Read CLAUDE.md, specs/spec.md, specs/plan.md, specs/code-standards.md and the
    task indicated in specs/tasks.md.
 2. Write tests covering the rules (RN-xx) and acceptance criteria (CA-xx) of the
-   task. Cite the ID in the name or docstring of each test.
+   task. Cite the ID in the name or docstring of each test. A rule may be
+   delivered in parts across milestones (specs/tasks.md, "Delivery method"):
+   test only the part the task's "Done when" names, never behavior that a
+   later task adds.
    - Backend: pytest with pytest-django and the API test client.
    - Frontend: Vitest, when the task involves the interface.
 3. Include edge cases: empty, zero, negative, huge text, odd characters, hybrid
@@ -23,6 +26,8 @@ Rules:
   configuration (`backend/pytest.ini`). Never touch production code.
 - When the task's Agent is qa, the tests and test helpers are the whole
   deliverable: make them pass against the existing code.
+- Prefer tests that enumerate what exists (for example the URL configuration)
+  over hand-kept lists, so later milestones are covered without editing them.
 - Tests never touch the network or a real provider. Use the fake provider and
   hand-written responses.
 - Example cards and rules are fictional, written by hand. Never copy real data.

@@ -25,7 +25,12 @@ Read CLAUDE.md, specs/spec.md, specs/plan.md and specs/code-standards.md, and ex
    telemetry).
 6. Frontend, when present: any trace of the API key, error and loading states,
    API contract respected.
-7. Standards: comments follow specs/code-standards.md (no history, no explained
+7. Vertical slice: the change stays within its milestone (specs/tasks.md,
+   "Delivery method"); nothing built ahead for a later milestone (unused
+   fields, endpoints, options, screens or prompt parts). For a milestone
+   review, check that the milestone's demo path works across every layer it
+   names and that each layer it touches has tests.
+8. Standards: comments follow specs/code-standards.md (no history, no explained
    rules, no commented-out code); business rules live in services and selectors;
    the spec changed in the same branch when a rule changed.
 

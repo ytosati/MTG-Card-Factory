@@ -1,6 +1,6 @@
 ---
 name: commit
-description: Commit the changes of the current task on its milestone branch following specs/git-standards.md, push the branch and start the next task. Use only when the maintainer asks to commit.
+description: Stage and commit the changes of the current task on its milestone branch following specs/git-standards.md. Use only when the maintainer asks to commit.
 disable-model-invocation: true
 argument-hint: [task id]
 allowed-tools: Bash(git status), Bash(git diff *), Bash(git log *)
@@ -24,11 +24,6 @@ Commit the current changes for $ARGUMENTS following specs/git-standards.md.
    subject up to 72 characters, optional body explaining why, and a footer
    `Refs: <task id>`. List exactly the files to stage.
 6. Wait for the maintainer's confirmation. Then stage only the listed files (never
-   `git add .` or `git add -A`) and commit.
+   `git add .` or `git add -A`) and commit. Never push: /next-task commits,
+   pushes the milestone branch and starts the next task.
 7. Show `git log -1 --stat`.
-8. Push the branch: `git push origin <branch>` (add `-u` when it has no
-   upstream). Never force-push. If the push fails, stop and report.
-9. Next task, only for a task of a milestone: find the task listed after
-   $ARGUMENTS in specs/tasks.md, within the same milestone (document order).
-   If there is none, or it is run by the `maintainer` (the milestone review),
-   stop and say so. Otherwise invoke the run-task skill with that task id.

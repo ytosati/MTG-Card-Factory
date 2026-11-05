@@ -1,6 +1,7 @@
 ---
 name: run-task
-description: Run the full implementation cycle for one task from specs/tasks.md (tests, implementation, review) with the project agents, stopping for the maintainer at checkpoints. Use only when the maintainer asks to run a task, or when /commit starts the next task.
+description: Run the full implementation cycle for one task from specs/tasks.md (tests, implementation, review) with the project agents, stopping for the maintainer at checkpoints. Use only when the maintainer asks to run a task, or when /next-task starts the next task.
+disable-model-invocation: true
 argument-hint: [task id, e.g. T29] [auto]
 ---
 
@@ -43,9 +44,9 @@ Summarize: task, files changed, test results, review findings fixed and still
 open, doubts, which parts of the diff to read first (the riskiest), and what
 still needs manual testing.
 Checkpoint B: stop. Do not commit, push, merge or switch branches. Offer
-/explain-diff for the riskiest parts, and suggest `/commit <task id>` after the
-maintainer has read the diff: it commits on the milestone branch, pushes it and
-starts the next task. If the task is the milestone review, remind that the
+/explain-diff for the riskiest parts, and suggest `/next-task <task id>` after
+the maintainer has read the diff: it commits on the milestone branch, pushes it
+and starts the next task (`/commit` only commits). If the task is the milestone review, remind that the
 milestone branch merges into `main` only after the review passes.
 
 ## Rules

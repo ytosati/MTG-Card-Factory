@@ -21,7 +21,11 @@ and `Refs: T29`), as described in `specs/git-standards.md`.
 - Each task names exactly one agent and stays within the folders that agent may
   change (`specs/plan.md`, section 12). Review tasks are run by the maintainer.
   When a task's agent is `qa`, the tests and test helpers are the whole
-  deliverable.
+  deliverable. For every other implementation task, the `qa` agent first writes
+  the failing tests from the RN and CA the task covers, and the task's agent then
+  makes them pass; that test step is part of the process, not a second agent of
+  the task. Shared test infrastructure named in a task (such as `pytest.ini` in
+  T1 or the helper in T6) is written by `qa` in that step.
 - Tests never touch the network or a real provider. They use the fake provider
   and fictional cards written by hand, and cite the RN or CA they protect.
 - No new dependency without approval.
@@ -65,25 +69,33 @@ Done when: `pytest -q` passes, and a test proves that an attempted connection fa
 
 ### T4: Configuration loader and settings to fix
 Implement `core.config`, the only module that reads `.env`. It uses a
-standard-library parser (comments, blank lines, quotes, spaces, UTF-8 byte-order
-mark, environment override) and returns a frozen config. Keys are `Secret`
-values that print as `***`. It reports a list of settings to fix: unknown
-provider, missing key or model, and image settings checked separately, with the
-image key falling back to the text key. `APP_PORT` defaults to 47821. Update
-`.env.example` with a comment for each setting.
-Covers: RN-05, RN-06, RN-07, RN-08, RN-27, RN-47, CA-05
+standard-library parser (comments, blank lines, quotes, spaces, UTF-8
+byte-order mark; process environment variables override `.env` only when
+`CARDFACTORY_DEBUG=1`, so a global `LLM_MODEL` never changes a release) and
+returns a frozen config. Keys are `Secret` values that print as `***`. It
+reports a list of settings to fix: unknown provider, missing key or model, and
+image settings checked separately. Provider values are trimmed and compared
+case-insensitively, so `OpenAI` is `openai`. The image key falls back to the
+text key. Empty image settings only make art unavailable; set but invalid ones
+(an unknown or non-image-capable image provider) are settings to fix; an image
+key with no image provider is ignored with a notice. `APP_PORT` defaults to
+47821, and an invalid value falls back to it as a setting to fix.
+`get_config()` reads the file again when its modification time changed; the
+port is read once at startup. Update `.env.example` with a comment for each
+setting.
+Covers: RN-05, RN-06, RN-07, RN-08, RN-27, RN-47, CA-05, CA-73, CA-74, CA-75
 Agent: backend-dev
 Depends on: T1
-Done when: parser and check tests pass for every case in RN-05 and RN-08, including the image key fallback and a `Secret` whose `str` and `repr` never reveal the value. The loader takes the file path as a parameter; tests use temporary files and a cleared environment, and no test reads the repository `.env`.
+Done when: parser and check tests pass for every case in RN-05 and RN-08, including the image key fallback, CA-74, CA-75, a changed file read again (CA-73) and a `Secret` whose `str` and `repr` never reveal the value. The loader takes the file path as a parameter; tests use temporary files and a cleared environment, and no test reads the repository `.env`.
 
 ### T5: Django secret key and key redaction in logs
 On first start, generate `data/secret_key` from the standard library and read it
 on later starts. Add a logging filter that redacts the configured text and image
-key values from every log record.
+key values from every log record, using the current configuration (T4).
 Covers: RN-06, CA-06
 Agent: backend-dev
 Depends on: T4
-Done when: tests show that the secret key is created once and reused, and that a log record containing a key value is written with the value redacted.
+Done when: tests show that the secret key is created once and reused, that a log record containing a key value is written with the value redacted, and that an empty or very short key (under 8 characters) changes nothing in a record.
 
 ### T6: Status endpoint (configuration part)
 Add `GET /api/status` with the text provider, the model, whether a key is
@@ -91,10 +103,10 @@ configured (boolean), the image provider and image model, and the settings to
 fix. Invalid configuration values never block startup. The qa agent adds the
 reusable test helper that calls endpoints with a fake configuration and asserts
 that no key value appears in a response.
-Covers: RN-06, RN-08, RN-40, CA-06, CA-46
+Covers: RN-06, RN-08, RN-40, CA-06, CA-46, CA-73, CA-74, CA-75
 Agent: backend-dev
 Depends on: T4, T5
-Done when: tests pass for a missing key (the setting is named, the response contains no key) and for a full configuration (the response contains booleans only, never the key).
+Done when: tests pass for a missing key (the setting is named, the response contains no key), a fix in the file seen on the next call (CA-73), the image cases of CA-74, an invalid port (CA-75), a changed port reported for the next start, and a full configuration (the response contains booleans only, never the key).
 
 ### T7: Local server entry point
 Provide a backend function that starts waitress on `127.0.0.1` and `APP_PORT`,
@@ -108,14 +120,15 @@ Done when: a test checks that the entry point binds to `127.0.0.1` on the config
 ### T8: Instance and heartbeat endpoints with watchdog
 Add `GET /api/instance`, which identifies Card Factory on the port, and
 `POST /api/heartbeat`. Add a watchdog that calls a stop callback when no
-heartbeat has arrived for 45 seconds after the first one. The watchdog has a
-hold that a running database build sets and clears; while held it never stops,
-and after the hold is cleared it stops 45 seconds after the later of the last
-heartbeat and the release.
+heartbeat has arrived for 180 seconds after the last one, or when no first
+heartbeat arrived within 120 seconds of startup (plan section 8). The watchdog
+has counted holds that running jobs acquire and release; while any hold is
+active it never stops, and after the last one is released it stops 180 seconds
+after the later of the last heartbeat and the release.
 Covers: RN-41, RN-47, CA-47
 Agent: backend-dev
 Depends on: T1
-Done when: watchdog tests with a fake clock pass: no stop before the first heartbeat, no stop while heartbeats arrive, a stop 45 seconds after the last one, no stop while held, and a stop 45 seconds after the hold is released with no heartbeat.
+Done when: watchdog tests with a fake clock pass: a stop 120 seconds after startup with no heartbeat, no stop while heartbeats arrive (including gaps of 60 seconds), a stop 180 seconds after the last one, no stop while held, no stop while one of two holds remains, and a stop 180 seconds after the last hold is released with no heartbeat.
 
 ### T9: Frontend skeleton
 Create the Vite, React and TypeScript app with Vitest, a single design-tokens
@@ -139,21 +152,28 @@ Depends on: T1, T9
 Done when: tests with a fixture build folder pass for `index.html` on an unknown path, for an asset with the right content type, and for the message when no build is present.
 
 ### T11: Frontend heartbeat hook
-Add a hook that sends a heartbeat every 15 seconds and on `pagehide`, mounted
-once in the application root.
+Add a hook that sends a heartbeat every 15 seconds, when the tab becomes visible
+again and on `pagehide`, mounted once in the application root. Heartbeats are
+JSON `fetch` calls with `keepalive` (T85). When a heartbeat fails, the root shows
+that the application stopped and how to start it again.
 Covers: RN-41, CA-47
 Agent: frontend-dev
 Depends on: T8, T9
-Done when: a Vitest test with fake timers shows the heartbeat calls at the right interval and on `pagehide`.
+Done when: a Vitest test with fake timers shows the heartbeat calls at the right interval, on visibility change and on `pagehide`, and the stopped notice after a failed heartbeat.
 
 ### T85: Origin check and JSON-only parsers
 Refuse every non-GET request whose `Origin` (or, when absent, `Referer`) is not
-the application's own origin, with the error envelope from plan section 6. Set
+the application's own origin, with the error envelope from plan section 6.
+`http://127.0.0.1:<port>` and `http://localhost:<port>` both count as the own
+origin. A request with neither header is accepted, since browsers always send
+`Origin` on cross-site POST; only local non-browser clients omit both. The
+heartbeat (T11) is sent as JSON with `fetch` and `keepalive`, never with
+`sendBeacon`. Set
 the DRF parsers to JSON only; the upload endpoint adds multipart when it exists.
 Covers: RN-29
 Agent: backend-dev
 Depends on: T6
-Done when: tests pass for a POST from another origin (refused), a POST with no `Origin` and a foreign `Referer` (refused), a same-origin POST (accepted), and a form-encoded POST (refused).
+Done when: tests pass for a POST from another origin (refused), a POST with no `Origin` and a foreign `Referer` (refused), same-origin POSTs from `127.0.0.1` and `localhost` (accepted), a POST with neither header (accepted), and a form-encoded POST (refused).
 
 ### T86: CI for the test suites
 A GitHub Actions workflow that runs `pytest -q`, `pytest launcher release`,
@@ -174,8 +194,8 @@ Depends on: T5
 Done when: tests in a temporary home pass for the log file location, the rotation setting, and a logged exception that contains a key value written with the value redacted.
 
 ### T12: Milestone 0 review
-Run both test suites. Check the coverage of RN-02, RN-05 to RN-08, RN-27,
-RN-29, RN-30, RN-33, RN-40, RN-41 and RN-47 so far. Confirm that `runserver` and
+Run both test suites. Check the coverage of every RN and CA that the coverage
+table assigns to T1–T11 and T85–T87. Confirm that `runserver` and
 the built frontend work together on `127.0.0.1`. Confirm that the embeddable
 Python 3.12 package planned for the zip has `sqlite3` with FTS5 enabled, and
 record the result. Record the findings.
@@ -188,12 +208,13 @@ Done when: both suites pass, and the findings are recorded as new tasks or as sp
 
 ### T13: Job model and in-process runner
 Add the `Job` model and the runner: a thread pool with `submit`, `get_job`, and
-`fail_orphan_jobs`, which marks jobs left running as failed. Add
+`fail_orphan_jobs`, which marks jobs left running as failed. Every running job
+holds the watchdog (T8) and releases it when it ends, whatever the outcome. Add
 `GET /api/jobs/{id}` with progress, result and error message.
-Covers: RN-03, RN-10, RN-41
+Covers: RN-03, RN-10, RN-41, CA-70
 Agent: backend-dev
 Depends on: T12
-Done when: tests pass for a successful job, a failing job (clear message, no partial result) and the orphan cleanup.
+Done when: tests pass for a successful job, a failing job (clear message, no partial result), the orphan cleanup, and the watchdog held while a job runs and released after it succeeds or fails (CA-70).
 
 ### T14: Catalog models and full-text tables
 Add `SourceRecord`, `BuildRun`, `OracleCard`, `Printing`, `RuleSection` and
@@ -206,13 +227,15 @@ Done when: migrations apply on an empty database, and tests show that the runnin
 
 ### T15: Source downloader
 Download each source to `data/downloads/` with the standard library, a
-descriptive User-Agent and an Accept header. Downloads can resume, and size and
-checksum are checked. Errors map to clear causes (no network, source failure,
+descriptive User-Agent and an Accept header. The size is checked against the
+listing or the `Content-Length`; a SHA-256 is computed and recorded in the
+source record. A download resumes only when the server accepts `Range`;
+otherwise it starts over. Errors map to clear causes (no network, source failure,
 disk full). The retry count is a named parameter until the spec decides it.
 Covers: RN-01, RN-03, RN-28, RN-29
 Agent: backend-dev
 Depends on: T14
-Done when: tests with a fake transport pass for success, resume, checksum mismatch, network failure and disk full, and assert the User-Agent header.
+Done when: tests with a fake transport pass for success, resume with `Range`, a restart when `Range` is refused, a size mismatch, network failure and disk full, and assert the User-Agent header.
 
 ### T16: Oracle cards import with Commander legality
 Import the Oracle Cards bulk file as a stream, one record at a time (never
@@ -235,17 +258,25 @@ Done when: an import test with a fictional bulk file stores the printings, inclu
 ### T18: Comprehensive Rules import and English terms
 Find the rules text link on the official rules page, store the sections in
 `RuleSection`, and derive the English `Term` rows for card types, supertypes,
-subtypes, keyword abilities and keyword actions (sections 205, 701 and 702).
-Covers: RN-01, RN-18, RN-19
+subtypes, keyword abilities, keyword actions and ability words (sections 205,
+701, 702 and the ability word list in 207.2c).
+Terms come only from the Comprehensive Rules, so un-set and digital-only terms
+are absent. Each subtype is stored with every card type it belongs to (creature
+types belong to Creature and Kindred; spell types to Instant and Sorcery), and
+card types and supertypes are marked with the fixed Commander list in plan
+section 4.
+Covers: RN-01, RN-18, RN-19, CA-65
 Agent: backend-dev
 Depends on: T14
-Done when: tests with a fictional rules page and a fictional rules text extract the link, the sections and the expected terms.
+Done when: tests with a fictional rules page and a fictional rules text extract the link, the sections, the expected terms, the card types of each subtype (including a creature type under Kindred and a spell type under both Instant and Sorcery) and the types and supertypes not allowed in a Commander deck.
 
 ### T19: Portuguese terms
 Stream the All Cards bulk file and keep only Portuguese printings. Derive
 Portuguese type words by aligning the printed type line with the type line, and
 keyword names by majority from the printed text. Keywords without a Portuguese
-term are recorded as missing.
+term are recorded as missing. Also derive the Portuguese ability words by
+majority from the printed text, and record the Portuguese words that printed
+texts follow with a number (`number_word`, plan section 4).
 Covers: RN-30
 Agent: backend-dev
 Depends on: T18
@@ -254,17 +285,19 @@ Done when: tests with fictional Portuguese printings produce the expected type a
 ### T20: Role tagging
 Implement `tag_roles()` with fixed patterns over rules text and type line for
 the roles listed in plan section 9.6. Cards with no match keep an empty list.
-Covers: RN-12
+In the same pass over oracle text, derive the English `number_word` terms: the
+words that existing cards follow with a number, outside reminder text.
+Covers: RN-12, RN-19
 Agent: backend-dev
 Depends on: T16
-Done when: tests with fictional cards pass, with at least one positive and one negative example for each role.
+Done when: tests with fictional cards pass, with at least one positive and one negative example for each role, and the expected English number words are derived.
 
 ### T21: All-or-nothing build and management command
 Implement `run_build()` and the `build_catalog` management command. Downloads
 come first. The imports, the FTS rebuild, the role tagging, the `SourceRecord`
 rows and the ready mark run in one transaction that never touches user tables.
-When the database is ready, a new run downloads nothing. The build holds the
-watchdog (T8) while it runs.
+When the database is ready, a new run downloads nothing. The build runs as a
+job, so it holds the watchdog (T13) while it runs.
 Covers: RN-01, RN-03, RN-28, RN-41, CA-07, CA-08
 Agent: backend-dev
 Depends on: T13, T15, T16, T17, T18, T19, T20
@@ -272,16 +305,23 @@ Done when: tests pass for an interrupted import (not ready, no duplicates after 
 
 ### T22: Setup endpoints and readiness gate
 Add `GET /api/setup` (build progress) and `POST /api/setup/build`, which starts
-the build as a job. `GET /api/setup` states the expected download size and the
-free disk space needed; `POST /api/setup/build` refuses to start when there is
-not enough free space. Extend `/api/status` with readiness and the date and
+the build as a job. Nothing is downloaded before `POST /api/setup/build`.
+`GET /api/setup` states the expected download size, read from the data source's
+download listing (T15) and cached for the session because the screen polls, and
+the free disk space needed on the drive that holds the data folder, computed as
+the download size times the named constant `BUILD_SPACE_FACTOR` (3: downloads,
+database and the write-ahead log of the import); when the listing cannot be
+reached, it returns the cause. Reading the listing is allowed before the person
+starts the build; no data file is downloaded.
+`POST /api/setup/build` refuses to start when there is not enough free space. Extend `/api/status` with readiness and the date and
 origin of each source. Every endpoint except status, status/connection-test,
 setup, jobs, instance and heartbeat answers with a clear "database not ready"
 error until the build is ready.
+TODO: state in RN-01 and CA-08 which date is shown for each source (publication or download).
 Covers: RN-01, RN-28, CA-08, CA-18, CA-60
 Agent: backend-dev
 Depends on: T21
-Done when: tests pass for the gate before and after a ready build, for progress reporting, for a refused build with too little free space (CA-60), and for the sources listed in status.
+Done when: tests pass for the gate before and after a ready build, for no build started by `GET /api/setup` (CA-18), for progress reporting, for a refused build with too little free space (CA-60), for an unreachable listing with its cause, and for the sources listed in status.
 
 ### T23: Comparables search
 Implement `search_cards(query, filters)`. It filters by color identity within
@@ -298,11 +338,14 @@ Done when: tests with fictional cards pass for the identity filter, the banned c
 ### T24: Rules search and lexicon selectors
 Implement `search_rules(keywords)` over `rules_fts`, plus the sections of the
 keywords a draft uses. Implement `get_lexicon(lang)` for English and Portuguese
-terms, including the missing Portuguese keywords.
+terms, including the missing Portuguese keywords, the parent card type of each
+subtype, the card types allowed in Commander, the ability words, and the words that
+existing cards follow with a number (English ones from T20, Portuguese ones
+from T19).
 Covers: RN-12, RN-18, RN-19, RN-30
 Agent: backend-dev
 Depends on: T21
-Done when: tests with fictional rules and terms pass for both selectors, including a language with no lexicon.
+Done when: tests with fictional rules and terms pass for both selectors, including a Portuguese keyword with no known term.
 
 ### T25: Base card search selectors
 Implement `find_base_cards(name)`, a case-insensitive search by part of the
@@ -326,8 +369,8 @@ Depends on: T23
 Done when: the script runs against a database built by `build_catalog` (checked by hand) and prints, for each request, the ten candidates and a place to mark them; the request texts are committed with no card data.
 
 ### T27: Milestone A review
-Run both test suites. Check the coverage of RN-01, RN-03, RN-04, RN-12, RN-28,
-RN-30, RN-36, CA-07, CA-08, CA-18, CA-24, CA-41 and CA-60 so far. Run
+Run both test suites. Check the coverage of every RN and CA that the coverage
+table assigns to T13–T26. Run
 `build_catalog` once on a real machine. Run the T26 script, mark the relevant
 cards in each top ten, and apply the pass rule: at least 16 of 20 requests with
 five or more relevant cards. On a fail, list the failed requests with a
@@ -342,57 +385,70 @@ Done when: both suites pass, a real build reaches ready, the T26 counts are reco
 
 ### T28: Validation result and mana cost validator
 Define the `ValidationResult` (status, causes, skipped checks) and the
-`validate(card, lexicon)` composition with no Django imports. Add the mana cost
-validator: a well-formed cost and a stated mana value that matches it.
-Covers: RN-17, CA-02
+`validate(card, lexicon, request)` composition with no Django imports (the
+request gives the requested identity and the idea text). Add the mana cost
+validator: official symbols in printed order, a mana value computed as the
+Comprehensive Rules define, a stated value that matches it, and a missing cost
+accepted with mana value 0, distinct from {0}.
+TODO: decide whether RN-17 checks only the order of groups ({X}, generic, colored) or also the order of colors, and where {C} and {S} go; update RN-17 and CA-66.
+Covers: RN-17, CA-02, CA-66
 Agent: backend-dev
 Depends on: T27
-Done when: tests pass, including CA-02: the cost {2}{G} with a stated value of 4 is rejected and the cause is named.
+Done when: tests pass, including CA-02 (the cost {2}{G} with a stated value of 4 is rejected and the cause is named) and CA-66 ({X}{2/W}{G/P} has mana value 3; a land with no cost is accepted with 0; {G}{2} is rejected for symbol order).
 
 ### T29: Color identity validator
 Compute the color identity from the cost and the rules text (hybrid, Phyrexian
 and colored symbols in text), excluding reminder text in parentheses, and
-reject anything outside the requested identity.
-Covers: RN-16, CA-01, CA-57
+reject anything outside the requested identity, including any colored symbol
+for a colorless request. An ability that defines the card's color ("This card
+is blue", "is all colors") adds those colors.
+Covers: RN-16, CA-01, CA-57, CA-62, CA-72
 Agent: backend-dev
 Depends on: T28
-Done when: tests pass, including CA-01 (a green request with a blue symbol in the text is rejected with the cause) and CA-57 (a {G/U} hybrid symbol is rejected; a {U} inside reminder text is not).
+Done when: tests pass, including CA-01 (a green request with a blue symbol in the text is rejected with the cause), CA-57 (a {G/U} hybrid symbol is rejected; a {U} inside reminder text is not) CA-62 (a colorless request rejects {G} and accepts {C}) and CA-72 (a color-defining ability outside the request is rejected).
 
 ### T30: Type line validator
-Check every card type, supertype and subtype against the lexicon.
-Covers: RN-18, CA-03
+Check every card type, supertype and subtype against the lexicon: card types
+limited to those a Commander deck can contain, and each subtype belonging to
+one of the card's types.
+Covers: RN-18, CA-03, CA-65
 Agent: backend-dev
 Depends on: T28
-Done when: tests pass for valid English and Portuguese type lines and for an unknown subtype (CA-03).
+Done when: tests pass for valid English and Portuguese type lines (including a legendary creature, a basic land and a land with no subtype), an unknown subtype (CA-03), a Scheme type and "Instant — Elf" (CA-65).
 
 ### T31: Keyword validator
-Check every keyword ability and keyword action used in the text against the
-lexicon. Keywords come from the card's structured keyword list and from lines
-that start with a capitalized term followed by a cost, a number or the end of
-the line (RN-19); ability words and reminder text are not keywords.
-Covers: RN-19, CA-04, CA-54
+Check the keywords of the rules text against the lexicon, ignoring reminder
+text (RN-19): keyword abilities at the start of a line, alone or in a
+comma-separated list, with their parameter; a word followed by a number in the
+middle of a sentence, accepted when it is a keyword action or a word that
+existing cards use the same way; ability words before a dash, accepted when
+they exist or appear in the idea of the request or were written in a manual
+edit.
+Covers: RN-19, CA-04, CA-54, CA-63, CA-64, CA-65
 Agent: backend-dev
 Depends on: T28
-Done when: tests pass for an unknown English keyword (CA-04), an unknown Portuguese keyword (CA-54, first part), and an ability word and a reminder text that are not reported as keywords.
+Done when: tests pass for CA-04 (alone and in a list; "Protection from red" and "Equip—Pay 3 life" accepted), CA-54 (first part), CA-63 ("then glorp 2" rejected; "deals 3 damage" and "scry 2" accepted), CA-64 (an invented ability word rejected, and accepted when it appears in the idea or a manual edit) and CA-65 (an un-set keyword rejected).
 
 ### T32: Text limits validator
 Check the number of abilities and the text length against named parameters.
 The values stay [DECIDE] in RN-20, and CA-28 can only be finished once the spec
 sets them.
+TODO: decide the RN-20 limits (number of abilities and text length) before this task.
 Covers: RN-20, CA-28
 Agent: backend-dev
 Depends on: T28
 Done when: tests with parameter values pass, rejecting a text over each limit and naming the exceeded limit. The final values are applied once the spec decides them.
 
 ### T33: Language-aware validation and skipped checks
-`validate()` runs every check for English and Portuguese. For other languages
-it runs color identity, mana cost and limits, and lists the type and keyword
-checks as skipped. A Portuguese keyword with no known term is listed as skipped
-instead of rejected.
+`validate()` runs every check for English and Portuguese cards, with the
+lexicon of the card language. In a Portuguese card, a keyword whose Portuguese
+term is not known to the database is accepted when written with its official
+English name and listed as a skipped check; any other unknown term is
+rejected.
 Covers: RN-30, CA-54
 Agent: backend-dev
 Depends on: T29, T30, T31, T32
-Done when: tests pass for a Japanese card (CA-54, second part) and for a Portuguese keyword with no term.
+Done when: tests pass for a Portuguese card with every check passing, for a keyword with no known Portuguese term written in English and listed as skipped (CA-54, second part), and for an unknown term rejected.
 
 ### T34: Milestone B review
 Run both test suites. Check the coverage of RN-16 to RN-20, RN-30, CA-01 to
@@ -423,10 +479,10 @@ Implement `providers.factory`, the only reader of `LLM_PROVIDER` and
 setting that enables art). Tests replace the factory functions with a pytest
 fixture that returns the fake adapter; the fake is never selectable from
 `.env`. The `/api/status` extension is part of T45.
-Covers: RN-05, RN-06, RN-07, RN-08, CA-32, CA-33, CA-34
+Covers: RN-05, RN-06, RN-07, RN-08, CA-32, CA-33, CA-34, CA-67, CA-68
 Agent: llm-engineer
 Depends on: T35
-Done when: tests pass for Anthropic with no image provider (art unavailable, setting named), Anthropic with an image provider (image adapter returned), and invalid image settings (text still available).
+Done when: tests pass for Anthropic with no image provider (art unavailable, setting named), Anthropic with an image provider (image adapter returned), invalid image settings (text still available), the same provider with an empty image key using the text key (CA-67), and an image provider with no image model (art unavailable, image model named, CA-68).
 
 ### T37: Card models and version service
 Add `Card`, `CardVersion` (immutable, numbered per card), `CardImage`,
@@ -441,6 +497,7 @@ Done when: tests pass for version numbering, immutability and an atomic save tha
 Implement `record_usage()` (text: tokens; image: number of images and size;
 outcome ok or failed; card optional), `usage_for(card)`, and `GET /api/usage`
 with text and art kept separate.
+TODO: same open point as T45: usage recorded during a running build must not hit the busy timeout.
 Covers: RN-09, CA-16, CA-35
 Agent: backend-dev
 Depends on: T37
@@ -483,6 +540,7 @@ Image generation without a template and image edit with a template. It requests
 the portrait size closest to the card proportions, at least 745 × 1040 when the
 model allows it. Content-policy refusals and unsupported templates map to the
 error set.
+TODO: answer the open question on whether the data source's terms allow its card images to be sent to an image model as a template; a no removes RN-38, RN-39, CA-43, CA-44 and CA-71.
 Covers: RN-31, RN-32, RN-38, RN-44, CA-50
 Agent: llm-engineer
 Depends on: T39
@@ -501,6 +559,7 @@ Done when: the T43 test set passes against the Google adapter.
 key. Each result is reported separately and names the setting to fix. Extend
 `GET /api/status` with art availability and its reason from
 `art_availability()`.
+TODO: decide how the connection test records usage while the build holds the SQLite write lock (defer the record until the build ends, or keep it in memory) (RN-09, RN-28).
 Covers: RN-08, CA-25, CA-34
 Agent: backend-dev
 Depends on: T36, T40, T41, T42, T43, T44
@@ -510,7 +569,8 @@ Done when: tests with the fake adapter pass for a valid text key with an invalid
 Prompts and JSON schemas for the design intent and search plan, the card draft
 (fields, rationale, comparables, power indicator with justification), the
 revision and the quick adjustments. They include the card language (English by
-default) and the base card snapshot.
+default, or Portuguese) and the base card snapshot.
+TODO: restrict the "never as models" wording of RN-04 to comparables, since a banned card can be a base card (RN-36, RN-37).
 Covers: RN-12, RN-13, RN-22, RN-30, RN-37, CA-21, CA-22, CA-42
 Agent: llm-engineer
 Depends on: T35
@@ -540,6 +600,7 @@ Validate the draft. Allow at most one revision. Save the result as approved or
 rejected with its causes, and save the first draft as rejected when the
 revision call fails. Record usage for every call, including failures. Invalid
 responses save no card.
+TODO: CA-14 needs recorded responses from each provider; add T40–T42 to the dependencies or move CA-14 to a task after the adapters.
 Covers: RN-09, RN-10, RN-14, RN-15, CA-10, CA-11, CA-14, CA-15, CA-16
 Agent: llm-engineer
 Depends on: T33, T38, T47b
@@ -556,24 +617,32 @@ Depends on: T13, T22, T48
 Done when: tests pass for each missing field being named (CA-26), invalid configuration with no provider call and no card (CA-05), and a rejected key with no card (CA-25).
 
 ### T50: Image storage service
-`attach_image()` stores image bytes under `data/images/cards/{card_id}/` and
-creates a new version that keeps the text fields. A failure leaves no file.
-Deleting a card removes the image files of every version.
-Covers: RN-33, RN-34
+`attach_image()` stores image bytes under `data/images/cards/{card_id}/`. Art
+from the request is attached to the card's first version by the same
+generation job; later art creates a new version that keeps the text fields. A
+failure leaves no file. Deleting a card removes the image files of every
+version.
+TODO: define in RN-32 and RN-43 how an image uploaded in the request reaches version 1 (same job, not the later upload endpoint), what happens when the tab closes before the upload, and whether retrying failed request art creates a new version.
+Covers: RN-32, RN-33, RN-34, RN-43, CA-69
 Agent: backend-dev
 Depends on: T37
-Done when: tests in a temporary data folder pass for the stored file, the new version, cleanup after a failed write, and deletion of every image.
+Done when: tests in a temporary data folder pass for the stored file, art attached to the first version (CA-69), a new version for later art, cleanup after a failed write, and deletion of every image.
 
 ### T51: Art pipeline
 `generate_art(card, description)` runs after the card is saved, for approved and
-rejected cards alike. It builds the prompt from the card fields, uses the base
-printing image as template when it is cached, and falls back to no template
-otherwise. It records usage, and on failure keeps the card unchanged with the
-cause. A generation job with art requested chains this step.
-Covers: RN-09, RN-31, RN-32, RN-38, RN-39, RN-44, CA-33, CA-35, CA-36, CA-37, CA-43, CA-44
+rejected cards alike. It builds the prompt from the card fields, the color
+identity and the artist credit "Card Factory", uses the base printing image as
+template when it is cached, and falls back to no template otherwise. When the
+image model does not accept a template, it generates without it and returns a
+notice (plan section 9.2). It records
+usage (a refused call with zero images), and on failure keeps the card
+unchanged with the cause. A generation job with art requested chains this step
+and attaches the art to the first version.
+TODO: align CA-36 with RN-31: it omits the design intent and the art description from what the image model receives.
+Covers: RN-09, RN-31, RN-32, RN-38, RN-39, RN-44, RN-48, CA-33, CA-35, CA-36, CA-37, CA-43, CA-44, CA-58, CA-69, CA-71
 Agent: llm-engineer
 Depends on: T43, T44, T49, T50
-Done when: tests with the fake adapter pass for CA-36 (no image request without art; card fields sent), CA-37, CA-43, the template fallback from CA-44, and image usage recorded (CA-35).
+Done when: tests with the fake adapter pass for CA-36 (no image request without art; card fields, color identity and artist credit sent), CA-37, CA-43, the template fallback from CA-44, a model without template support (CA-71), image usage recorded including a refusal with zero images (CA-35), and a request with art that ends with one version holding text and art (CA-69).
 
 ### T52: Quick adjustment service
 `quick_adjust(card, kind)` (stronger, weaker, cheaper, more expensive, simplify
@@ -608,21 +677,24 @@ Depends on: T53
 Done when: tests pass for CA-31: listed after a new test client session, listed among the favorites, and gone with no image files left after deletion.
 
 ### T55: Edit with revalidation
-`PATCH /api/cards/{id}` with card fields calls `edit_fields()`. It creates a
-new version, revalidates it with no provider call, keeps the art and the power
-indicator, and marks the indicator as possibly outdated.
+`PATCH /api/cards/{id}` with card fields calls `edit_fields()`. Only name, mana
+cost, type line, rules text, power and toughness are editable; the mana value
+is recomputed from the cost. Each saved edit creates one new version,
+revalidated with no provider call; the art and the power indicator are kept,
+and the indicator is marked as possibly outdated.
 Covers: RN-23, RN-25, RN-34, CA-12, CA-39, CA-55
 Agent: backend-dev
 Depends on: T54
-Done when: tests pass for CA-12, the art kept on edit (CA-39) and the outdated mark set with no provider call (CA-55).
+Done when: tests pass for CA-12 (a malformed cost rejected; a valid cost edit recomputes the mana value and creates one version), a refused edit of a non-editable field, the art kept on edit (CA-39) and the outdated mark set with no provider call (CA-55).
 
 ### T56: Versions and restore API
 `GET /api/cards/{id}/versions` and `POST .../versions/{n}/restore`. A restore
-creates a new version with the fields and the art of version n, revalidated.
+creates a new version with the fields, the art, the power indicator with its
+justification and the possibly-outdated mark of version n, revalidated.
 Covers: RN-25, RN-34, CA-13, CA-39
 Agent: backend-dev
 Depends on: T54
-Done when: tests pass for CA-13 and for restoring the earlier art after new art was added (CA-39).
+Done when: tests pass for CA-13 (including the power indicator and its mark) and for restoring the earlier art after new art was added (CA-39).
 
 ### T57: Quick adjustment endpoint
 `POST /api/cards/{id}/adjustments` starts `quick_adjust` as a job.
@@ -645,6 +717,7 @@ Done when: tests pass for an unavailable art option with no image request (CA-32
 checked by content. It reads the dimensions from the file headers with the
 standard library, adds the low print-quality notice below 745 × 1040, and makes
 no provider call and no usage record.
+TODO: follow the decision recorded in T50 about request images and version 1.
 Covers: RN-43, RN-44, CA-49, CA-50
 Agent: backend-dev
 Depends on: T54
@@ -673,48 +746,52 @@ Done when: both sweep tests pass over the full endpoint list from plan section 6
 ### T62: App shell, API client, job polling and readiness gate
 Extend the typed API client to the full endpoint list. Add a job polling hook.
 The app shell opens the Setup screen while the database is not ready and allows
-only Status during the build. The shell has a footer with the fan content
-notice (RN-48) and keyboard navigation between screens with visible focus
-(RN-49).
-Covers: RN-28, RN-48, RN-49, CA-18, CA-58, CA-59
+only Status during the build. The shell has keyboard navigation between screens
+with visible focus (RN-49).
+Covers: RN-28, RN-49, CA-18, CA-59
 Agent: frontend-dev
 Depends on: T61
-Done when: Vitest tests pass for the gate (not ready: Setup and Status only; ready: every screen), for job polling until done or failed, for the footer notice on every screen (CA-58), and for keyboard focus moving through the navigation (CA-59).
+Done when: Vitest tests pass for the gate (not ready: Setup and Status only; ready: every screen), for job polling until done or failed, and for keyboard focus moving through the navigation (CA-59).
 
 ### T63: Setup screen
-Shows the expected download size and free disk space needed, the build
-progress, starts the build when needed, shows the cause of a failure with a
-retry, and links to Status.
-Covers: RN-28, CA-18, CA-60
+Opens first while the database is not ready. Shows the expected download size
+and free disk space needed, starts the build only when the person starts it,
+shows the build progress,
+shows the cause of a failure with a retry, and, when settings need fixing, a
+notice with a link to Status.
+Covers: RN-28, RN-49, CA-18, CA-60
 Agent: frontend-dev
 Depends on: T62
-Done when: Vitest tests pass for progress, failure with its cause, a refused build for lack of disk space (CA-60), and the move to the normal screens when ready.
+Done when: Vitest tests pass for no build before the person starts it (CA-18), progress, failure with its cause, a refused build for lack of disk space (CA-60), the settings notice with its link, and the move to the normal screens when ready.
 
 ### T64: Status screen
 Text provider, model and key configured (yes or no); image provider, image
 model and art availability with its reason; date and origin of each source;
 the settings to fix; and a connection test button.
-Covers: RN-01, RN-07, RN-08, RN-40, CA-08, CA-32, CA-34, CA-46
+Covers: RN-01, RN-07, RN-08, RN-40, RN-49, CA-08, CA-32, CA-34, CA-46, CA-74
 Agent: frontend-dev
 Depends on: T62
 Done when: Vitest tests pass for a missing key setting named (CA-46), unavailable art with its reason (CA-32), the listed sources, and connection test results.
 
 ### T65: Request screen
-Theme, color identity, power level and card language (English by default).
-Optional art: generated (with a description and the billing notice) or
-uploaded, shown as unavailable with the reason when art is not available.
-Missing required fields are named and the request is not sent. An image chosen
-in the request is uploaded after the generation job saves the card; when the
-generation fails, the image is discarded and the person is told (RN-43).
-Covers: RN-07, RN-11, RN-30, RN-35, RN-43, CA-21, CA-26, CA-32, CA-40, CA-61
+Idea or theme, color identity (colors, or colorless chosen explicitly), power
+level and card language (English by default, or Portuguese). Optional art:
+generated (with a description and the billing notice) or uploaded, shown as
+unavailable with the reason when art is not available. Missing required fields
+are named and the request is not sent. An image chosen in the request is
+checked when chosen (PNG, JPEG or WebP by content, up to 10 MB); it is uploaded
+after the generation job saves the card, and when no card is saved, it is not
+kept and the person is told (RN-43).
+TODO: follow the decision recorded in T50 about sending the request image with the request.
+Covers: RN-07, RN-11, RN-16, RN-30, RN-35, RN-43, RN-49, CA-21, CA-26, CA-32, CA-40, CA-61, CA-62
 Agent: frontend-dev
 Depends on: T62
-Done when: Vitest tests pass for CA-26, the billing notice before sending (CA-40), unavailable art (CA-32), English as the default language, and a failed generation with an uploaded image that is discarded with a notice (CA-61).
+Done when: Vitest tests pass for CA-26 (including colorless only when chosen), the billing notice before sending (CA-40), unavailable art (CA-32), English as the default language with Portuguese as the only other option, a renamed text file refused when chosen, and a failed generation with an uploaded image that is not kept, with a notice (CA-61).
 
 ### T66: Base card picker
 Search by part of the name, then choose the printing and, for cards with more
 than one face, the face. A failed image download shows its cause.
-Covers: RN-36, RN-39, CA-41, CA-44
+Covers: RN-36, RN-39, RN-49, CA-41, CA-44
 Agent: frontend-dev
 Depends on: T65
 Done when: Vitest tests pass for picking a face of a two-faced card and for the download failure message.
@@ -722,27 +799,29 @@ Done when: Vitest tests pass for picking a face of a two-faced card and for the 
 ### T67: Result screen: card display
 The card image fitted into a card-shaped area (whole image, proportions kept,
 loaded only from the local application) beside the card text in rules format,
-or the text alone. Also the design intent, rationale, comparables, base card,
-power indicator with its justification and outdated mark, skipped checks, and
-the approved or rejected status with its causes.
-Covers: RN-12, RN-13, RN-14, RN-15, RN-22, RN-30, RN-33, RN-44, CA-21, CA-22, CA-27, CA-29, CA-38, CA-50
+or the text alone. Also the artist credit "Card Factory", the design intent,
+rationale, comparables, base card, power indicator with its justification and
+outdated mark, skipped checks, and the approved or rejected status with its
+causes.
+Covers: RN-12, RN-13, RN-14, RN-15, RN-22, RN-30, RN-33, RN-44, RN-48, RN-49, CA-21, CA-22, CA-27, CA-29, CA-38, CA-50, CA-58
 Agent: frontend-dev
 Depends on: T62
-Done when: Vitest tests pass for a card with and without an image, a rejected card with its causes, a "too strong" indicator on an approved card, and image sources limited to local paths.
+Done when: Vitest tests pass for a card with and without an image, a rejected card with its causes, a "too strong" indicator on an approved card, the artist credit shown (CA-58), and image sources limited to local paths.
 
 ### T68: Result screen: art actions, notices and usage
 Generate, retry or upload art (with the billing notice); open the image at full
-resolution; the outdated-text notice after an edit or adjustment; and usage
-with text and art shown separately.
-Covers: RN-09, RN-23, RN-32, RN-34, RN-35, RN-43, RN-44, CA-16, CA-35, CA-37, CA-39, CA-40, CA-55
+resolution; the outdated-text notice after an edit or adjustment; the notice
+when art was generated without the base card template; and usage with text and
+art shown separately.
+Covers: RN-09, RN-23, RN-32, RN-34, RN-35, RN-38, RN-43, RN-44, RN-49, CA-16, CA-35, CA-37, CA-39, CA-40, CA-55, CA-71
 Agent: frontend-dev
 Depends on: T67
-Done when: Vitest tests pass for the art failure cause with retry, the outdated-text notice, the separate usage lists and the full-resolution link.
+Done when: Vitest tests pass for the art failure cause with retry, the outdated-text notice, the no-template notice (CA-71), the separate usage lists and the full-resolution link.
 
 ### T69: Adjustments and versions screen
 Edit fields with the revalidation result shown right away, the quick
 adjustments, new or uploaded art, and the version list with restore.
-Covers: RN-23, RN-24, RN-25, RN-34, RN-43, CA-12, CA-13, CA-30, CA-39, CA-49
+Covers: RN-23, RN-24, RN-25, RN-34, RN-43, RN-49, CA-12, CA-13, CA-30, CA-39, CA-49
 Agent: frontend-dev
 Depends on: T67
 Done when: Vitest tests pass for an edit that ends rejected (CA-12), a restore that appears as a new version (CA-13), a failed adjustment with its cause (CA-30), and a refused upload with its reason (CA-49).
@@ -750,7 +829,7 @@ Done when: Vitest tests pass for an edit that ends rejected (CA-12), a restore t
 ### T70: Library screen
 Saved cards with an image thumbnail when present, a favorites filter, and
 deletion with confirmation.
-Covers: RN-26, RN-33, CA-31
+Covers: RN-26, RN-33, RN-49, CA-31
 Agent: frontend-dev
 Depends on: T62
 Done when: Vitest tests pass for the list, the favorites filter and the removal after deletion.
@@ -774,7 +853,7 @@ with a clear message when the database is newer than the application.
 Covers: RN-42, CA-48
 Agent: backend-dev
 Depends on: T71
-Done when: tests pass for an upgrade from an older fixture database that keeps every card, version and image record (CA-48), and for the refusal of a newer database.
+Done when: tests pass for an upgrade from an older fixture database that keeps every card, version and image record (CA-48), for the refusal of a newer database with the data left unchanged, and for a failed migration that leaves the database as it was.
 
 ### T73: VERSION file and launcher prerequisite checks
 Add `VERSION` (Semantic Versioning, `MAJOR.MINOR.PATCH`, equal to the release
@@ -791,6 +870,7 @@ Done when: unit tests for each check pass with the message box replaced by a rec
 When a running Card Factory answers on the port, open a new tab and exit.
 Otherwise run the upgrade service, start the local server entry point, open the
 default browser, and wire the watchdog to stop the process.
+TODO: another Card Factory install (other folder or version) on the same port would get the tab; consider returning the version and home folder from `/api/instance` (RN-41, RN-47).
 Covers: RN-29, RN-41, RN-42, CA-20, CA-47, CA-48
 Agent: release-dev
 Depends on: T72, T73
@@ -840,9 +920,9 @@ Done when: the workflow file passes a syntax check, and a run on a test tag (aut
 A user guide for the zip and for a clone: every setting of the configuration
 file (text provider, model, key, image provider, image model with an example
 value for OpenAI and for Google, image key, local port), the first-run build,
-upgrading by copying `data/` and `.env`, the development commands for other
-systems, and the fan content notice with the maintainer's exact text.
-Covers: RN-27, RN-42, RN-45, RN-46, RN-48, CA-52, CA-58
+upgrading by copying `data/` and `.env`, and the development commands for other
+systems.
+Covers: RN-27, RN-42, RN-45, RN-46, CA-52
 Agent: docs-writer
 Depends on: T77
 Done when: every setting in `.env.example` appears in the guide for both install paths, checked line by line.
@@ -868,7 +948,7 @@ Done when: the files exist and the README links to them.
 CA-17, CA-20, CA-45, CA-47, CA-51 and CA-53, the contrast check of CA-59, and
 one end-to-end generation with a real key for each text provider (OpenAI,
 Anthropic, Google), each with the expected result.
-Covers: CA-17, CA-20, CA-45, CA-47, CA-51, CA-53
+Covers: RN-49, CA-17, CA-20, CA-45, CA-47, CA-51, CA-53, CA-59
 Agent: docs-writer
 Depends on: T77
 Done when: each listed CA has steps and an expected result.
@@ -918,10 +998,10 @@ tasks then add the new IDs to their dependencies.
 | RN-13 | T46, T47b, T67 |
 | RN-14 | T37, T48, T67 |
 | RN-15 | T48, T67 |
-| RN-16 | T29 |
+| RN-16 | T29, T65 |
 | RN-17 | T28 |
 | RN-18 | T18, T24, T30 |
-| RN-19 | T18, T24, T31 |
+| RN-19 | T18, T20, T24, T31 |
 | RN-20 | T32 |
 | RN-22 | T46, T47b, T67 |
 | RN-23 | T52, T55, T68, T69 |
@@ -933,23 +1013,23 @@ tasks then add the new IDs to their dependencies.
 | RN-29 | T1, T3, T7, T15, T39, T60, T61, T74, T76, T83, T85 |
 | RN-30 | T9, T19, T24, T33, T46, T65, T67 |
 | RN-31 | T43, T44, T51, T58 |
-| RN-32 | T43, T44, T51, T58, T68 |
+| RN-32 | T43, T44, T50, T51, T58, T68 |
 | RN-33 | T10, T50, T54, T58, T67, T70 |
 | RN-34 | T50, T52, T55, T56, T68, T69 |
 | RN-35 | T65, T68 |
 | RN-36 | T17, T25, T60, T66 |
 | RN-37 | T46, T47a |
-| RN-38 | T17, T43, T44, T51 |
+| RN-38 | T17, T43, T44, T51, T68 |
 | RN-39 | T51, T60, T66 |
 | RN-40 | T6, T64, T73, T83 |
 | RN-41 | T8, T11, T13, T21, T74, T83 |
 | RN-42 | T72, T74, T79 |
-| RN-43 | T59, T65, T68, T69 |
+| RN-43 | T50, T59, T65, T68, T69 |
 | RN-44 | T43, T44, T51, T58, T59, T67, T68 |
 | RN-45 | T76, T77, T78, T79, T83 |
 | RN-46 | T79 |
 | RN-47 | T4, T7, T8, T73, T83 |
-| RN-48 | T62, T79 |
+| RN-48 | T51, T67 |
 | RN-49 | T62, T63, T64, T65, T66, T67, T68, T69, T70, T82 |
 | CA-01 | T29 |
 | CA-02 | T28 |
@@ -1007,7 +1087,21 @@ tasks then add the new IDs to their dependencies.
 | CA-55 | T52, T55, T68 |
 | CA-56 | T47b |
 | CA-57 | T29 |
-| CA-58 | T62, T79 |
+| CA-58 | T51, T67 |
 | CA-59 | T62, T82 |
 | CA-60 | T22, T63 |
 | CA-61 | T65 |
+| CA-62 | T29, T65 |
+| CA-63 | T31 |
+| CA-64 | T31 |
+| CA-65 | T18, T30, T31 |
+| CA-66 | T28 |
+| CA-67 | T36 |
+| CA-68 | T36 |
+| CA-69 | T50, T51 |
+| CA-70 | T13 |
+| CA-71 | T51, T68 |
+| CA-72 | T29 |
+| CA-73 | T4, T6 |
+| CA-74 | T4, T6, T64 |
+| CA-75 | T4, T6 |

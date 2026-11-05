@@ -8,9 +8,8 @@ Anthropic or Google).
 - Write everything in English: code, identifiers, comments, tests, documentation, specs (spec,
   plan, tasks), commit messages, UI text, error messages, LLM prompts, and agent
   and skill files.
-- Generated cards are in any language available in Scryfall (English by default).
-  English and Portuguese cards get full rules validation; other languages skip
-  the type and keyword checks (spec RN-30).
+- Generated cards are in English (default) or Portuguese (Brazil), both with
+  full rules validation (spec RN-30).
 - Repository content is public and professional. It describes the project only:
   no first person, no personal context, no references to how the work was
   organized (specs/code-standards.md).
@@ -30,7 +29,7 @@ Anthropic or Google).
   is image-capable. IMAGE_API_KEY may be empty when no image provider is set or
   it equals the text provider; LLM_API_KEY is then used. The same factory rule applies to image adapters.
 - Port: APP_PORT in .env, default 47821. The server binds to 127.0.0.1. There
-  is no setting to change it in v1.
+  is no setting to change the bind address in v1.
 - Startup never calls a provider; keys are tried by the Status connection test
   and by generation.
 - Images are stored as local files under data/; the SQLite database keeps their

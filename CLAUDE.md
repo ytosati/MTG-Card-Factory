@@ -61,6 +61,9 @@ Development commands. End users start the application with the launcher
 ## Workflow
 - The source of truth is specs/spec.md. Code and tests follow the spec.
 - If the spec is ambiguous, ask before deciding.
+- Milestones are vertical slices: each ends with a capability demonstrated in
+  the running application, across frontend, backend and database, and builds
+  only what its demo needs (specs/tasks.md, "Delivery method").
 - One task at a time, from specs/tasks.md. Nothing outside the current task.
 - Tests never touch the network or a real provider. They use the fake provider
   and fictional cards written by hand.

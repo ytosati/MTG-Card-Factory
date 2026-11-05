@@ -1,0 +1,9 @@
+[
+  {
+    "object": "card",
+    "name": "Quillback Archivist",
+    "mana_cost": "{2}{U}",
+    "type_line": "Creature - Fictional Scribe",
+    "oracle_text": "This text is invented for a test fixture."
+  }
+]

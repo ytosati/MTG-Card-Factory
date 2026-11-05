@@ -29,6 +29,9 @@ Rules:
 - A milestone end-to-end flow test extends the suite in `backend/tests/e2e/`
   with the milestone's demo path through the API. Never weaken or remove the
   flows of earlier milestones; if one must change, stop and report why.
+- When a task adds or changes an endpoint a screen consumes, add or regenerate
+  its contract samples in `frontend/src/api/contract/samples.ts` through the
+  backend helper (specs/plan.md, section 6). Never edit the samples by hand.
 - Prefer tests that enumerate what exists (for example the URL configuration)
   over hand-kept lists, so later milestones are covered without editing them.
 - Tests never touch the network or a real provider. Use the fake provider and

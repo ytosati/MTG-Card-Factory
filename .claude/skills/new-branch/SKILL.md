@@ -2,7 +2,7 @@
 name: new-branch
 description: Check the Git state and create a milestone branch, or a branch for work outside the milestones, following specs/git-standards.md. Tasks have no branches of their own. Use only when the maintainer asks to start a milestone or a branch.
 disable-model-invocation: true
-argument-hint: [milestone id (m0 to m9) | type and short description]
+argument-hint: [milestone id (m0 to m10) | type and short description]
 ---
 
 Prepare the branch for $ARGUMENTS following specs/git-standards.md (section 2,

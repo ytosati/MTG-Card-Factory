@@ -68,8 +68,10 @@ Fields listed are the ones the spec needs; types are left to the tasks.
 **catalog**
 - `SourceRecord`: source (scryfall_oracle, scryfall_default, scryfall_all,
   comprehensive_rules), url, published_at, downloaded_at, sha256, size (RN-01).
-- `BuildRun`: status (running, ready, failed), started_at, finished_at, error,
-  progress (RN-03, RN-28).
+- `BuildRun`: one row per completed build, written as ready inside the import
+  transaction: catalog_version, started_at, finished_at (RN-03). The live state
+  of a build (queued, running, failed, progress, error) is its `Job`, so a
+  crash never leaves a build "running".
 - `OracleCard`: `oracle_id` (Scryfall, primary key), name, mana_cost, cmc,
   type_line, oracle_text, colors, color_identity, keywords, power, toughness,
   layout, faces (JSON), commander_legality (legal, banned, not_legal),
@@ -93,7 +95,10 @@ Fields listed are the ones the spec needs; types are left to the tasks.
   migration with fixed SQL and queried only with parameters.
 
 **cards**
-- `Card`: `id` (UUID4), created_at, favorite, language, current_version.
+- `Card`: `id` (UUID4), created_at, favorite, language, current_version, and
+  the request it came from: idea, requested color identity (possibly
+  colorless), power level. Revalidation after an edit, an adjustment or a
+  restore uses it (RN-16, RN-19).
 - `CardVersion`: card, number (1, 2, …), origin (generated, revised, edited,
   adjusted, restored, art_generated, art_uploaded), name, mana_cost, mana_value,
   type_line, rules_text, power, toughness, rarity, design_intent, rationale,
@@ -138,8 +143,38 @@ Fields listed are the ones the spec needs; types are left to the tasks.
 All under `/api/`, JSON, local only. Long operations return `202` with a job id.
 Response shapes are the serializers in `backend/api/serializers.py`; the
 frontend client types mirror them. Every error response uses one envelope:
-`{"error": {"code": str, "message": str, "setting": str | null}}`, where
-`setting` names the configuration setting to fix when there is one (RN-08).
+`{"error": {"code": str, "message": str, "setting": str | null, "fields": {name: [str]} | null}}`,
+where `setting` names the configuration setting to fix when there is one
+(RN-08) and `fields` names each invalid request field (CA-26). An unknown
+`/api/` path answers 404 in the envelope, never the built `index.html`.
+
+**Error codes.** Stable, added per milestone, never renamed; the frontend
+branches on `code`, never on `message`: `config_invalid`, `origin_refused`,
+`not_found`, `validation`, `database_not_ready`, `database_busy`,
+`insufficient_space`, `source_unreachable`, `auth`, `quota`, `rate_limited`,
+`model_not_found`, `provider_unavailable`, `provider_not_available_yet`
+(development state of Milestone 3 only), `invalid_response`,
+`content_refused`, `art_unavailable`, `card_changed`, `internal`. A settings
+list (status, generation, setup) uses the same objects: `{setting, code,
+message}`.
+
+**Jobs.** `GET /api/jobs/{id}` returns `{id, kind, status, progress, result,
+error}`, where `error` is the envelope above. A job never stores the text of an
+exception: an exception outside the mapped set becomes `internal` with a fixed
+message, and its detail goes only to the redacted log.
+
+**Readiness gate.** A default DRF permission requires a ready catalog; the
+views that work without it (status, connection test, setup, jobs, instance,
+heartbeat) opt out explicitly, and a test walks the URL configuration.
+
+**Contract samples.** A backend test helper calls the endpoints with a fake
+configuration, normalizes what varies (UUIDs, dates, elapsed time) and writes
+`frontend/src/api/contract/samples.ts`, one `export const <name> = {...}
+satisfies <ClientType>;` per sample. The test fails when the generated text
+differs from the committed file (`CARDFACTORY_UPDATE_CONTRACT=1` rewrites it),
+and `npx tsc -b` checks every sample against the client types. Frontend tests
+build their mocks from these samples. This catches drift between the
+serializers and the client types with no new dependency.
 
 | Method and path | Purpose | RN |
 |---|---|---|
@@ -186,17 +221,43 @@ that resolves it, and every other path (`data/`, `.env`, images, logs) is
 derived from it. In the zip the home is the extracted folder; in a clone it is
 the repository root.
 
-**Concurrency.** SQLite runs in WAL mode with a busy timeout, because job
-threads write while waitress threads read. Job and build progress is kept in
-memory by the runner and persisted only at state changes (queued, running,
-done, failed), so the long import transaction never blocks progress reads.
+**Concurrency.** SQLite runs in WAL mode with a busy timeout and IMMEDIATE
+transactions, because job threads write while waitress threads read. Job and
+build progress is kept in memory by the runner and persisted only at state
+changes (queued, running, done, failed), so the import transaction never blocks
+progress reads. Rules:
+- While a build runs, no other writing job starts; the readiness gate already
+  blocks generation, adjustments and art.
+- The only write possible during a build is the usage record of a connection
+  test; it waits in a small in-memory queue in `core` that the build job flushes
+  when it ends, whatever the outcome.
+- Selectors never open `transaction.atomic()`: with IMMEDIATE transactions it
+  would take the write lock.
+- `database is locked` maps to the error code `database_busy`.
+- Orphans are detected by the runner: a job persisted as queued or running
+  whose id the runner of this process does not know is reported and stored as
+  failed by `get_job`; the startup cleanup is only housekeeping. This works
+  under the launcher, `runserver` and tests.
+
+**Catalog version (RN-03, RN-42).** `catalog` keeps a source registry (one
+entry per source: name, how to read its size, how to download it, its
+importer) and an integer `CATALOG_VERSION`. A milestone that adds a source adds
+its entry and increments the constant. `is_ready()` means a ready `BuildRun`
+with `catalog_version == CATALOG_VERSION`; when the constant changes, the Setup
+screen opens again and the build reruns every source, leaving user tables
+untouched. The setup download size is the sum over the registry.
 
 **All-or-nothing build (RN-03).** Two phases.
-1. Download each source to `data/downloads/` and check size and checksum. A
-   download can resume; it does not mark anything ready.
-2. Import in a single SQLite transaction: delete reference rows, insert the new
-   ones, rebuild the FTS tables, tag roles, mark the `BuildRun` ready, commit.
-   An interruption rolls the transaction back; user tables are never touched.
+1. Outside any transaction, and resumable: download each source to
+   `data/downloads/` and check size and checksum, then stream it once and
+   extract only the needed fields into a compact JSON-lines file next to it. A
+   download resumes with `If-Range` (ETag or Last-Modified), so a source that
+   changed since the partial download starts over. Nothing is marked ready.
+2. Import in a single short SQLite transaction: delete reference rows, insert
+   the extracted rows, rebuild the FTS tables, tag roles, write the
+   `SourceRecord` rows and the ready `BuildRun`, commit. An interruption rolls
+   the transaction back; user tables are never touched. The review of each
+   milestone that adds a source records how long the write lock was held.
 
 *Alternative considered:* build into a second database file and swap it in.
 Rejected: the user tables live in the same file (CLAUDE.md: a single SQLite
@@ -204,12 +265,23 @@ file), so a swap would need copying user data across.
 
 **Stable identifiers.** Reference cards use the Scryfall `oracle_id`, printings
 the Scryfall `id`; both survive a rebuild. User cards and images use UUID4.
-Versions are numbered per card. A version stores a snapshot of its base card and
-comparables, so a rebuild never breaks a saved card.
+Versions are numbered per card, inside the IMMEDIATE transaction of
+`save_version()`, with a unique `(card, number)` constraint. A version stores a
+snapshot of its base card and comparables, so a rebuild never breaks a saved
+card. User tables never hold a foreign key to a catalog table (only ids inside
+snapshots), because a rebuild deletes the reference rows. The JSON fields of a
+version (`comparables`, `base_card`, `validation`) may gain keys but never
+rename or remove one; readers default missing keys. `validation` is
+`{status, checks_run: [...], causes: [{check, code, message}], skipped: [...]}`,
+with stable check names (`mana_cost`, `color_identity`, `type_line`,
+`keywords`, `limits`), so a card approved before every validator existed shows
+which checks ran. Inputs that cannot be rebuilt later (the request of a card)
+are stored by the first milestone that receives them.
 
 **Upgrades (RN-42).** On start, when migrations are pending, the launcher
-copies the database to `data/backups/` (replacing the previous backup) and runs
-them. If the database is newer than the
+copies the database to `data/backups/` with the SQLite backup API of the
+standard library (a plain file copy can miss pages still in the write-ahead
+log), replacing the previous backup, and runs them. If the database is newer than the
 application (unknown migrations), it stops with a message instead of migrating.
 
 ## 8. Configuration, secret and status (topic 3)
@@ -304,9 +376,11 @@ search by part of a name (RN-36) uses a case-insensitive `LIKE`, not FTS.
 ### 9.2 Provider factory and adapters (topic 2)
 
 **Chosen: one adapter protocol, direct HTTP with the standard library.**
-- Protocol: `complete_json(system, messages, schema) -> (data, usage)`;
-  `generate_image(prompt, template_image | None, size) -> (bytes, mime, usage)`;
-  `capabilities` (text, image, image_template).
+- Two protocols: `TextAdapter.complete_json(system, messages, schema) -> (data,
+  usage)`, and `ImageAdapter.generate_image(prompt, template_image | None,
+  size) -> (bytes, mime, usage)` with `capabilities` (image_template). The text
+  side and its fake come first (Milestone 3); the image side and its fake come
+  with art (Milestone 7). Anthropic has no image adapter.
 - `providers.factory` is the only place that reads `LLM_PROVIDER` and
   `IMAGE_PROVIDER`, which accept only `openai`, `anthropic` and `google`
   (`IMAGE_PROVIDER`: `openai` and `google`). Tests replace the factory
@@ -316,9 +390,23 @@ search by part of a name (RN-36) uses a case-insensitive `LIKE`, not FTS.
   `x-goog-api-key` header), because URLs appear in exception text.
 - Each adapter maps its errors to one set: `AuthError`, `QuotaError`,
   `ProviderUnavailable`, `InvalidResponse`, `ContentRefused`,
-  `TemplateUnsupported`. Messages never include the key.
+  `TemplateUnsupported`, `ModelNotFound` (names `LLM_MODEL` or `IMAGE_MODEL`).
+  Messages never include the key. An error raised after the provider answered
+  (`InvalidResponse`, `ContentRefused`) carries the usage the provider
+  reported, so it is recorded (RN-09).
 - Text calls request structured JSON output; the response is parsed and checked
-  against the schema before use (invalid → `InvalidResponse`, RN-10).
+  against the schema before use (invalid → `InvalidResponse`, RN-10), by a small
+  validator in `providers/` (no `jsonschema` dependency).
+- Schemas use only the subset the three providers accept in structured output:
+  object, array, string, integer, number, boolean and enum, every property
+  required, no `oneOf`, `anyOf`, `pattern` or `format`. A test walks every
+  schema and refuses other keywords, so a schema that one provider rejects is
+  caught before its adapter exists.
+- Error texts never include the provider's response body: a rejected-key body
+  can echo a masked part of the key that the log filter does not recognize.
+- HTTP 429 is split: a quota or billing error maps to `QuotaError`, a rate limit
+  to `ProviderUnavailable` with the code `rate_limited`, so the cause shown is
+  the right one (RN-08).
 - Images: OpenAI image generation and edit (template); Google image models that
   accept an input image for the template, and Imagen without template. A model
   without template support raises `TemplateUnsupported`. The art pipeline skips
@@ -499,7 +587,7 @@ connection), so CA-19 and the "tests never touch the network" rule hold.
 |---|---|---|
 | backend-dev | `backend/**` except `providers/` and `generation/`; `.env.example` | `frontend/`, `specs/`, `launcher/`, `release/`, tests |
 | llm-engineer | `backend/providers/**`, `backend/generation/**` (adapters, factory, prompts, retrieval for the text model, generation pipelines, the search evaluation script) | models, catalog, validators, cards, api, tests |
-| qa | test files: `backend/**/tests/**`, `backend/**/conftest.py`, `backend/pytest.ini`, `frontend/**/*.test.ts(x)`, `launcher/tests/**`, `release/tests/**`, test fixtures and helpers | production code |
+| qa | test files: `backend/**/tests/**`, `backend/**/conftest.py`, `backend/pytest.ini`, `frontend/**/*.test.ts(x)`, `frontend/src/api/contract/**` (generated contract samples), `launcher/tests/**`, `release/tests/**`, test fixtures and helpers | production code |
 | frontend-dev | `frontend/**` except tests | `backend/`, `specs/` |
 | release-dev | `launcher/**`, `release/**` (except tests), `start.cmd`, `VERSION`, `.github/workflows/**`, `.gitignore`, `.gitattributes` | `backend/`, `frontend/` |
 | docs-writer | `README.md`, `docs/**`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `.github/ISSUE_TEMPLATE/**`, `specs/manual-checks.md` | code, other `specs/` files |
@@ -545,35 +633,46 @@ sources.
 | M0 Foundation | Status screen shows the configuration and the settings to fix | config, status endpoint, origin check, log, frontend skeleton served by Django, CI |
 | M1 Double-click start | the locally built zip starts with a double click and stops after the last tab closes | server entry point, instance and heartbeat, watchdog, upgrade service, launcher, release zip, manual checklist |
 | M2 Reference database | Setup screen builds the database from Oracle Cards; Status lists the source | jobs, catalog models, downloader, Oracle import, roles, build, setup endpoints and gate, Setup screen |
-| M3 First card | a request becomes a validated, saved card shown on the Result screen, with each text provider | provider protocol, three text adapters, factory, connection test, card models, usage, mana cost and color identity validators, comparables search, generation pipeline, Request and Result screens, key-leak sweep |
-| M4 Rules validation | type line, keyword and limits validators with terms from the Comprehensive Rules | rules import, terms, lexicon, rules search in the draft call |
-| M5 Library and versions | library, favorites, deletion, editing, quick adjustments, restore | library, edit, versions and adjustment endpoints and screens |
-| M6 Art | generated and uploaded art, shown beside the card text | image adapters, art availability, image storage and serving, art pipeline, upload, art screens |
-| M7 Base card | a chosen printing guides the design and is the art template | printings import, base card search, base image cache, template |
-| M8 Portuguese cards | cards in Portuguese with every validation | Portuguese terms and lexicon, card language |
-| M9 Public release | release zip and clone start for the public | release assets, clone start file, CI release, README, license, community files |
+| M3 First card | a request becomes a validated, saved card shown on the Result screen, with OpenAI | provider protocol, OpenAI text adapter, factory, card models, usage, mana cost and color identity validators, comparables search, generation pipeline, Request and Result screens, key-leak sweep |
+| M4 Text providers | the same request works with OpenAI, Anthropic and Google; Status tests the text key | Anthropic and Google text adapters, cross-provider test, connection test |
+| M5 Rules validation | type line, keyword and limits validators with terms from the Comprehensive Rules | rules import, terms, lexicon, rules search in the draft call |
+| M6 Library and versions | library, favorites, deletion, editing, quick adjustments, restore | library, edit, versions and adjustment endpoints and screens |
+| M7 Art | generated and uploaded art, shown beside the card text | image adapters, art availability, image storage and serving, art pipeline, upload, art screens |
+| M8 Base card | a chosen printing guides the design and is the art template | printings import, base card search, base image cache, template |
+| M9 Portuguese cards | cards in Portuguese with every validation | Portuguese terms and lexicon, card language |
+| M10 Public release | release zip and clone start for the public | release assets, clone start file, CI release, README, license, community files |
 
-**Build sources by milestone.** M2 builds from Oracle Cards; M4 adds the
-Comprehensive Rules, M7 Default Cards and M8 All Cards. During development, a
+**Build sources by milestone.** M2 builds from Oracle Cards; M5 adds the
+Comprehensive Rules, M8 Default Cards and M9 All Cards. During development, a
 milestone that adds a source rebuilds the database by hand; whether a new
 application version requires a rebuild (spec, open questions) is answered
-before the first task that adds a source (T18).
+in the Milestone 2 review (T89), before any milestone adds a source.
 
 **Decisions that are expensive to change late** are exercised early: the
 embeddable Python and FTS5 in M1, the SQLite concurrency between jobs and the
-server in M2, the provider protocol across the three text providers and the
-search quality evaluation in M3, and the upgrade of a data folder from an
-earlier zip in M5.
+server in M2, the generation pipeline and the search quality evaluation in M3,
+the provider protocol across the three text providers in M4, and the upgrade of
+a data folder from an earlier zip in M6.
+
+**End-to-end suite.** `backend/tests/e2e/` runs the demo path of every
+milestone from M2 on through the API, with the fake provider, fictional source
+files behind a fake transport and a temporary data folder. Each milestone adds
+its flow; earlier flows keep passing.
+
+**Migrations.** Development data folders are disposable. Before the first
+public release, the migrations are replaced by one initial migration per app
+(T125); the upgrade path of section 7 applies from that release on.
 
 ## 15. Verification
 
 - Backend: `pytest -q` with the fake provider and the network guard; every test
-  names the RN or CA it covers.
+  names the RN or CA it covers. It includes the end-to-end suite of section 14.
 - Frontend: `npm run test` and `npx tsc -b`.
 - Manual checks on a Windows machine: the CAs marked manual (zip start,
   clone start, port in use, firewall prompt, browser close), listed in
   `specs/manual-checks.md` from Milestone 1 on and extended by later
   milestones, plus one end-to-end generation with a real key per text provider.
 - Each milestone review runs its demo from the locally built zip (from
-  Milestone 1 on).
+  Milestone 1 on): on a Windows computer with no Python or Node for Milestones
+  1 and 10, on the development machine for the others.
 - T26 counts recorded in the Milestone 3 review (T94), with the first generated cards.

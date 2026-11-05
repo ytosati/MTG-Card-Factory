@@ -125,7 +125,9 @@ and key for art. The person pays the providers directly for usage.
   with the reason; it is not a setting to fix. An image setting that is set but
   invalid (an unknown provider, or one that is not image-capable such as
   Anthropic) is a setting to fix. An image key set with no image provider is
-  ignored, and the Status screen says so. The configuration file is read again
+  ignored, and the Status screen says so. An image model set with no image
+  provider while the text provider is not image-capable is ignored the same
+  way, with a notice on the Status screen. The configuration file is read again
   each time the Status screen is opened and before each generation, so a fix
   takes effect without restarting; only the port takes effect at the next
   start, and the Status screen says so when it changed.
@@ -589,7 +591,9 @@ never use the network or a real provider.
 - CA-74 (RN-07, RN-08): With no image settings, art is unavailable with the
   reason and no setting to fix is reported; with the image provider set to
   Anthropic, the image provider setting is named as a setting to fix; with an
-  image key and no image provider, the Status screen says the key is ignored.
+  image key and no image provider, the Status screen says the key is ignored;
+  with an image model, no image provider and Anthropic as text provider, the
+  Status screen says the image model is ignored.
 - CA-75 (RN-47): With a port value that is not a number from 1 to 65535, the
   application starts on the default port and the Status screen names the port
   setting.

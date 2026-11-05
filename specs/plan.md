@@ -79,7 +79,16 @@ Fields listed are the ones the spec needs; types are left to the tasks.
   image URLs per face (png 745 × 1040).
 - `RuleSection`: number (primary key, for example "702.19b"), text.
 - `Term`: lang (en, pt), kind (card_type, supertype, subtype, keyword_ability,
-  keyword_action), english, localized (RN-18, RN-19, RN-30).
+  keyword_action, ability_word, number_word), english, localized, parent card
+  types (JSON list, for a subtype; a subtype may belong to several types),
+  allowed in Commander (for a card type or supertype) (RN-18, RN-19, RN-30).
+  The Commander list is fixed in code: card types Artifact, Battle, Creature,
+  Enchantment, Instant, Kindred, Land, Planeswalker and Sorcery; supertypes
+  Basic, Legendary, Snow and World. Every other card type and supertype in the
+  Comprehensive Rules (such as Scheme, Plane, Conspiracy or Ongoing) is not
+  allowed. `number_word` rows are the words that existing cards follow with a
+  number (as in "deals 3"), derived at build time from English oracle text and
+  Portuguese printed text.
 - Full-text tables `oracle_fts` and `rules_fts` (SQLite FTS5), created by a
   migration with fixed SQL and queried only with parameters.
 
@@ -91,7 +100,10 @@ Fields listed are the ones the spec needs; types are left to the tasks.
   comparables (JSON: oracle_id, name, role), base_card (JSON snapshot: oracle_id,
   printing id, face, name, rules text), power_indicator, power_justification,
   power_outdated, status (approved, rejected), validation (JSON causes),
-  skipped_checks, image (nullable). Versions are immutable.
+  skipped_checks, image (nullable). Versions are immutable, with one exception:
+  art requested in the request is attached to version 1 by the generation job
+  that created it (RN-32). The artist credit "Card Factory" is a constant, not
+  a stored field (RN-48).
 - `CardImage`: `id` (UUID4), card, origin (generated, uploaded), relative file
   path, mime, width, height, created_at.
 - `BaseCardImage`: printing id (primary key), face, relative file path,
@@ -115,7 +127,7 @@ Fields listed are the ones the spec needs; types are left to the tasks.
 | catalog.ingest | `run_build()`, `download_sources()`, `import_oracle()`, `import_printings()`, `import_rules()`, `import_pt_terms()`, `tag_roles()` |
 | catalog.selectors | `is_ready()`, `search_cards(query, filters)`, `search_rules(keywords)`, `get_lexicon(lang)`, `find_base_cards(name)`, `list_printings(oracle_id)` |
 | providers.factory | `text_adapter()`, `image_adapter()`, `art_availability()` |
-| validators | `validate(card, lexicon) -> ValidationResult` composed of color identity, mana cost, type line, keywords, limits |
+| validators | `validate(card, lexicon, request) -> ValidationResult` composed of color identity, mana cost, type line, keywords, limits; `request` gives the requested identity (possibly colorless) and the idea text |
 | generation.text | `generate_card(request)`, `revise(draft, causes)`, `quick_adjust(card, kind)` |
 | generation.art | `generate_art(card, description)`, `fetch_base_image(printing, face)` |
 | cards.services | `save_version()`, `edit_fields()`, `restore_version()`, `set_favorite()`, `delete_card()`, `attach_image()`, `upload_image()`, `record_usage()` |
@@ -207,8 +219,15 @@ application (unknown migrations), it stops with a message instead of migrating.
   temporary files with a cleared environment and never read the repository
   `.env`. A small parser in the standard library reads `KEY=VALUE` lines, ignores comments and blank lines,
   strips quotes, spaces and the UTF-8 byte-order mark that Notepad may add, and
-  lets process environment variables override for development. It returns a
-  frozen config object; keys are `Secret` objects whose text form is `***`.
+  lets process environment variables override only when `CARDFACTORY_DEBUG=1`.
+  It returns a frozen config object; keys are `Secret` objects whose text form
+  is `***`. `get_config()` reads the file again when its modification time
+  changed, so the Status screen and each generation see a fix without a restart
+  (RN-08). The port is read once at startup; a changed port is reported as
+  taking effect at the next start. An invalid `APP_PORT` falls back to 47821
+  and is reported as a setting to fix (RN-47). Empty image settings only make
+  art unavailable; set but invalid ones are settings to fix; `IMAGE_API_KEY`
+  with no `IMAGE_PROVIDER` is ignored with a notice.
   *Alternative:* the `python-dotenv` package. Rejected to avoid a dependency for
   about forty lines.
 - **Defaults and checks (RN-05, RN-07, RN-08).** No provider call at startup.
@@ -302,7 +321,10 @@ search by part of a name (RN-36) uses a case-insensitive `LIKE`, not FTS.
   against the schema before use (invalid → `InvalidResponse`, RN-10).
 - Images: OpenAI image generation and edit (template); Google image models that
   accept an input image for the template, and Imagen without template. A model
-  without template support raises `TemplateUnsupported` (RN-32).
+  without template support raises `TemplateUnsupported`. The art pipeline skips
+  the template when the adapter's capabilities exclude `image_template`, and
+  retries once without it on `TemplateUnsupported`; either way the result
+  carries a notice (RN-38).
 
 | Option | For | Against |
 |---|---|---|
@@ -351,9 +373,14 @@ waitress as server, Django serves the built frontend.**
      `APP_PORT` (RN-47).
   3. Backs up the database and migrates (RN-42), marks orphan jobs failed.
   4. Starts waitress on `127.0.0.1` in a thread, opens the default browser.
-  5. A watchdog stops the process when no heartbeat arrived for 45 seconds
-     after the first one (stop within one minute, RN-41). The frontend sends a
-     heartbeat every 15 seconds and on `pagehide`.
+  5. A watchdog stops the process when no heartbeat arrived for 180 seconds
+     after the last one, or when no first heartbeat arrived within 120 seconds
+     of startup (RN-41). The margin tolerates the timer throttling browsers
+     apply to background tabs. Every running job (build, generation, art,
+     quick adjustment) holds it; holds are counted. The frontend sends a
+     heartbeat every 15 seconds, when the tab becomes visible again and on
+     `pagehide`; when heartbeats fail, it shows that the application stopped
+     and how to start it again.
 - **Serving the frontend:** a catch-all Django view returns `index.html`; assets
   are served by Django's static file view mapped explicitly to the built folder,
   which works with `DEBUG` off. No extra package.
@@ -404,12 +431,13 @@ The T26 evaluation measures whether the patterns plus keywords are good enough.
   Requests send a descriptive User-Agent and Accept header, as Scryfall asks.
 - Comprehensive Rules: the text file linked from the Wizards rules page; the
   importer finds the link and stores the sections. Keyword abilities (702),
-  keyword actions (701) and type lists (205) feed `Term` in English.
+  keyword actions (701), type lists (205) and the ability word list (207.2c)
+  feed `Term` in English.
 - Portuguese terms: type words come from aligning `printed_type_line` with
   `type_line` on Portuguese printings; keyword names from Portuguese printed text
   of cards whose English text starts with that keyword, by majority. A keyword
   with no Portuguese term found is reported as a skipped check instead of a
-  rejection.
+  rejection. Card languages are English and Portuguese (Brazil) only.
 - *Trade-off:* All Cards is the largest file (gigabytes). It is downloaded once
   during the build and deleted after import. *Alternative:* paged API search of
   Portuguese printings; smaller download, but Scryfall asks for bulk files when
@@ -443,7 +471,7 @@ The T26 evaluation measures whether the patterns plus keywords are good enough.
 | 27 | release build; launcher | manual check |
 | 28 | setup endpoint; frontend gate; disk errors mapped | first start |
 | 29 | settings bind and hosts; only adapters, ingest and base image fetch open connections | network guard in tests |
-| 30 | generation prompt language; validators with `get_lexicon(lang)`; skipped checks | pt and ja fixtures |
+| 30 | generation prompt language (en, pt); validators with `get_lexicon(lang)`; skipped checks for unknown Portuguese keyword terms | en and pt fixtures |
 | 31–32 | generation.art; save after card; failure leaves no file | art failure |
 | 33 | cards.services image storage; `images` endpoint; delete removes files | delete card |
 | 34 | cards.services keeps image on edit; art creates version | edit keeps art |
@@ -452,13 +480,13 @@ The T26 evaluation measures whether the patterns plus keywords are good enough.
 | 37 | generation.text prompt includes base snapshot | fake receives base |
 | 38–39 | generation.art template; fetch_base_image cache and fallback | no-network fallback |
 | 40, 47 | launcher checks and messages | manual check |
-| 41 | heartbeat endpoint, launcher watchdog, frontend hook | watchdog unit test |
+| 41 | heartbeat endpoint, launcher watchdog, job runner hold, frontend hook | watchdog unit test; runner hold test |
 | 42 | launcher backup and migrate | migration from older fixture database |
 | 43 | cards.services.upload_image with header checks | renamed text file |
 | 44 | generation.art size request; frontend fitted display; images endpoint | size and display tests |
 | 45 | start.cmd, `runtime/prepared.json` | manual check |
 | 46 | README user guide | review |
-| 48 | README and interface footer | review, component test |
+| 48 | art prompt artist credit; Result screen | fake adapter receives the credit; component test |
 | 49 | frontend components and screens | component tests, manual check |
 
 Cross-site requests are refused by an origin check (section 8), tested on

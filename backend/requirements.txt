@@ -1,0 +1,8 @@
+Django==5.2.19
+djangorestframework==3.18.3
+waitress==3.0.2
+
+# Required by the packages above
+asgiref==3.13.0
+sqlparse==0.6.1
+tzdata==2026.6; sys_platform == "win32"

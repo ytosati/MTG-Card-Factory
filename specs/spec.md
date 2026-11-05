@@ -69,7 +69,8 @@ and key for art. The person pays the providers directly for usage.
 - Request: idea or theme, color identity (one or more colors, or colorless),
   power level and, optionally, card language (English or Portuguese), base card (with the chosen printing and face), art requested (yes
   or no), art description and uploaded image.
-- Card: name, mana cost, mana value, type line, rules text, power and toughness
+- Card: the request it came from (idea, requested color identity and power
+  level), name, mana cost, mana value, type line, rules text, power and toughness
   (when applicable), rarity, language, design intent, design rationale,
   comparables used, base card (when chosen), power indicator with its
   justification, art (when present) with its origin (generated or uploaded),
@@ -86,7 +87,8 @@ and key for art. The person pays the providers directly for usage.
 
 ### Data and sources
 - RN-01: The card and rules database is built locally from the data sources,
-  and the system records the date and origin of each source used.
+  and the system records, for each source used, its origin, the date the source
+  published it and the date it was downloaded.
 - RN-02: The project repository contains no card data, no rules text, and no
   card images or frames.
 - RN-03: Building the database is all or nothing: if interrupted, the database
@@ -115,8 +117,9 @@ and key for art. The person pays the providers directly for usage.
   without calling any provider. If a provider value is unknown, or a required key
   or model is missing, it names the setting to fix and creates no card. Keys are
   tried only by the connection test on the Status screen and by a generation; if
-  the provider rejects the key or the usage limit, the system states the cause
-  and creates no card. The same checks apply to the image settings: a problem in
+  the provider rejects the key, the model name or the usage limit, the system
+  states the cause, names the setting to fix when there is one (an unknown model
+  names the model setting), and creates no card. The same checks apply to the image settings: a problem in
   them makes art unavailable and names the setting to fix, while text generation
   keeps working. Leaving the image settings empty only makes art unavailable,
   with the reason; it is not a setting to fix. An image setting that is set but
@@ -389,7 +392,8 @@ never use the network or a real provider.
 - CA-07 (RN-03): With the download interrupted, the database is not marked ready,
   and a new run rebuilds it with no duplicated records.
 - CA-08 (RN-01, RN-03): With the database ready, a new run downloads nothing
-  again, and the Status screen shows the date and origin of each source.
+  again, and the Status screen shows the origin, the publication date and the
+  download date of each source.
 - CA-09: Removed.
 - CA-10 (RN-14): An invalid draft never appears as approved.
 - CA-11 (RN-15): A card rejected twice is saved and shown as rejected, with the
@@ -589,6 +593,8 @@ never use the network or a real provider.
 - CA-75 (RN-47): With a port value that is not a number from 1 to 65535, the
   application starts on the default port and the Status screen names the port
   setting.
+- CA-76 (RN-08): When the provider does not know the configured model name, the
+  person sees that cause with the model setting named, and no card is saved.
 
 ## Screens
 - First-run setup: the expected download size and free disk space needed, the
@@ -596,7 +602,7 @@ never use the network or a real provider.
   to Status when settings need fixing
 - Status: text provider, model and whether a key is configured (never the key);
   image provider, image model and whether art is available, with the reason when
-  it is not; the date and origin of each data source; a connection test; the
+  it is not; the origin, publication date and download date of each data source; a connection test; the
   settings to fix
 - Request: idea or theme, color identity (colors or colorless), power level,
   card language (English or Portuguese), optional base card (search by name,

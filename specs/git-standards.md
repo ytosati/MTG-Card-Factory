@@ -61,7 +61,7 @@ Rules:
 Examples:
 
 - `milestone/m0-foundation`, `milestone/m1-double-click-start`,
-  `milestone/m3-first-card`, `milestone/m9-public-release` (the full list is in
+  `milestone/m3-first-card`, `milestone/m10-public-release` (the full list is in
   `specs/tasks.md`, Process)
 - `fix/session-key-leak`
 - `chore/update-dependencies`

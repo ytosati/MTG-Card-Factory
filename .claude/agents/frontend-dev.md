@@ -21,6 +21,11 @@ Rules:
   shows only the parts its task delivers; parts that a later task adds (for
   example art, base card or language on the Request screen) are left out, not
   shown disabled or mocked.
+- Client types must type-check the contract samples in
+  `frontend/src/api/contract/` (`npx tsc -b`). Never edit the samples; a
+  mismatch means the contract changed: stop and report.
+- Branch on the error `code` of the envelope (specs/plan.md, section 6), never
+  on the message text.
 - The frontend never receives, stores or sends the API key. It only shows the
   configuration status that the backend returns.
 - Every screen handles loading, error and empty states.

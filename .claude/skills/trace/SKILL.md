@@ -2,6 +2,7 @@
 name: trace
 description: Build the traceability matrix from rules to acceptance criteria, tests, tasks and code, and list the orphans. Read-only. Use when the maintainer asks, typically at the end of a milestone.
 disable-model-invocation: true
+argument-hint: [optional: milestone id, e.g. m3]
 allowed-tools: Read, Grep, Glob
 ---
 
@@ -20,7 +21,10 @@ Build the traceability matrix. Read-only: edit nothing.
    tasks that cite no rule; tests that cite a missing ID; code that implements
    behavior no rule asks for; open [DECIDE] items.
 7. Summarize: coverage by milestone, the three most important gaps and the next
-   action for each.
+   action for each. Rules are delivered in parts across milestones
+   (specs/tasks.md, "Delivery method"): a rule whose remaining tasks belong to
+   later milestones is "partial, on plan", not missing. With a milestone id as
+   argument, limit the matrix to the RN and CA parts of that milestone's tasks.
 
 Rules: report only what you found in the files. Mark anything you could not
 verify as "not verified".

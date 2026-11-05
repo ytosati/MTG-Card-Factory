@@ -18,7 +18,8 @@ then the code.
 4. Use the spec-reviewer agent on the proposed text and show its findings.
 5. Wait for the maintainer's approval, then apply the spec edit.
 6. List what must change next: tests (which CA need new or updated tests), tasks
-   (new, changed or obsolete), plan sections and user documentation. Propose the
+   (new, changed or obsolete; work of a merged milestone changes through a new
+   task in the current or next milestone, never by editing a done task), plan sections and user documentation. Propose the
    edits to specs/tasks.md and specs/plan.md and apply them only after approval.
 7. Stop. Implementation starts with /run-task on the updated task.
 

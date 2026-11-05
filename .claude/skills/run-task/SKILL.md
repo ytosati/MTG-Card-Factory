@@ -18,9 +18,13 @@ If the second word is `auto`, skip checkpoint A. Checkpoint B is never skipped.
    branch. Do not create or switch branches here; if the milestone branch does
    not exist, offer /new-branch.
 3. Read the RN and CA the task cites in specs/spec.md. If any is marked
-   [DECIDE], stop and ask.
+   [DECIDE], or the task has a TODO line that is still open, stop and ask.
+   Read the milestone's goal and demo (specs/tasks.md, "Delivery method"):
+   the task builds only its part of that slice, and every agent prompt below
+   names the milestone and the parts the task leaves to later tasks.
 4. Use the implementing agent named in the task's `Agent:` field. If it is
-   `maintainer`, stop: the task is not run by this skill. If it is `qa`, step 1
+   `maintainer`, stop: the task is not run by this skill; a milestone review
+   runs with /milestone-review. If it is `qa`, step 1
    is the whole implementation: skip step 2 and go to review. If the agent file
    does not exist in `.claude/agents/`, stop and say so.
 
@@ -47,7 +51,8 @@ Checkpoint B: stop. Do not commit, push, merge or switch branches. Offer
 /explain-diff for the riskiest parts, and suggest `/next-task <task id>` after
 the maintainer has read the diff: it commits on the milestone branch, pushes it
 and starts the next task (`/commit` only commits). If the task is the milestone review, remind that the
-milestone branch merges into `main` only after the review passes.
+milestone branch merges into `main` only after the review passes. If the next
+task of the milestone is its review, suggest /milestone-review.
 
 ## Rules
 - One task per run.

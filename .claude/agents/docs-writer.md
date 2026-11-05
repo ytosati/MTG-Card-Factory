@@ -45,7 +45,8 @@ Create what is missing and update what changed:
 - SECURITY.md: how to report a vulnerability privately, and what is in scope
   (key handling, local-only server).
 - specs/manual-checks.md: step-by-step manual checks on a clean Windows machine,
-  each with its CA and the expected result.
+  each with its CA and the expected result. It grows with each milestone that
+  adds a manual check; append, and keep earlier checks valid.
 
 ## Writing rules
 - Professional, neutral and friendly. Plain language, short sentences, active

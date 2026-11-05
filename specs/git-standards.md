@@ -49,7 +49,8 @@ Prefixes:
 - `refactor/`: internal restructuring
 - `chore/`: maintenance, documentation, tests and CI
 
-- `milestone/`: one branch per milestone of `specs/tasks.md`
+- `milestone/`: one branch per milestone of `specs/tasks.md`. Milestones are
+  vertical slices (`specs/tasks.md`, "Delivery method").
 
 Rules:
 
@@ -59,8 +60,9 @@ Rules:
 
 Examples:
 
-- `milestone/m0-foundation`, `milestone/ma-data`, `milestone/mb-validators`,
-  `milestone/mc-generation`, `milestone/md-api-interface`, `milestone/me-release`
+- `milestone/m0-foundation`, `milestone/m1-double-click-start`,
+  `milestone/m3-first-card`, `milestone/m9-public-release` (the full list is in
+  `specs/tasks.md`, Process)
 - `fix/session-key-leak`
 - `chore/update-dependencies`
 
@@ -76,7 +78,10 @@ Examples:
 - The findings of a milestone review task are committed on the milestone
   branch.
 - The milestone branch merges into `main` only after its review task passes,
-  with every test suite green.
+  with every test suite green and its demo working.
+- A change of rule or plan found by a milestone review goes through
+  `/spec-change` on the milestone branch before the merge, or on a branch
+  outside the milestones.
 - Work outside the milestones (for example spec or tooling changes) branches
   from `main`.
 

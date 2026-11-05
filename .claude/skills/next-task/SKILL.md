@@ -22,8 +22,9 @@ Where this file adds or overrides a step, it says so. If `$ARGUMENTS` contains
 2. Find the current task: the task id in `$ARGUMENTS`, or, if none is given,
    ask. Find it in specs/tasks.md and confirm that its milestone matches the
    current milestone branch `milestone/<id>-<name>`. Stop on any mismatch.
-3. If the task is a milestone review task (Agent: maintainer), stop: the
-   milestone branch merges into `main` only by the maintainer's decision.
+3. If the task is a milestone review task (Agent: maintainer), stop: it runs
+   with /milestone-review, and the milestone branch merges into `main` only by
+   the maintainer's decision.
 
 ## 1. Commit (follows commit/SKILL.md)
 1. Run every test suite that exists in the repository and stop if any fails:
@@ -53,7 +54,7 @@ Where this file adds or overrides a step, it says so. If `$ARGUMENTS` contains
 2. The next task is the first one not done whose `Depends on:` tasks are all
    done. If the only remaining task is the milestone review (Agent:
    maintainer), or if none is ready, stop and report: the next step is the
-   maintainer's.
+   maintainer's (/milestone-review for the review).
 3. Show the chosen task (id, title, agent, dependencies) and why it was chosen.
 
 ## 4. Run the next task (follows run-task/SKILL.md)

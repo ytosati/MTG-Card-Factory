@@ -297,7 +297,7 @@ keywords or an embeddings option for approval. Only the request texts and the
 counts are committed, never card data (RN-02).
 
 FTS5 availability is checked early: T14 tests it in the running Python, and the
-Milestone 0 review confirms it in the embeddable Python planned for the zip. If
+Milestone 1 review (T88) confirms it in the embeddable Python of the zip. If
 it is missing, the fallback is a `LIKE` search with the same filters. Base card
 search by part of a name (RN-36) uses a case-insensitive `LIKE`, not FTS.
 
@@ -531,29 +531,49 @@ task names exactly one agent.
 - Python formatter and linter: none in v1 until one is approved (ruff is the
   proposed option). No ESLint in v1.
 
-## 14. Suggested task order
+## 14. Delivery in vertical slices
 
-Milestones for `specs/tasks.md`, which assigns the final IDs.
+Milestones are vertical slices (`specs/tasks.md`, "Delivery method"): each one
+ends with a capability demonstrated in the running application, across every
+layer it needs. The structure in sections 2 to 13 is the target; each
+milestone builds the part of it that its demo needs, and later milestones
+extend models, endpoints, the API client, prompts, screens and the build
+sources.
 
-1. Foundations: backend skeleton, config and secret, network guard for tests,
-   origin check, logging, CI for the test suites, frontend skeleton.
-2. Reference data: catalog models and ingest, roles, search, T26 evaluation,
-   Portuguese terms.
-3. Validation: validators and lexicon.
-4. Generation: provider protocol and fake, adapters, text pipeline, jobs,
-   endpoints, usage.
-5. Cards: library, editing, versions, quick adjustments.
-6. Art: image adapters, art pipeline, uploads, base card images.
-7. Frontend screens.
-8. Distribution: launcher, release build, clone start file, README guide.
+| Milestone | Demonstrable capability | Layers it adds |
+|---|---|---|
+| M0 Foundation | Status screen shows the configuration and the settings to fix | config, status endpoint, origin check, log, frontend skeleton served by Django, CI |
+| M1 Double-click start | the locally built zip starts with a double click and stops after the last tab closes | server entry point, instance and heartbeat, watchdog, upgrade service, launcher, release zip, manual checklist |
+| M2 Reference database | Setup screen builds the database from Oracle Cards; Status lists the source | jobs, catalog models, downloader, Oracle import, roles, build, setup endpoints and gate, Setup screen |
+| M3 First card | a request becomes a validated, saved card shown on the Result screen, with each text provider | provider protocol, three text adapters, factory, connection test, card models, usage, mana cost and color identity validators, comparables search, generation pipeline, Request and Result screens, key-leak sweep |
+| M4 Rules validation | type line, keyword and limits validators with terms from the Comprehensive Rules | rules import, terms, lexicon, rules search in the draft call |
+| M5 Library and versions | library, favorites, deletion, editing, quick adjustments, restore | library, edit, versions and adjustment endpoints and screens |
+| M6 Art | generated and uploaded art, shown beside the card text | image adapters, art availability, image storage and serving, art pipeline, upload, art screens |
+| M7 Base card | a chosen printing guides the design and is the art template | printings import, base card search, base image cache, template |
+| M8 Portuguese cards | cards in Portuguese with every validation | Portuguese terms and lexicon, card language |
+| M9 Public release | release zip and clone start for the public | release assets, clone start file, CI release, README, license, community files |
+
+**Build sources by milestone.** M2 builds from Oracle Cards; M4 adds the
+Comprehensive Rules, M7 Default Cards and M8 All Cards. During development, a
+milestone that adds a source rebuilds the database by hand; whether a new
+application version requires a rebuild (spec, open questions) is answered
+before the first task that adds a source (T18).
+
+**Decisions that are expensive to change late** are exercised early: the
+embeddable Python and FTS5 in M1, the SQLite concurrency between jobs and the
+server in M2, the provider protocol across the three text providers and the
+search quality evaluation in M3, and the upgrade of a data folder from an
+earlier zip in M5.
 
 ## 15. Verification
 
 - Backend: `pytest -q` with the fake provider and the network guard; every test
   names the RN or CA it covers.
 - Frontend: `npm run test` and `npx tsc -b`.
-- Manual checks on a clean Windows machine: the CAs marked manual (zip start,
+- Manual checks on a Windows machine: the CAs marked manual (zip start,
   clone start, port in use, firewall prompt, browser close), listed in
-  `specs/manual-checks.md`, plus one end-to-end generation with a real key per
-  text provider.
-- T26 counts recorded in the Milestone A review (T27) before generation work relies on the search.
+  `specs/manual-checks.md` from Milestone 1 on and extended by later
+  milestones, plus one end-to-end generation with a real key per text provider.
+- Each milestone review runs its demo from the locally built zip (from
+  Milestone 1 on).
+- T26 counts recorded in the Milestone 3 review (T94), with the first generated cards.

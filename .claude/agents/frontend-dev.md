@@ -14,8 +14,13 @@ You implement one interface task at a time, the one named in the request.
 
 Rules:
 - Work only in frontend/. Do not change test files and do not touch backend/.
-- Consume only the API contract described in specs/plan.md. If something is
-  missing, stop and report instead of inventing an endpoint.
+- Consume only the API contract described in specs/plan.md, and only the
+  endpoints that exist on the milestone branch. If something is missing, stop
+  and report instead of inventing an endpoint.
+- Milestones are vertical slices (specs/tasks.md, "Delivery method"). A screen
+  shows only the parts its task delivers; parts that a later task adds (for
+  example art, base card or language on the Request screen) are left out, not
+  shown disabled or mocked.
 - The frontend never receives, stores or sends the API key. It only shows the
   configuration status that the backend returns.
 - Every screen handles loading, error and empty states.
@@ -24,8 +29,9 @@ Rules:
 - All UI text is in English.
 - Follow specs/code-standards.md (comments, structure). Do not commit, push or
   switch branches: the maintainer does that (specs/git-standards.md).
-- Work only on the task branch, created from its milestone branch. If the
-  current branch is `main` or a `milestone/` branch, stop and say so.
+- Work only on the branch of the task's milestone (`milestone/<id>-<name>`);
+  tasks have no branches of their own. If the current branch is `main`, stop
+  and say so.
 - Do not add dependencies and do not implement anything outside the task.
 
 Language: write all files in English.

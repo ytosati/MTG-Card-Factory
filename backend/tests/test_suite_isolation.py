@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 
-from tests.isolation import TEST_HOME
+from tests.isolation import CONFIGURED_DATABASE_NAMES, TEST_HOME
 from tests.project_environment import is_project_variable
 from tests.settings_probe import REPOSITORY_ROOT
 
@@ -38,9 +38,8 @@ def test_t1_settings_module_comes_from_pytest_ini():
 
 def test_t1_django_settings_use_the_temporary_home():
     """RN-29 / CA-19 / T1: settings loaded by pytest-django point the database at the temporary home."""
-    from django.conf import settings
-
-    database_name = settings.DATABASES["default"]["NAME"]
+    # Recorded at session start: once a database test runs, Django points NAME at the test database.
+    database_name = CONFIGURED_DATABASE_NAMES["default"]
 
     assert not _is_under(database_name, REPOSITORY_ROOT)
     assert Path(database_name).resolve() == TEST_HOME / "data" / "cardfactory.sqlite3"

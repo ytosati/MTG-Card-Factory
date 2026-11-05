@@ -35,6 +35,23 @@ def _remove_test_home():
 atexit.register(_remove_test_home)
 
 
+# Database names as configured, before pytest-django swaps them for test databases.
+CONFIGURED_DATABASE_NAMES = {}
+
+
+def pytest_configure(config):
+    """Record the configured database names; pytest-django has loaded the settings by now."""
+    try:
+        from django.conf import settings
+
+        databases = settings.DATABASES
+    except Exception:
+        # Without Django settings there is nothing to record.
+        return
+    for alias, database in databases.items():
+        CONFIGURED_DATABASE_NAMES[alias] = database.get("NAME")
+
+
 def pytest_unconfigure(config):
     """Remove the temporary home once the session ends."""
     try:

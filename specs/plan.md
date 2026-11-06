@@ -330,8 +330,12 @@ application (unknown migrations), it stops with a message instead of migrating.
   the image key held in the config (the effective one after the fallback, or
   the one set with an invalid `IMAGE_PROVIDER`), and an `IMAGE_API_KEY` ignored
   for lack of `IMAGE_PROVIDER`, kept in the config as a `Secret` for this
-  purpose. A value under 8 characters is left alone, since replacing it would
-  garble ordinary text. The filter covers the formatted message, its arguments
+  purpose. Every key value seen since the process started stays redacted
+  until the process stops, so a call made with a key replaced in `.env`
+  cannot log the old value; these values are kept in memory only. A value
+  under 8 characters is left alone, since replacing it would garble ordinary
+  text. This is an accepted risk: real provider keys are far longer, and a key
+  that short is not valid. The filter covers the formatted message, its arguments
   when they do not match the message, the exception text and `stack_info`; it
   never drops a record. Serializers list fields explicitly; the
   status serializer has booleans only. A test sends every endpoint through a
@@ -347,8 +351,10 @@ application (unknown migrations), it stops with a message instead of migrating.
   before it reaches a provider.
 - **Logs.** With `pythonw.exe` there is no console, so the application logs to
   `data/logs/app.log` with size-based rotation. The key redaction filter applies
-  to every handler. Logs record events, causes and identifiers, never card
-  contents, prompts or keys.
+  to every handler. The log format uses only the message, the standard record
+  fields, the exception and the stack, so `extra` fields, which the filter
+  does not cover, never reach the file. Logs record events, causes and
+  identifiers, never card contents, prompts or keys.
 
 ## 9. Topics with alternatives
 

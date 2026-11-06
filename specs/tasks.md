@@ -396,8 +396,8 @@ Done when: the workflow file passes a syntax check, and a run on a branch (autho
 Log to `<home>/data/logs/app.log` with size-based rotation, through the key
 redaction filter of T5 on every handler. Logs record events, causes and
 identifiers, never card contents, prompts or keys.
-TODO: decide whether a key value under 8 characters, which the log filter leaves alone, needs an explicit exception in RN-06 or CA-06, or is recorded as an accepted risk (RN-06, CA-06).
-TODO: decide whether the log filter keeps redacting key values replaced in `.env` while the process runs (a call made with the old key may log after the fix), and whether log formats are limited to the message, standard fields, the exception and the stack, or the filter also covers `extra` fields (RN-06, CA-06).
+Decided: a key value under 8 characters is left alone and recorded as an accepted risk in the plan, section 8 (RN-06, CA-06).
+Decided: the log filter keeps redacting every key value seen since the process started, in memory only, so a key replaced in `.env` stays redacted until the process stops; the log format is limited to the message, the standard record fields, the exception and the stack, so `extra` fields never reach the file (RN-06, CA-06).
 Covers: RN-06, CA-06
 Agent: backend-dev
 Depends on: T5

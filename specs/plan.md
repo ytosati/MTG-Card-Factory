@@ -150,9 +150,10 @@ where `setting` names the configuration setting to fix when there is one
 
 **Error codes.** Stable, added per milestone, never renamed; the frontend
 branches on `code`, never on `message`: `config_invalid`, `origin_refused`,
-`not_found`, `validation`, `database_not_ready`, `database_busy`,
-`insufficient_space`, `source_unreachable`, `auth`, `quota`, `rate_limited`,
-`model_not_found`, `provider_unavailable`, `provider_not_available_yet`
+`not_found`, `method_not_allowed`, `validation`, `database_not_ready`,
+`database_busy`, `insufficient_space`, `source_unreachable`, `auth`, `quota`,
+`rate_limited`, `model_not_found`, `provider_unavailable`,
+`provider_not_available_yet`
 (development state of Milestone 3 only), `invalid_response`,
 `content_refused`, `art_unavailable`, `card_changed`, `internal`. A settings
 list (status, generation, setup) uses the same objects, `{setting, code,

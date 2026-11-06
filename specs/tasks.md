@@ -97,10 +97,10 @@ merged into `main`.
 ### Milestone 0 — Foundation
 
 - [x] T1: Backend project skeleton
-- [ ] T2: Runtime folders ignored and repository content check
-- [ ] T3: Test network guard
-- [ ] T4: Configuration loader and settings to fix
-- [ ] T5: Django secret key and key redaction in logs
+- [x] T2: Runtime folders ignored and repository content check
+- [x] T3: Test network guard
+- [x] T4: Configuration loader and settings to fix
+- [x] T5: Django secret key and key redaction in logs
 - [ ] T6: Status endpoint (configuration part)
 - [ ] T126: API contract samples
 - [ ] T9: Frontend skeleton and Status screen (configuration part)
@@ -335,6 +335,7 @@ exception handler of plan section 6: every API error, including an unknown
 `/api/` path (404), uses the envelope. The qa agent adds the reusable test
 helper that calls endpoints with a fake configuration and asserts that no key
 value appears in a response.
+TODO: decide what the Status screen shows when the port in the file becomes invalid or empty while the application runs: the port setting to fix, the notice that the port changes at the next start, or both (RN-08, RN-47).
 Covers: RN-06, RN-08, RN-40, CA-06, CA-46, CA-73, CA-74, CA-75
 Agent: backend-dev
 Depends on: T4, T5
@@ -395,6 +396,8 @@ Done when: the workflow file passes a syntax check, and a run on a branch (autho
 Log to `<home>/data/logs/app.log` with size-based rotation, through the key
 redaction filter of T5 on every handler. Logs record events, causes and
 identifiers, never card contents, prompts or keys.
+TODO: decide whether a key value under 8 characters, which the log filter leaves alone, needs an explicit exception in RN-06 or CA-06, or is recorded as an accepted risk (RN-06, CA-06).
+TODO: decide whether the log filter keeps redacting key values replaced in `.env` while the process runs (a call made with the old key may log after the fix), and whether log formats are limited to the message, standard fields, the exception and the stack, or the filter also covers `extra` fields (RN-06, CA-06).
 Covers: RN-06, CA-06
 Agent: backend-dev
 Depends on: T5
@@ -489,6 +492,8 @@ tag without the `v`) and `launcher/start.pyw` checks: not started from inside a 
 folder writable, `.env` present, and the port free or held by Card Factory.
 Each failure shows a Windows message box (through `ctypes`) that names the
 problem and the fix.
+TODO: decide whether the launcher reads the port through `core.config`, so that one parser applies the RN-47 rule, and whether an unreadable `.env` at startup is a case of the RN-40 window or of the Status screen (RN-40, RN-47).
+TODO: decide whether a `data/secret_key` that cannot be read or written (no permission, not UTF-8, a folder) stops startup with the RN-40 window or is replaced (RN-40).
 Covers: RN-40, RN-47, CA-17, CA-53
 Agent: release-dev
 Depends on: T12
@@ -1671,6 +1676,7 @@ file (text provider, model, key, image provider, image model with an example
 value for OpenAI and for Google, image key, local port), the first-run build,
 upgrading by copying `data/` and `.env`, and the development commands for other
 systems.
+TODO: decide whether the guide states that an empty local port uses the default, the valid port range, and that a `#` after a value is part of the value (RN-46, RN-47).
 Covers: RN-27, RN-42, RN-45, RN-46, CA-52
 Agent: docs-writer
 Depends on: T77

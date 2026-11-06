@@ -220,6 +220,7 @@ node_modules/
 # Card Factory runtime and release output
 data/
 runtime/
+frontend/dist/
 *.sqlite3
 *.db
 *.zip

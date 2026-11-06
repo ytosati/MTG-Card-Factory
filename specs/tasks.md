@@ -106,7 +106,7 @@ merged into `main`.
 - [x] T9: Frontend skeleton and Status screen (configuration part)
 - [x] T10: Django serves the built frontend
 - [x] T86: CI for the test suites
-- [ ] T87: Application log
+- [x] T87: Application log
 - [ ] T12: Milestone 0 review
 
 ### Milestone 1 — Double-click start

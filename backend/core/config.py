@@ -86,7 +86,17 @@ def default_path():
 def load_config(path=None):
     """Read `path` (default: `.env` in the application home) and check it; never raises."""
     values = _read_values(Path(path) if path is not None else default_path())
-    return _build_config(values)
+    config = _build_config(values)
+    _remember_keys(config)
+    return config
+
+
+def _remember_keys(config):
+    """Let the log filter keep redacting these keys after `.env` changes (spec RN-06)."""
+    # Local import: core.log_redaction imports this module.
+    from core.log_redaction import remember_keys
+
+    remember_keys(config)
 
 
 _cache = {}
@@ -101,6 +111,8 @@ def get_config(path=None):
     with _cache_lock:
         cached = _cache.get(key)
         if cached is not None and cached[0] == mtime:
+            # Every read remembers the keys, a cached one as well as a fresh one.
+            _remember_keys(cached[1])
             return cached[1]
         config = load_config(file_path)
         _cache[key] = (mtime, config)

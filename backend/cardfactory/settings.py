@@ -2,6 +2,7 @@
 Details: specs/plan.md, sections 7 and 8.
 """
 
+from core.app_log import logging_settings
 from core.config import load_config
 from core.environment import debug_enabled
 from core.paths import data_dir, frontend_build_dir
@@ -83,6 +84,9 @@ STATIC_URL = "static/"
 # The built frontend (see specs/plan.md, section 9.5): a Path or a str, read by
 # the serving views on every request.
 FRONTEND_BUILD_DIR = frontend_build_dir()
+
+# Every handler redacts the API keys (see specs/plan.md, section 8).
+LOGGING = logging_settings()
 
 REST_FRAMEWORK = {
     # No accounts in the product: an Authorization header is never read.

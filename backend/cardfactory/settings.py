@@ -4,9 +4,9 @@ Details: specs/plan.md, sections 7 and 8.
 
 from core.environment import debug_enabled
 from core.paths import data_dir
+from core.secret_key import get_secret_key
 
-# Development placeholder only (see specs/plan.md, section 8).
-SECRET_KEY = "dev-placeholder-not-secret"
+SECRET_KEY = get_secret_key()
 
 DEBUG = debug_enabled()
 

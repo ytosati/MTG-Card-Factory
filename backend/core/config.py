@@ -74,6 +74,8 @@ class Config:
     app_port: int
     settings_to_fix: tuple = field(default=())
     notices: tuple = field(default=())
+    # Kept only so the log filter can redact it (see spec RN-06); never used to call a provider.
+    ignored_image_api_key: Secret = field(default=Secret(""), repr=False)
 
 
 def default_path():
@@ -198,6 +200,7 @@ def _build_config(values):
     image_provider = values.get("IMAGE_PROVIDER", "").lower()
     image_key = values.get("IMAGE_API_KEY", "")
     image_model = values.get("IMAGE_MODEL", "")
+    ignored_image_key = ""
     # Empty image settings only make art unavailable; see spec RN-07 and RN-08.
     if image_provider:
         if image_provider in TEXT_PROVIDERS and image_provider not in IMAGE_PROVIDERS:
@@ -215,6 +218,7 @@ def _build_config(values):
     else:
         if image_key:
             notices.append(_notice("IMAGE_API_KEY", "IMAGE_API_KEY is ignored because IMAGE_PROVIDER is empty."))
+            ignored_image_key = image_key
         if llm_provider in IMAGE_PROVIDERS:
             image_key = llm_key
         else:
@@ -244,4 +248,5 @@ def _build_config(values):
         app_port=app_port,
         settings_to_fix=tuple(to_fix),
         notices=tuple(notices),
+        ignored_image_api_key=Secret(ignored_image_key),
     )

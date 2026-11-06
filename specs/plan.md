@@ -49,7 +49,7 @@ data/                   runtime only, never committed (see section 7)
 
 | App | Owns | Depends on |
 |---|---|---|
-| core | config loader, `Secret` type, data paths, Django secret key, `Job` model and runner, status service | none |
+| core | config loader, `Secret` type, data paths, Django secret key, key redaction log filter, `Job` model and runner, status service | none |
 | catalog | `OracleCard`, `Printing`, `RuleSection`, `Term`, `SourceRecord`, `BuildRun`; ingest services; search selectors; lexicon selector | core |
 | providers | adapter protocol, OpenAI/Anthropic/Google adapters, fake adapter, factory | core |
 | validators | pure functions over a card and a lexicon | none |
@@ -126,7 +126,7 @@ Fields listed are the ones the spec needs; types are left to the tasks.
 
 | Module | Functions (names indicative) |
 |---|---|
-| core.config | `load_config()`, `get_config()`; `Secret.reveal()` used only by providers.factory |
+| core.config | `load_config()`, `get_config()`; `Secret.reveal()` used only by providers.factory and core.log_redaction |
 | core.jobs | `submit(kind, fn)`, `get_job(id)`, `fail_orphan_jobs()` |
 | core.status | `status_snapshot()` (no key values) |
 | catalog.ingest | `run_build()`, `download_sources()`, `import_oracle()`, `import_printings()`, `import_rules()`, `import_pt_terms()`, `tag_roles()` |
@@ -314,19 +314,31 @@ application (unknown migrations), it stops with a message instead of migrating.
   The loader reports missing or unknown values as a list of "settings to fix".
   `IMAGE_API_KEY` falls back to `LLM_API_KEY` when art uses the text provider.
   `APP_PORT` defaults to 47821.
-- **Django secret key.** On first start, `core` writes `data/secret_key` with a
-  random value from the standard library and reads it on later starts. It is not
-  the API key and is never shown. No action from the person.
-- **Key protection (RN-06).** Only `providers.factory` calls `reveal()`.
-  Adapters never put the key in exception text. A logging filter redacts the key
-  values as a second line of defense. Serializers list fields explicitly; the
+- **Django secret key.** When settings first load, `core` writes
+  `data/secret_key` with a random value from the standard library (`secrets`,
+  at least 50 characters, so Django's key check passes) and reads it on later
+  loads, without surrounding whitespace. A file that is empty or holds only
+  whitespace is replaced by a new value; a file with content is never
+  rewritten. It is not the API key and is never shown. No action from the
+  person.
+- **Key protection (RN-06).** In application code, only `providers.factory`
+  and the log filter (`core.log_redaction`, which needs the values to remove
+  them) call `reveal()`. Adapters never put the key in exception text. As a
+  second line of defense, the log filter replaces with `***` every key value
+  of the current configuration (`get_config()` on each record): the text key,
+  the image key held in the config (the effective one after the fallback, or
+  the one set with an invalid `IMAGE_PROVIDER`), and an `IMAGE_API_KEY` ignored
+  for lack of `IMAGE_PROVIDER`, kept in the config as a `Secret` for this
+  purpose. A value under 8 characters is left alone, since replacing it would
+  garble ordinary text. The filter covers the formatted message, its arguments
+  when they do not match the message, the exception text and `stack_info`; it
+  never drops a record. Serializers list fields explicitly; the
   status serializer has booleans only. A test sends every endpoint through a
   fake configuration and asserts the key never appears.
 - **Settings.** `DEBUG` is on only when the environment variable
   `CARDFACTORY_DEBUG=1` is set (development; it is not in `.env.example`).
   `ALLOWED_HOSTS` is limited to `127.0.0.1` and `localhost`. The server always
-  binds to `127.0.0.1`; there is no setting to change it in v1 (RN-29). Until
-  the secret key task exists, settings use a development placeholder secret.
+  binds to `127.0.0.1`; there is no setting to change it in v1 (RN-29).
 - **Cross-site requests.** Any web page open in the browser can send requests
   to `127.0.0.1`. Non-GET requests are refused unless `Origin` (or, when absent,
   `Referer`) is the application's own origin. DRF parsers are JSON only, except

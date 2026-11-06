@@ -396,6 +396,8 @@ Done when: the workflow file passes a syntax check, and a run on a branch (autho
 Log to `<home>/data/logs/app.log` with size-based rotation, through the key
 redaction filter of T5 on every handler. Logs record events, causes and
 identifiers, never card contents, prompts or keys.
+TODO: decide whether a key value under 8 characters, which the log filter leaves alone, needs an explicit exception in RN-06 or CA-06, or is recorded as an accepted risk (RN-06, CA-06).
+TODO: decide whether the log filter keeps redacting key values replaced in `.env` while the process runs (a call made with the old key may log after the fix), and whether log formats are limited to the message, standard fields, the exception and the stack, or the filter also covers `extra` fields (RN-06, CA-06).
 Covers: RN-06, CA-06
 Agent: backend-dev
 Depends on: T5
@@ -491,6 +493,7 @@ folder writable, `.env` present, and the port free or held by Card Factory.
 Each failure shows a Windows message box (through `ctypes`) that names the
 problem and the fix.
 TODO: decide whether the launcher reads the port through `core.config`, so that one parser applies the RN-47 rule, and whether an unreadable `.env` at startup is a case of the RN-40 window or of the Status screen (RN-40, RN-47).
+TODO: decide whether a `data/secret_key` that cannot be read or written (no permission, not UTF-8, a folder) stops startup with the RN-40 window or is replaced (RN-40).
 Covers: RN-40, RN-47, CA-17, CA-53
 Agent: release-dev
 Depends on: T12

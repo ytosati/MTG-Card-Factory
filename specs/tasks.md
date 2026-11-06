@@ -103,7 +103,7 @@ merged into `main`.
 - [x] T5: Django secret key and key redaction in logs
 - [x] T6: Status endpoint (configuration part)
 - [x] T126: API contract samples
-- [ ] T9: Frontend skeleton and Status screen (configuration part)
+- [x] T9: Frontend skeleton and Status screen (configuration part)
 - [ ] T10: Django serves the built frontend
 - [ ] T86: CI for the test suites
 - [ ] T87: Application log
@@ -364,9 +364,9 @@ loading and error states, every field has a label and focus is visible. All
 interface labels are in English. The Vite development server proxies `/api` to
 the backend and sends the backend's own origin, so the origin check (T85) needs
 no development exception. Approved development dependencies for this
-task: jsdom and @testing-library/react. The client types are written so the
-contract samples (T126) type-check with `satisfies`, and the screen tests
-build their mocks from them.
+task: jsdom, @testing-library/react, @types/react and @types/react-dom. The
+client types are written so the contract samples (T126) type-check with
+`satisfies`, and the screen tests build their mocks from them.
 Covers: RN-08, RN-30, RN-40, RN-49, CA-46, CA-73, CA-74
 Agent: frontend-dev
 Depends on: T6, T126

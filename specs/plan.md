@@ -624,10 +624,12 @@ task names exactly one agent.
 - Runtime (approved): Django, Django REST Framework, waitress; embeddable Python
   for the zip.
 - Development: pytest, pytest-django (backend); Vite, TypeScript, React, Vitest,
-  jsdom and @testing-library/react (frontend, approved for T9). Further testing
-  helpers need approval in the task that first needs them.
+  jsdom, @testing-library/react, @types/react and @types/react-dom (frontend,
+  approved for T9). JSX is compiled by Vite's own esbuild, with no React
+  plugin. Further testing helpers need approval in the task that first needs them.
 - Versions: Python 3.12 (development and the embeddable package); Django 5.2
-  LTS.
+  LTS; Node 22.22.2 or later for frontend development, tests and the release
+  build (required by jsdom), declared in `engines` of `frontend/package.json`.
 - Not added: SDKs of the providers, `python-dotenv`, an image library, a router
   library (the frontend uses a small hash-based switch), a task queue (jobs run
   in a thread pool inside the process).

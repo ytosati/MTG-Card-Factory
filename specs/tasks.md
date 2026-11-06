@@ -176,6 +176,7 @@ exception handler of plan section 6: every API error, including an unknown
 `/api/` path (404), uses the envelope. The qa agent adds the reusable test
 helper that calls endpoints with a fake configuration and asserts that no key
 value appears in a response.
+TODO: decide what the Status screen shows when the port in the file becomes invalid or empty while the application runs: the port setting to fix, the notice that the port changes at the next start, or both (RN-08, RN-47).
 Covers: RN-06, RN-08, RN-40, CA-06, CA-46, CA-73, CA-74, CA-75
 Agent: backend-dev
 Depends on: T4, T5
@@ -330,6 +331,7 @@ tag without the `v`) and `launcher/start.pyw` checks: not started from inside a 
 folder writable, `.env` present, and the port free or held by Card Factory.
 Each failure shows a Windows message box (through `ctypes`) that names the
 problem and the fix.
+TODO: decide whether the launcher reads the port through `core.config`, so that one parser applies the RN-47 rule, and whether an unreadable `.env` at startup is a case of the RN-40 window or of the Status screen (RN-40, RN-47).
 Covers: RN-40, RN-47, CA-17, CA-53
 Agent: release-dev
 Depends on: T12
@@ -1512,6 +1514,7 @@ file (text provider, model, key, image provider, image model with an example
 value for OpenAI and for Google, image key, local port), the first-run build,
 upgrading by copying `data/` and `.env`, and the development commands for other
 systems.
+TODO: decide whether the guide states that an empty local port uses the default, the valid port range, and that a `#` after a value is part of the value (RN-46, RN-47).
 Covers: RN-27, RN-42, RN-45, RN-46, CA-52
 Agent: docs-writer
 Depends on: T77

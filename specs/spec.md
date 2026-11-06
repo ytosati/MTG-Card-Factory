@@ -318,7 +318,10 @@ and key for art. The person pays the providers directly for usage.
 - RN-47: The application listens on a fixed default port rarely used by other
   programs, which the configuration file can change. An invalid port value is
   replaced by the default port, and the Status screen names the port setting.
-  If the port is in use by a
+  Spaces and quotes around the value are ignored. A missing or empty port value
+  means the default port and is not a setting to fix. A valid value is a whole
+  number from 1 to 65535 written only with the digits 0 to 9, leading zeros
+  allowed; any other value is invalid. If the port is in use by a
   running Card Factory, RN-41 applies. If it is in use by another program, the
   message names the port and the setting that changes it.
 - RN-41: Starting the application opens the interface in the default browser.
@@ -596,7 +599,8 @@ never use the network or a real provider.
   Status screen says the image model is ignored.
 - CA-75 (RN-47): With a port value that is not a number from 1 to 65535, the
   application starts on the default port and the Status screen names the port
-  setting.
+  setting. With a missing or empty port value, it starts on the default port and
+  no setting to fix is reported.
 - CA-76 (RN-08): When the provider does not know the configured model name, the
   person sees that cause with the model setting named, and no card is saved.
 

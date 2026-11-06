@@ -155,8 +155,9 @@ branches on `code`, never on `message`: `config_invalid`, `origin_refused`,
 `model_not_found`, `provider_unavailable`, `provider_not_available_yet`
 (development state of Milestone 3 only), `invalid_response`,
 `content_refused`, `art_unavailable`, `card_changed`, `internal`. A settings
-list (status, generation, setup) uses the same objects: `{setting, code,
-message}`.
+list (status, generation, setup) uses the same objects, `{setting, code,
+message}`, with codes as stable as the error codes: `config_invalid` for a
+setting to fix and `ignored` for a setting ignored with a notice (RN-08).
 
 **Jobs.** `GET /api/jobs/{id}` returns `{id, kind, status, progress, result,
 error}`, where `error` is the envelope above. A job never stores the text of an
@@ -299,7 +300,14 @@ application (unknown migrations), it stops with a message instead of migrating.
   taking effect at the next start. An invalid `APP_PORT` falls back to 47821
   and is reported as a setting to fix (RN-47). Empty image settings only make
   art unavailable; set but invalid ones are settings to fix; `IMAGE_API_KEY`
-  with no `IMAGE_PROVIDER` is ignored with a notice.
+  with no `IMAGE_PROVIDER` is ignored with a notice. Setting names are
+  case-sensitive, the first `=` separates the name from the value, and the last
+  repeated line wins. There are no inline comments (an unquoted key may contain
+  `#`) and no `export` prefix. An empty process variable never overrides the
+  file. A missing or unreadable file reads as empty and never raises; at
+  startup, a missing file is the launcher's case (RN-40). An unrecognized
+  provider value is not kept in the config, since it may be a pasted key
+  (RN-06). A `Secret` is false when empty.
   *Alternative:* the `python-dotenv` package. Rejected to avoid a dependency for
   about forty lines.
 - **Defaults and checks (RN-05, RN-07, RN-08).** No provider call at startup.

@@ -102,7 +102,7 @@ merged into `main`.
 - [x] T4: Configuration loader and settings to fix
 - [x] T5: Django secret key and key redaction in logs
 - [x] T6: Status endpoint (configuration part)
-- [ ] T126: API contract samples
+- [x] T126: API contract samples
 - [ ] T9: Frontend skeleton and Status screen (configuration part)
 - [ ] T10: Django serves the built frontend
 - [ ] T86: CI for the test suites

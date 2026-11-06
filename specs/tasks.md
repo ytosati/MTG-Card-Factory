@@ -88,6 +88,165 @@ are still cheap to change.
   and fictional cards written by hand, and cite the RN or CA they protect.
 - No new dependency without approval.
 
+## Progress
+
+A task is checked when its commits are on its milestone branch. A
+milestone is complete when its review task is checked and its branch is
+merged into `main`.
+
+### Milestone 0 — Foundation
+
+- [x] T1: Backend project skeleton
+- [ ] T2: Runtime folders ignored and repository content check
+- [ ] T3: Test network guard
+- [ ] T4: Configuration loader and settings to fix
+- [ ] T5: Django secret key and key redaction in logs
+- [ ] T6: Status endpoint (configuration part)
+- [ ] T126: API contract samples
+- [ ] T9: Frontend skeleton and Status screen (configuration part)
+- [ ] T10: Django serves the built frontend
+- [ ] T86: CI for the test suites
+- [ ] T87: Application log
+- [ ] T12: Milestone 0 review
+
+### Milestone 1 — Double-click start
+
+- [ ] T7: Local server entry point
+- [ ] T8: Instance and heartbeat endpoints with watchdog
+- [ ] T85: Origin check and JSON-only parsers
+- [ ] T11: Frontend heartbeat hook
+- [ ] T72: Database upgrade service
+- [ ] T73: VERSION file and launcher prerequisite checks
+- [ ] T74: Launcher startup sequence
+- [ ] T75: Local release zip build
+- [ ] T82: Manual acceptance checklist (start and stop)
+- [ ] T88: Milestone 1 review
+
+### Milestone 2 — Reference database
+
+- [ ] T13: Job model and in-process runner
+- [ ] T14: Catalog models and card full-text table
+- [ ] T15: Source downloader
+- [ ] T16: Oracle cards import with Commander legality
+- [ ] T20: Role tagging
+- [ ] T21: All-or-nothing build and management command
+- [ ] T22: Setup endpoints and readiness gate
+- [ ] T62: App shell, job polling and readiness gate
+- [ ] T63: Setup screen
+- [ ] T64: Status screen: data sources and readiness
+- [ ] T116: Milestone 2 end-to-end flow test
+- [ ] T89: Milestone 2 review
+
+### Milestone 3 — First card
+
+- [ ] T35: Provider protocol, error set and fake adapter
+- [ ] T39: Shared HTTP transport for adapters
+- [ ] T40: OpenAI text adapter
+- [ ] T36: Provider factory for text
+- [ ] T37: Card models and version service
+- [ ] T38: Usage recording and usage endpoint (text)
+- [ ] T28: Validation result and mana cost validator
+- [ ] T29: Color identity validator
+- [ ] T23: Comparables search
+- [ ] T26: Search quality evaluation script
+- [ ] T46: Generation prompts and output schemas
+- [ ] T48: Validation, one automatic revision and saving
+- [ ] T49: Generation endpoint and request serializer
+- [ ] T61: Key-leak and outgoing connection sweep
+- [ ] T65: Request screen (idea, color identity, power level)
+- [ ] T67: Result screen: card text
+- [ ] T117: Milestone 3 end-to-end flow test
+- [ ] T94: Milestone 3 review
+
+### Milestone 4 — Text providers
+
+- [ ] T41: Anthropic text adapter
+- [ ] T42: Google text adapter
+- [ ] T118: Same card across text providers
+- [ ] T45: Connection test endpoint (text key)
+- [ ] T92: Status screen: connection test
+- [ ] T93: Manual checks: real-key generation
+- [ ] T119: Milestone 4 review
+
+### Milestone 5 — Rules validation
+
+- [ ] T18: Comprehensive Rules import and English terms
+- [ ] T24: Rules search and English lexicon selector
+- [ ] T30: Type line validator
+- [ ] T31: Keyword validator
+- [ ] T32: Text limits validator
+- [ ] T95: Rules sections and every validator in generation
+- [ ] T120: Milestone 5 end-to-end flow test
+- [ ] T96: Milestone 5 review
+
+### Milestone 6 — Library and versions
+
+- [ ] T54: Library API
+- [ ] T55: Edit with revalidation
+- [ ] T56: Versions and restore API
+- [ ] T52: Quick adjustment service
+- [ ] T57: Quick adjustment endpoint
+- [ ] T69: Adjustments and versions screen
+- [ ] T70: Library screen
+- [ ] T121: Milestone 6 end-to-end flow test
+- [ ] T97: Milestone 6 review
+
+### Milestone 7 — Art
+
+- [ ] T90: Art availability in the factory and in status
+- [ ] T43: OpenAI image adapter
+- [ ] T44: Google image adapter
+- [ ] T91: Connection test: image key
+- [ ] T50: Image storage service
+- [ ] T115: Generation request: art option
+- [ ] T51: Art pipeline
+- [ ] T58: Art generation endpoint and image serving
+- [ ] T59: Image upload
+- [ ] T101: Status screen: art availability
+- [ ] T98: Request screen: art option
+- [ ] T99: Result screen: card image
+- [ ] T68: Result screen: art actions, notices and usage
+- [ ] T100: Versions and library: art
+- [ ] T113: Manual checks: art with real keys
+- [ ] T122: Milestone 7 end-to-end flow test
+- [ ] T102: Milestone 7 review
+
+### Milestone 8 — Base card
+
+- [ ] T17: Printings import
+- [ ] T25: Base card search selectors
+- [ ] T60: Base card endpoints, base image cache and request field
+- [ ] T103: Base card in the generation prompts
+- [ ] T104: Art template and fallback
+- [ ] T66: Base card picker
+- [ ] T105: Result screen: base card and template notice
+- [ ] T114: Manual checks: base card template
+- [ ] T123: Milestone 8 end-to-end flow test
+- [ ] T106: Milestone 8 review
+
+### Milestone 9 — Portuguese cards
+
+- [ ] T19: Portuguese terms
+- [ ] T107: Portuguese lexicon selector
+- [ ] T33: Language-aware validation and card language
+- [ ] T108: Card language in the prompts
+- [ ] T109: Card language on the Request and Result screens
+- [ ] T124: Milestone 9 end-to-end flow test
+- [ ] T110: Milestone 9 review
+
+### Milestone 10 — Public release
+
+- [ ] T111: Release assets: license, notices and frontend-dist
+- [ ] T125: Migration baseline for the first release
+- [ ] T76: Clone start file: runtime preparation
+- [ ] T77: Clone start file: built interface by version
+- [ ] T78: CI release artifacts
+- [ ] T79: README user guide
+- [ ] T80: License
+- [ ] T81: Community files
+- [ ] T112: Manual checks: clone and contrast
+- [ ] T83: Clean-machine installation test
+- [ ] T84: Milestone 10 review
 ## Milestone 0 — Foundation
 
 Goal: a walking skeleton. The backend runs on `127.0.0.1`, serves the built

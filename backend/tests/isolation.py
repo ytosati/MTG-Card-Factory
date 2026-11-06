@@ -20,6 +20,10 @@ def _clear_project_environment():
             del os.environ[name]
 
 
+# A test tool switch, not a project setting: read before the project variables are cleared.
+UPDATE_CONTRACT_VARIABLE = "CARDFACTORY_UPDATE_CONTRACT"
+UPDATE_CONTRACT_REQUESTED = os.environ.get(UPDATE_CONTRACT_VARIABLE, "").strip() == "1"
+
 _clear_project_environment()
 
 TEST_HOME = Path(tempfile.mkdtemp(prefix="cardfactory-test-home-")).resolve()

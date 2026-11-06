@@ -101,8 +101,8 @@ merged into `main`.
 - [x] T3: Test network guard
 - [x] T4: Configuration loader and settings to fix
 - [x] T5: Django secret key and key redaction in logs
-- [ ] T6: Status endpoint (configuration part)
-- [ ] T126: API contract samples
+- [x] T6: Status endpoint (configuration part)
+- [x] T126: API contract samples
 - [ ] T9: Frontend skeleton and Status screen (configuration part)
 - [ ] T10: Django serves the built frontend
 - [ ] T86: CI for the test suites
@@ -335,7 +335,7 @@ exception handler of plan section 6: every API error, including an unknown
 `/api/` path (404), uses the envelope. The qa agent adds the reusable test
 helper that calls endpoints with a fake configuration and asserts that no key
 value appears in a response.
-TODO: decide what the Status screen shows when the port in the file becomes invalid or empty while the application runs: the port setting to fix, the notice that the port changes at the next start, or both (RN-08, RN-47).
+Decided: when the port in the file becomes invalid or empty while the application runs, the status reports both parts that apply (RN-08, RN-47). An invalid value names the port setting to fix; an empty or missing value is not a setting to fix. In either case, when the port for the next start (the default) differs from the running port, the status reports the change for the next start.
 Covers: RN-06, RN-08, RN-40, CA-06, CA-46, CA-73, CA-74, CA-75
 Agent: backend-dev
 Depends on: T4, T5

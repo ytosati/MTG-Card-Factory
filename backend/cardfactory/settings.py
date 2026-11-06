@@ -2,6 +2,7 @@
 Details: specs/plan.md, sections 7 and 8.
 """
 
+from core.config import load_config
 from core.environment import debug_enabled
 from core.paths import data_dir
 from core.secret_key import get_secret_key
@@ -12,6 +13,10 @@ DEBUG = debug_enabled()
 
 # The server listens only on the local machine (see spec RN-29).
 ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+
+# Read once at startup: a changed APP_PORT applies at the next start (see spec RN-47).
+# An invalid or empty value gives the default port and never blocks startup.
+RUNNING_PORT = load_config().app_port
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -74,3 +79,11 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+
+REST_FRAMEWORK = {
+    # No accounts in the product: an Authorization header is never read.
+    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "EXCEPTION_HANDLER": "api.exceptions.exception_handler",
+    # JSON only: an API answer is never an HTML page.
+    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+}

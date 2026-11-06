@@ -490,9 +490,13 @@ waitress as server, Django serves the built frontend.**
      heartbeat every 15 seconds, when the tab becomes visible again and on
      `pagehide`; when heartbeats fail, it shows that the application stopped
      and how to start it again.
-- **Serving the frontend:** a catch-all Django view returns `index.html`; assets
-  are served by Django's static file view mapped explicitly to the built folder,
-  which works with `DEBUG` off. No extra package.
+- **Serving the frontend:** a catch-all Django view returns `index.html`; an
+  explicit asset view serves `/assets/*` from the built folder, which works
+  with `DEBUG` off. It sets the content types of `.js`, `.mjs` and `.css`
+  itself, because Django's static file view guesses them through the Windows
+  registry, which can map `.js` to `text/plain` and block the module script.
+  `core.paths` resolves the built folder and keeps every asset inside it
+  (no `..`, no NTFS stream names). No extra package.
 - **Clone (`start.cmd`, RN-45):** prepares `runtime/` and then calls the same
   launcher.
   - Downloads the embeddable Python (pinned version and SHA-256 in

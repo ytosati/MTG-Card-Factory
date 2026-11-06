@@ -104,7 +104,7 @@ merged into `main`.
 - [x] T6: Status endpoint (configuration part)
 - [x] T126: API contract samples
 - [x] T9: Frontend skeleton and Status screen (configuration part)
-- [ ] T10: Django serves the built frontend
+- [x] T10: Django serves the built frontend
 - [ ] T86: CI for the test suites
 - [ ] T87: Application log
 - [ ] T12: Milestone 0 review

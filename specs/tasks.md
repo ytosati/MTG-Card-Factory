@@ -97,9 +97,9 @@ merged into `main`.
 ### Milestone 0 — Foundation
 
 - [x] T1: Backend project skeleton
-- [ ] T2: Runtime folders ignored and repository content check
-- [ ] T3: Test network guard
-- [ ] T4: Configuration loader and settings to fix
+- [x] T2: Runtime folders ignored and repository content check
+- [x] T3: Test network guard
+- [x] T4: Configuration loader and settings to fix
 - [ ] T5: Django secret key and key redaction in logs
 - [ ] T6: Status endpoint (configuration part)
 - [ ] T126: API contract samples

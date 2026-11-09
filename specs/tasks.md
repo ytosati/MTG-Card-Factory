@@ -110,6 +110,7 @@ merged into `main`.
 - [x] T127: Configuration re-read on a same-time change
 - [x] T128: Model values that look like a key
 - [x] T129: Unreadable configuration file
+- [ ] T130: Fictional key values that no secret scanner matches
 - [ ] T12: Milestone 0 review
 
 ### Milestone 1 — Double-click start
@@ -441,6 +442,17 @@ Agent: backend-dev
 Depends on: T127
 Done when: tests pass for a UTF-16 file with a byte-order mark read like UTF-8, a stray invalid byte in a comment that keeps the other settings, a file that cannot be opened and a UTF-16 file with no byte-order mark (each the single `.env` item with its message, no port change, no part of the file in the response), a contract sample of the unreadable case that type-checks, and a file made readable again with the same modification time and size read on the next call (CA-73).
 
+### T130: Fictional key values that no secret scanner matches
+Replace the fictional values in the backend tests that match the format of a
+real provider key (such as `AIza` followed by 35 key characters), so that
+secret scanning on push raises no alert in the public repository. Test values
+that start with a key prefix stay recognizable as fictional and differ in
+length from every real key format. Found in the Milestone 0 review.
+Covers: none (test data)
+Agent: qa
+Depends on: T128
+Done when: `git grep -nE "AIza[0-9A-Za-z_-]{35}"` finds nothing in the repository, and `pytest -q` passes with the CA-78 tests still covering both prefixes.
+
 ### T12: Milestone 0 review
 Run every test suite. Check the coverage of the RN and CA parts that the
 coverage table assigns to the tasks of this milestone. Run the demo: `runserver`
@@ -449,7 +461,7 @@ setting, and the fix seen on reopening. Record the findings, and check the
 Milestone 1 tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T1–T6, T9, T10, T86, T87, T126, T127, T128, T129
+Depends on: T1–T6, T9, T10, T86, T87, T126, T127, T128, T129, T130
 Done when: every suite passes, the demo works, the findings are recorded as new tasks or as spec questions, and the blocking items of Milestone 1 are listed.
 
 ## Milestone 1 — Double-click start
@@ -752,11 +764,14 @@ Done when: Vitest tests pass for no build before the person starts it (CA-18), p
 
 ### T64: Status screen: data sources and readiness
 Extend the Status screen with the database readiness and the origin,
-publication date and download date of each source.
-Covers: RN-01, RN-49, CA-08
+publication date and download date of each source. While the configuration
+file cannot be read (the `.env` settings item, CA-77), the configuration fields
+are not shown as missing values: the screen shows the `.env` item in their
+place. Found in the Milestone 0 review.
+Covers: RN-01, RN-49, CA-08, CA-77
 Agent: frontend-dev
 Depends on: T62
-Done when: Vitest tests pass for the listed sources with their origin and both dates, and for a database that is not ready.
+Done when: Vitest tests pass for the listed sources with their origin and both dates, for a database that is not ready, for an unreadable configuration file shown with no "Not set" field and no missing key (mock from the contract sample of CA-77), and for visible focus on the screen's controls reached with the keyboard (RN-49).
 
 ### T116: Milestone 2 end-to-end flow test
 Create the end-to-end suite in `backend/tests/e2e/` with its shared fixtures
@@ -1934,8 +1949,8 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | CA-64 | T31 |
 | CA-65 | T18, T30, T31 |
 | CA-66 | T28 |
-| CA-67 | T90 |
-| CA-68 | T90 |
+| CA-67 | T4, T90 |
+| CA-68 | T4, T90 |
 | CA-69 | T50, T51, T122 |
 | CA-70 | T13 |
 | CA-71 | T104, T105 |
@@ -1944,5 +1959,5 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | CA-74 | T4, T6, T9, T90, T101 |
 | CA-75 | T4, T6 |
 | CA-76 | T40, T41, T42 |
-| CA-77 | T129 |
+| CA-77 | T129, T64 |
 | CA-78 | T128, T36 |

@@ -139,7 +139,7 @@ merged into `main`.
 - [ ] T62: App shell, job polling and readiness gate
 - [ ] T63: Setup screen
 - [ ] T64: Status screen: data sources and readiness
-- [ ] T116: Milestone 2 end-to-end flow test
+- [x] T116: Milestone 2 end-to-end flow test
 - [ ] T89: Milestone 2 review
 
 ### Milestone 3 — First card

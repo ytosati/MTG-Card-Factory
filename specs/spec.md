@@ -164,6 +164,10 @@ and key for art. The person pays the providers directly for usage.
   revision call fails (RN-10), the first draft is saved as rejected with its
   causes, and the provider failure is shown.
 
+- RN-50: A card generation, an art generation or a quick adjustment runs one
+  at a time. While one runs, starting another is refused with a message that
+  says one is already running. A running generation cannot be cancelled.
+
 ### Validations
 - RN-16: The card's color identity, considering cost and text, is within the
   requested identity. With a colorless request, any colored symbol outside
@@ -360,7 +364,9 @@ and key for art. The person pays the providers directly for usage.
   on the drive that holds the data folder. The build starts only when the
   person starts it, and shows progress. It refuses to start when there is not
   enough free space. When the data source cannot be reached, the screen shows
-  the cause and a retry. If the disk
+  the cause and a retry. A failed download is tried again automatically up
+  to three attempts in all, with a short pause between them, before the build
+  fails with its cause. If the disk
   fills up during the build, the build fails as in RN-03 and the person sees
   the cause.
 - RN-29: The application runs entirely on the person's computer and is reachable
@@ -665,7 +671,6 @@ moved to Future work.
 
 ## Open questions
 - What are the limits on abilities and text length? (RN-20)
-- If the source download fails, how many times does it retry?
 - Can the person refresh the database later, and how (for example a button on
   the Status screen)? Does a new application version require a rebuild (RN-42)?
 - Which license does the project use?
@@ -673,11 +678,11 @@ moved to Future work.
   as a template (RN-38)?
 - Should casual, medium and strong align with the official Commander brackets?
 - What happens when a generated card has the same name as an existing card?
-- Are simultaneous generations allowed, and can a running generation be
-  cancelled?
 - What are the maximum lengths of the idea and of the art description?
 
 ## Future work
+- Cancelling a running card generation, art generation or quick adjustment
+  (RN-50).
 - Generated cards with more than one face (split, adventure, transform and modal
   double-faced). Each face has its own name, mana cost, type line, rules text,
   power and toughness, and art. This changes the card and its versions, the

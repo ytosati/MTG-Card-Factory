@@ -669,8 +669,10 @@ of the last heartbeat and the release. Every running job holds the watchdog
 and releases it when it ends, whatever the outcome. Add `GET /api/jobs/{id}` with the shape of plan
 section 6. The test database is a file in the temporary home, and job tests
 that use threads run with `transaction=True`.
-TODO: answer the open question on simultaneous generations and cancellation before this task; it sets the size of the pool (T88).
-Covers: RN-03, RN-10, RN-41, CA-70
+The pool runs one generation job at a time (RN-50): a card generation, an
+art generation or a quick adjustment submitted while one runs is refused with
+the error code `generation_running`. The build is not a generation job.
+Covers: RN-03, RN-10, RN-41, RN-50, CA-70
 Agent: backend-dev
 Depends on: T88
 Done when: tests pass for a successful job, a failing job (error envelope, no partial result, no exception text stored), an orphan reported as failed by `get_job` and cleaned at startup, the watchdog held while a job runs and released after it succeeds or fails (CA-70), and watchdog tests with a fake clock for no stop while held, no stop while one of two holds remains, and a stop 180 seconds after the last hold is released with no heartbeat.
@@ -693,8 +695,8 @@ listing or the `Content-Length`; a SHA-256 is computed and recorded in the
 source record. A download resumes with `If-Range` (ETag or Last-Modified) only
 when the server accepts it; otherwise, or when the source changed since the
 partial download, it starts over. Errors map to clear causes (no network, source failure,
-disk full). The retry count is a named parameter until the spec decides it.
-TODO: answer the open question on download retries (T88).
+disk full). The retry count is the named constant `DOWNLOAD_ATTEMPTS` (3 attempts in all,
+RN-28) with a short growing pause between attempts.
 Covers: RN-01, RN-03, RN-28, RN-29
 Agent: backend-dev
 Depends on: T14
@@ -1002,12 +1004,14 @@ Done when: tests pass for CA-10, CA-11 (both cases), CA-15 and CA-16 (two record
 `POST /api/generations` validates the request (idea, color identity and power
 level required) and checks the configuration before any provider call. It then
 starts the generation as a job, through `core.jobs.submit`.
+A generation started while another one runs answers `generation_running`
+(RN-50).
 `GET /api/cards/{id}` returns the card with its current version: the text
 fields, validation result, design intent, rationale, comparables, power
 indicator and text usage; T54 adds the list, favorite and delete. The base card
 (T60), art (T115) and language (T33) fields are added by later milestones.
 TODO: answer the open questions on the maximum length of the idea, on a generated card named like an existing card, and on the power levels and the Commander brackets (T89).
-Covers: RN-08, RN-11, CA-05, CA-25, CA-26
+Covers: RN-08, RN-11, RN-50, CA-05, CA-25, CA-26
 Agent: backend-dev
 Depends on: T13, T22, T48
 Done when: tests pass for each missing field being named in the `fields` of the envelope (CA-26), invalid configuration with no provider call and no card (CA-05), a rejected key with no card (CA-25), the job run through the runner (CA-70), and the saved card read back by `GET /api/cards/{id}`.
@@ -1916,6 +1920,7 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | RN-47 | T4, T7, T8, T74, T131, T83 |
 | RN-48 | T67, T51 |
 | RN-49 | T9, T62, T63, T64, T65, T67, T92, T69, T70, T101, T98, T99, T68, T100, T66, T105, T109, T112 |
+| RN-50 | T13, T49 |
 | CA-01 | T29 |
 | CA-02 | T28 |
 | CA-03 | T30, T120 |

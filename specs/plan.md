@@ -155,7 +155,8 @@ branches on `code`, never on `message`: `config_invalid`, `origin_refused`,
 `rate_limited`, `model_not_found`, `provider_unavailable`,
 `provider_not_available_yet`
 (development state of Milestone 3 only), `invalid_response`,
-`content_refused`, `art_unavailable`, `card_changed`, `bad_request`, `internal`.
+`content_refused`, `art_unavailable`, `card_changed`, `generation_running`,
+`bad_request`, `internal`.
 `bad_request` answers a malformed JSON body (400), an unsupported media type
 (415) and an unacceptable `Accept` header (406), with a fixed message and the
 original status. `origin_refused` answers 403. A settings
@@ -242,6 +243,9 @@ changes (queued, running, done, failed), so the import transaction never blocks
 progress reads. Rules:
 - While a build runs, no other writing job starts; the readiness gate already
   blocks generation, adjustments and art.
+- One generation job (card generation, art generation or quick adjustment)
+  runs at a time (RN-50); submitting another while one runs is refused with
+  `generation_running`. There is no cancellation in v1.
 - The only write possible during a build is the usage record of a connection
   test; it waits in a small in-memory queue in `core` that the build job flushes
   when it ends, whatever the outcome.

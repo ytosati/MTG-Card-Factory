@@ -136,7 +136,7 @@ merged into `main`.
 - [x] T20: Role tagging
 - [x] T21: All-or-nothing build and management command
 - [x] T22: Setup endpoints and readiness gate
-- [ ] T62: App shell, job polling and readiness gate
+- [x] T62: App shell, job polling and readiness gate
 - [ ] T63: Setup screen
 - [ ] T64: Status screen: data sources and readiness
 - [x] T116: Milestone 2 end-to-end flow test

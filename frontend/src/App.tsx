@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ComponentType } from "react";
 
+import { useHeartbeat } from "./hooks/useHeartbeat";
 import { StatusScreen } from "./screens/StatusScreen";
 
 const SCREENS: Record<string, ComponentType> = {
@@ -16,9 +17,20 @@ function currentRoute(): string {
   return hash in SCREENS ? hash : DEFAULT_ROUTE;
 }
 
+/** The banner shown while the application is not answering heartbeats (spec RN-41). */
+function StoppedNotice() {
+  return (
+    <div className="stopped-notice" role="alert">
+      <p className="stopped-notice-title">Card Factory has stopped.</p>
+      <p>To start it again, double-click the start file in its folder and use the new tab it opens.</p>
+    </div>
+  );
+}
+
 /** The application: a header and the screen named by the location hash. */
 export function App() {
   const [route, setRoute] = useState(currentRoute);
+  const { stopped } = useHeartbeat();
 
   useEffect(() => {
     const onHashChange = () => setRoute(currentRoute());
@@ -30,6 +42,7 @@ export function App() {
 
   return (
     <div className="app">
+      {stopped && <StoppedNotice />}
       <header className="app-header">
         <span className="app-name">Card Factory</span>
         <nav aria-label="Screens">

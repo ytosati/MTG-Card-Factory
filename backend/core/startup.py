@@ -177,7 +177,7 @@ def serve(stop_event, sock=None):
 def _bind(port):
     """An IPv4 socket bound to `127.0.0.1:port` and listening, or StartupError naming APP_PORT."""
     try:
-        _probe_wildcards(port)
+        probe_wildcards(port)
     except OSError as error:
         raise _port_error(port) from error
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -193,7 +193,7 @@ def _bind(port):
     return sock
 
 
-def _probe_wildcards(port):
+def probe_wildcards(port):
     """Raise OSError when another socket holds `port` on every interface (0.0.0.0 or [::]).
 
     Windows lets a bind to 127.0.0.1 succeed over another program's wildcard

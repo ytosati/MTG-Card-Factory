@@ -56,3 +56,27 @@ def test_rn47_port_is_free_is_false_while_a_socket_listens_and_true_after():
         listener.close()
 
     assert _launch().port_is_free(port) is True
+
+
+def test_rn47_ca53_port_held_on_every_interface_is_not_free():
+    """RN-47 / CA-53: a port bound by another socket on 0.0.0.0 is not free (task T131).
+
+    The holder only binds: a wildcard listener could raise a firewall prompt.
+    """
+    holder = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        holder.bind(("0.0.0.0", 0))
+        port = holder.getsockname()[1]
+        assert _launch().port_is_free(port) is False
+    finally:
+        holder.close()
+
+
+def test_rn47_port_with_nothing_on_it_is_free():
+    """RN-47: a port that no socket holds is free (task T131)."""
+    probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    probe.bind(("127.0.0.1", 0))
+    port = probe.getsockname()[1]
+    probe.close()
+
+    assert _launch().port_is_free(port) is True

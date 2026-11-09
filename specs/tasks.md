@@ -124,7 +124,7 @@ merged into `main`.
 - [x] T74: Launcher startup sequence
 - [x] T75: Local release zip build
 - [x] T82: Manual acceptance checklist (start and stop)
-- [ ] T131: Free-port check on every interface and lock released before an error window
+- [x] T131: Free-port check on every interface and lock released before an error window
 - [ ] T88: Milestone 1 review
 
 ### Milestone 2 — Reference database

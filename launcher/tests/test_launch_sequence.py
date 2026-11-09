@@ -153,15 +153,17 @@ class _FakeConnection:
 class FakeServerHandle:
     """`error` set: the serving thread already ended with that exception after the bind."""
 
-    def __init__(self, stop_event, error=None):
+    def __init__(self, stop_event, error=None, log=None):
         self.stop_event = stop_event
         self.error = error
+        self.log = log
 
     def join(self, timeout=None):
-        if self.error is not None:
-            return
-        # Bounded, so a launcher that never sets the event cannot hang the suite.
-        self.stop_event.wait(5 if timeout is None else min(timeout, 5))
+        if self.error is None:
+            # Bounded, so a launcher that never sets the event cannot hang the suite.
+            self.stop_event.wait(5 if timeout is None else min(timeout, 5))
+        if self.log is not None and self.stop_event.is_set():
+            self.log.append("server.stopped")
 
     def is_alive(self):
         return self.error is None and not self.stop_event.is_set()
@@ -268,7 +270,7 @@ class FakeDeps:
         self.instance_file_at_serve = self._instance_path().exists()
         self._maybe_fail("serve")
         self.server_stop_events.append(stop_event)
-        return FakeServerHandle(stop_event, self.server_error)
+        return FakeServerHandle(stop_event, self.server_error, self.log)
 
     def open_browser(self, url):
         self.log.append("browser")
@@ -692,3 +694,97 @@ def test_rn41_ca47_watchdog_stop_sets_server_stop_event_and_launcher_exits(home)
     assert "watchdog.stop" in deps.log
     assert len(deps.server_stop_events) == 1
     assert deps.server_stop_events[0].is_set()
+
+
+# ---------------------------------------------------------------------------
+# Task T131: wildcard holders and the lock released before an error window
+# ---------------------------------------------------------------------------
+
+
+class RecordingLock:
+    """A lock handle that records its release in the launcher log."""
+
+    def __init__(self, log):
+        self._log = log
+        self.closed = 0
+
+    def close(self):
+        self.closed += 1
+        self._log.append("lock.release")
+
+
+class RecordingLockDeps(FakeDeps):
+    def acquire_lock(self, path):
+        super().acquire_lock(path)
+        self.lock = RecordingLock(self.log)
+        return self.lock
+
+
+def test_rn42_rn47_ca53_port_held_on_every_interface_gets_the_port_message_and_no_upgrade(home):
+    """RN-42 / RN-47 / CA-53: with the real free-port check and a port held on 0.0.0.0, the probe
+    runs and the port message is shown; the upgrade (backup and migration) never runs."""
+    import socket
+
+    holder = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        holder.bind(("0.0.0.0", 0))
+        port = holder.getsockname()[1]
+        deps = FakeDeps(home, port=port, probe=ProbeAnswer.response(200, b"not the instance"))
+        deps.port_is_free = _launch().port_is_free
+
+        result = _run(home, deps)
+    finally:
+        holder.close()
+
+    assert result != 0
+    assert "probe" in deps.log
+    assert "upgrade" not in deps.log
+    assert not (Path(home) / "data" / "backups").exists()
+    assert len(deps.messages) == 1
+    assert str(port) in _message_text(deps)
+    assert "APP_PORT" in _message_text(deps)
+    _assert_no_second_server(deps)
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        pytest.param(StartupError("Fictional problem.", "Fictional fix."), id="startup-error"),
+        pytest.param(RuntimeError("fictional unexpected failure"), id="unexpected"),
+    ],
+)
+@pytest.mark.parametrize("step", ["upgrade", "serve", "browser"])
+def test_rn41_startup_error_window_is_shown_after_the_lock_is_released(home, step, error):
+    """RN-41: the lock is released before a startup error window, and after the server stopped
+    when it was started, so a second start meanwhile runs on its own (task T131)."""
+    deps = RecordingLockDeps(home, port_free=True)
+    deps.failures[step] = error
+
+    result = _run(home, deps)
+
+    assert result != 0
+    assert deps.log.index("lock.release") < deps.log.index("message")
+    assert deps.lock.closed == 1
+    for stop_event in deps.server_stop_events:
+        assert stop_event.is_set()
+    if deps.server_stop_events:
+        assert deps.log.index("server.stopped") < deps.log.index("lock.release")
+
+
+def test_rn41_port_message_is_shown_after_the_lock_is_released(home):
+    """RN-41: the port message is a startup error window too; the lock goes first (task T131)."""
+    deps = RecordingLockDeps(home, probe=ProbeAnswer.response(404, b"{}"))
+
+    _run(home, deps)
+
+    assert deps.log.index("lock.release") < deps.log.index("message")
+    assert deps.lock.closed == 1
+
+
+def test_rn41_successful_run_releases_the_lock_once_at_the_end(home):
+    """RN-41: on the success path the lock is still released, once, when the launcher ends."""
+    deps = RecordingLockDeps(home, port_free=True)
+
+    assert _run(home, deps) == 0
+    assert deps.log[-1] == "lock.release"
+    assert deps.lock.closed == 1

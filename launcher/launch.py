@@ -13,7 +13,7 @@ import time
 import types
 import webbrowser
 
-from core.startup import StartupError
+from core.startup import StartupError, probe_wildcards
 
 HOST = "127.0.0.1"
 PROBE_PATH = "/api/instance"
@@ -64,7 +64,15 @@ def default_deps():
 
 
 def port_is_free(port):
-    """True when an exclusive bind on `127.0.0.1:port` succeeds; the socket never listens."""
+    """True when no other socket holds the port on `127.0.0.1` or on every interface.
+
+    Exclusive binds that never listen; on Windows a bind to 127.0.0.1 succeeds over a
+    wildcard holder, so the wildcard addresses are checked too (see spec RN-47).
+    """
+    try:
+        probe_wildcards(port)
+    except OSError:
+        return False
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         try:
             if sys.platform == "win32":
@@ -150,6 +158,7 @@ def main(home, *, deps):
             deps.open_browser(_url(port))
             return 0
         if answer != _FREE:
+            lock = _release(lock)
             deps.show_message(*_port_message(port, answer))
             return 1
 
@@ -157,16 +166,25 @@ def main(home, *, deps):
         _run_server(deps, port, instance_file)
         return 0
     except StartupError as error:
+        # Released before the window, so a second start meanwhile runs on its own (see spec RN-41).
+        lock = _release(lock)
         deps.show_message(error.problem, error.fix)
         return 1
     except Exception:
         # Never the exception text in the window: it could hold a key (plan section 9.5).
         logger.exception("Card Factory could not start.")
+        lock = _release(lock)
         deps.show_message(UNEXPECTED_PROBLEM, UNEXPECTED_FIX)
         return 1
     finally:
-        if lock is not None and hasattr(lock, "close"):
-            lock.close()
+        _release(lock)
+
+
+def _release(lock):
+    """Release the single-instance lock, if still held; None, the lock's new value."""
+    if lock is not None and hasattr(lock, "close"):
+        lock.close()
+    return None
 
 
 def _run_server(deps, port, instance_file):

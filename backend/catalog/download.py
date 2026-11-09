@@ -18,7 +18,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from catalog import sources
-from core.errors import CODE_INTERNAL
+from core.errors import CODE_INTERNAL, MappedError
 from core.instance import instance_snapshot
 from core.paths import data_dir
 
@@ -58,12 +58,8 @@ FILE_FAILURE_MESSAGE = (
 _DISK_FULL_WINERRORS = (39, 112)
 
 
-class DownloadError(Exception):
+class DownloadError(MappedError):
     """A download that failed for good; `code` is an error code of plan section 6."""
-
-    def __init__(self, code, message):
-        super().__init__(message)
-        self.code = code
 
 
 class _AttemptFailed(Exception):
@@ -142,7 +138,7 @@ def download_file(url, filename, *, expected_size=None, transport=None, sleep=No
         os.replace(target.partial, target.path)
         target.forget_validator()
     except OSError as error:
-        raise _file_failure(error) from None
+        raise file_failure(error) from None
     return DownloadResult(path=target.path, size=size, sha256=sha256)
 
 
@@ -227,7 +223,8 @@ def _network_failure(error):
     return _AttemptFailed(NO_NETWORK_MESSAGE)
 
 
-def _file_failure(error):
+def file_failure(error):
+    """The DownloadError of an OSError raised by a file in the data folder."""
     if error.errno == errno.ENOSPC or getattr(error, "winerror", None) in _DISK_FULL_WINERRORS:
         # A full disk fails at once, with no retry (see spec RN-28).
         return DownloadError(CODE_INSUFFICIENT_SPACE, DISK_FULL_MESSAGE)

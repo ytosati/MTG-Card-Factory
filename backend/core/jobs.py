@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from django.db import OperationalError, connection, connections
 
 from core import watchdog
-from core.errors import CODE_INTERNAL, INTERNAL_MESSAGE, error_body
+from core.errors import CODE_INTERNAL, INTERNAL_MESSAGE, MappedError, error_body
 from core.models import Job
 
 logger = logging.getLogger(__name__)
@@ -46,8 +46,8 @@ class JobRunner:
         self._lock = threading.Lock()
         self._known = set()
         self._progress = {}
-        # Ended jobs whose failed state could not be stored; get_job reports them failed.
-        self._failed = set()
+        # Ended jobs whose failed state could not be stored, with their error envelope; get_job reports them failed.
+        self._failed = {}
         self._generation = None
         self._builds = 0
         self._usage_queue = []
@@ -100,17 +100,17 @@ class JobRunner:
             return job
         with self._lock:
             known = job_id in self._known
-            failed = job_id in self._failed
+            failed = self._failed.get(job_id)
             progress = self._progress.get(job_id)
-        if failed:
-            return _failed_in_memory(job, INTERNAL_MESSAGE)
+        if failed is not None:
+            return _failed_in_memory(job, failed)
         if not known:
             try:
                 _fail_orphans(Job.objects.filter(pk=job_id))
                 job.refresh_from_db()
             except OperationalError:
                 logger.exception("Orphan job %s could not be stored as failed.", job_id)
-                return _failed_in_memory(job, ORPHAN_MESSAGE)
+                return _failed_in_memory(job, error_body(CODE_INTERNAL, ORPHAN_MESSAGE))
         elif progress is not None:
             job.progress = progress
         return job
@@ -128,6 +128,9 @@ class JobRunner:
         try:
             Job.objects.filter(pk=job_id).update(status=Job.Status.RUNNING)
             result = fn(lambda progress: self._report(job_id, progress))
+        except MappedError as error:
+            logger.exception("Job %s (%s) failed.", job_id, kind)
+            fields = _failed_fields(error_body(error.code, error.message, error.setting))
         except Exception:
             # The detail goes only to the redacted log; the job stores a fixed message (plan section 6).
             logger.exception("Job %s (%s) failed.", job_id, kind)
@@ -155,7 +158,9 @@ class JobRunner:
             if self._generation == job_id:
                 self._generation = None
         stored = self._store_end(job_id, kind, fields)
-        self._finish(job_id, kind, stored)
+        # A failure that cannot be stored keeps its own envelope in memory; any other end becomes internal.
+        failed = fields["error"] if fields["status"] == Job.Status.FAILED else _failed_fields()["error"]
+        self._finish(job_id, kind, stored, failed)
 
     def _store_end(self, job_id, kind, fields):
         """Store the end state, or the internal failure when that fails; False when neither is stored."""
@@ -173,13 +178,13 @@ class JobRunner:
             logger.exception("Job %s (%s) could not store its failure.", job_id, kind)
             return False
 
-    def _finish(self, job_id, kind, stored):
+    def _finish(self, job_id, kind, stored, failed=None):
         with self._lock:
             if self._generation == job_id:
                 self._generation = None
             self._progress.pop(job_id, None)
             if not stored:
-                self._failed.add(job_id)
+                self._failed[job_id] = failed if failed is not None else _failed_fields()["error"]
             # Forgotten only after the end state is stored or kept in memory; earlier, get_job would see an orphan.
             self._known.discard(job_id)
         if kind == Job.Kind.BUILD:
@@ -204,15 +209,18 @@ class JobRunner:
                 logger.exception("A queued usage record could not be written.")
 
 
-def _failed_fields():
-    return {"status": Job.Status.FAILED, "result": None, "error": error_body(CODE_INTERNAL, INTERNAL_MESSAGE)}
+def _failed_fields(error=None):
+    """End state of a failed job; `error` is its envelope, the internal failure by default."""
+    if error is None:
+        error = error_body(CODE_INTERNAL, INTERNAL_MESSAGE)
+    return {"status": Job.Status.FAILED, "result": None, "error": error}
 
 
-def _failed_in_memory(job, message):
-    """`job` reported as failed without storing it."""
+def _failed_in_memory(job, error):
+    """`job` reported as failed with the envelope `error`, without storing it."""
     job.status = Job.Status.FAILED
     job.result = None
-    job.error = error_body(CODE_INTERNAL, message)
+    job.error = error
     return job
 
 

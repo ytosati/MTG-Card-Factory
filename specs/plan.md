@@ -137,7 +137,7 @@ Fields listed are the ones the spec needs; types are left to the tasks.
 | core.config | `load_config()`, `get_config()`; `Secret.reveal()` used only by providers.factory and core.log_redaction |
 | core.jobs | `submit(kind, fn)`, `get_job(id)`, `fail_orphan_jobs()` |
 | core.status | `status_snapshot()` (no key values) |
-| catalog.ingest | `run_build()`, `download_sources()`, `import_oracle()`, `import_printings()`, `import_rules()`, `import_pt_terms()`, `tag_roles()` |
+| catalog.build, catalog.ingest | `run_build()` and `start_build()` (catalog.build); `download_sources()`, `import_oracle()`, `import_printings()`, `import_rules()`, `import_pt_terms()`, `tag_roles()` |
 | catalog.selectors | `is_ready()`, `search_cards(query, filters)`, `search_rules(keywords)`, `get_lexicon(lang)`, `find_base_cards(name)`, `list_printings(oracle_id)` |
 | providers.factory | `text_adapter()`, `image_adapter()`, `art_availability()` |
 | validators | `validate(card, lexicon, request) -> ValidationResult` composed of color identity, mana cost, type line, keywords, limits; `request` gives the requested identity (possibly colorless) and the idea text |
@@ -276,14 +276,17 @@ untouched. The setup download size is the sum over the registry.
 **All-or-nothing build (RN-03).** Two phases.
 1. Outside any transaction, and resumable: download each source to
    `data/downloads/` and check size and checksum, then stream it once and
-   extract only the needed fields into a compact JSON-lines file next to it. A
+   extract only the needed fields, with the roles already tagged, into a
+   compact JSON-lines file next to it. A
    download resumes with `If-Range` (ETag or Last-Modified), so a source that
    changed since the partial download starts over. Nothing is marked ready.
 2. Import in a single short SQLite transaction: delete reference rows, insert
-   the extracted rows, rebuild the FTS tables, tag roles, write the
+   the extracted rows, rebuild the FTS tables, write the
    `SourceRecord` rows and the ready `BuildRun`, commit. An interruption rolls
    the transaction back; user tables are never touched. The review of each
    milestone that adds a source records how long the write lock was held.
+   A failed build keeps the complete downloads for the next run, except
+   after a disk-full failure; the JSON-lines file is always deleted.
 
 *Alternative considered:* build into a second database file and swap it in.
 Rejected: the user tables live in the same file (CLAUDE.md: a single SQLite

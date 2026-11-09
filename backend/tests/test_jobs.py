@@ -679,6 +679,56 @@ def test_t13_rn10_rn50_ca70_locked_state_update_still_ends_the_job(inline, statu
     assert jobs.get_job(job.id).status == "failed"
 
 
+MAPPED_MESSAGE = "The disk that holds the data folder is full. Free some space and try again. ✦ fictional"
+
+
+@pytest.mark.django_db
+def test_t21_rn10_mapped_error_is_stored_with_its_code_and_message(inline):
+    """RN-10 / RN-28 (plan section 6, Jobs): a job raising core.errors.MappedError stores its code and
+    fixed message in the envelope instead of `internal`."""
+    from core.errors import MappedError
+
+    jobs = _jobs()
+
+    def fn(report):
+        raise MappedError("insufficient_space", MAPPED_MESSAGE)
+
+    job = jobs.submit(BUILD_KIND, fn)
+
+    error = envelope_error(jobs.get_job(job.id).error)
+    assert error["code"] == "insufficient_space"
+    assert error["message"] == MAPPED_MESSAGE
+    assert envelope_error(_stored(job.id).error)["code"] == "insufficient_space"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_t21_rn28_rn10_mapped_error_is_kept_in_memory_when_the_failed_state_cannot_be_stored(inline):
+    """RN-28 / RN-10 (plan section 7, "database is locked"): when the FAILED update of a job that raised
+    a MappedError fails, get_job still reports the job failed with that code and message, not `internal`."""
+    from core.errors import MappedError
+
+    jobs = _jobs()
+
+    def fn(report):
+        raise MappedError("insufficient_space", MAPPED_MESSAGE)
+
+    with job_updates_failing({"failed"}) as refused:
+        with watchdog_calls_counted() as calls:
+            job = jobs.submit(BUILD_KIND, fn)
+        assert refused, "The injected failure never triggered."
+        assert calls == {"hold": 1, "release": 1}
+
+        reported = jobs.get_job(job.id)
+        assert reported.status == "failed"
+        error = envelope_error(reported.error)
+        assert error["code"] == "insufficient_space"
+        assert error["message"] == MAPPED_MESSAGE
+
+    error = envelope_error(jobs.get_job(job.id).error)
+    assert error["code"] == "insufficient_space"
+    assert error["message"] == MAPPED_MESSAGE
+
+
 class ExecutorBroken(RuntimeError):
     """The executor refuses new work (for example after a shutdown)."""
 

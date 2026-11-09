@@ -124,6 +124,7 @@ merged into `main`.
 - [x] T74: Launcher startup sequence
 - [x] T75: Local release zip build
 - [x] T82: Manual acceptance checklist (start and stop)
+- [ ] T131: Free-port check on every interface and lock released before an error window
 - [ ] T88: Milestone 1 review
 
 ### Milestone 2 — Reference database
@@ -249,6 +250,7 @@ merged into `main`.
 - [ ] T80: License
 - [ ] T81: Community files
 - [ ] T112: Manual checks: clone and contrast
+- [ ] T132: Startup integration test and hardening
 - [ ] T83: Clean-machine installation test
 - [ ] T84: Milestone 10 review
 ## Milestone 0 — Foundation
@@ -616,6 +618,20 @@ Agent: docs-writer
 Depends on: T75
 Done when: each listed CA has steps and an expected result.
 
+### T131: Free-port check on every interface and lock released before an error window
+`port_is_free` (T74) binds only `127.0.0.1`, so a program that holds the port on
+`0.0.0.0` or `[::]` counts as free on Windows; the probe is skipped and the
+database upgrade (backup and migration) runs before the bind fails with the port
+message. Check the wildcard addresses too, with the same exclusive bind as
+`core.startup` uses (T7). Release the single-instance lock before a startup error
+window is shown, so a second start while that window is open runs on its own
+instead of waiting 30 seconds and reporting that the first is still starting.
+Found by the Milestone 1 review.
+Covers: RN-41, RN-42, RN-47, CA-53
+Agent: release-dev
+Depends on: T74
+Done when: tests pass for a port held on `0.0.0.0` (not free: probe and port message, no upgrade, no backup), a port held on `127.0.0.1` (not free), a free port (free), and a startup error whose window is shown after the lock is released.
+
 ### T88: Milestone 1 review
 Run every test suite. Check the coverage of the RN and CA parts of this
 milestone. Run the demo from the zip on a Windows computer with no Python
@@ -624,7 +640,7 @@ smoke test of the zip build (T75; plan section 9.1). Record the findings, and ch
 against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T7, T8, T11, T72, T73, T74, T75, T82, T85
+Depends on: T7, T8, T11, T72, T73, T74, T75, T82, T85, T131
 Done when: every suite passes, the manual checks of this milestone are recorded as passed or as new tasks, the FTS5 result is recorded, and the blocking items of Milestone 2 are listed.
 
 ## Milestone 2 — Reference database
@@ -1797,6 +1813,22 @@ Agent: docs-writer
 Depends on: T77
 Done when: each listed CA has steps and an expected result, and the checklist covers every CA marked manual.
 
+### T132: Startup integration test and hardening
+A launcher test that runs `launch.main` with the real settings and server on a
+temporary home (browser and message box replaced), sends a real HTTP heartbeat
+with the own `Origin` and sees it reach the installed watchdog. The release smoke
+test also imports `launch` and `core.startup` through the zip's own paths.
+Logging is configured before the Django settings load, so an early unexpected
+error reaches `data/logs/app.log` that the fixed message names. A database file
+that is not SQLite is a `StartupError` naming the data file. When a failed
+migration cannot be undone, the backup is kept and never replaced by a later
+start. The frontend heartbeat gives up after a timeout and counts as failed.
+Found by the Milestone 1 review.
+Covers: RN-40, RN-41, RN-42, CA-47
+Agent: release-dev
+Depends on: T131
+Done when: tests pass for the integration path, an early error logged to the file, a corrupt database file (`StartupError`), a second start after a failed restore (backup unchanged), and a heartbeat that never answers (stopped notice); the release smoke test imports the launcher modules.
+
 ### T83: Clean-machine installation test
 Run `specs/manual-checks.md` on a Windows computer with no Python or Node, once
 from the release zip and once from a fresh clone.
@@ -1813,7 +1845,7 @@ or a recorded manual check, and that the definition of done of the spec holds.
 Record the findings.
 Covers: none (review)
 Agent: maintainer
-Depends on: T76–T83, T111, T112, T125
+Depends on: T76–T83, T111, T112, T125, T132
 Done when: every suite and the content check pass, and the coverage table has no open entry.
 
 ## Reserved
@@ -1874,14 +1906,14 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | RN-37 | T103, T105, T123 |
 | RN-38 | T17, T104, T105, T114, T123 |
 | RN-39 | T60, T104, T66, T123 |
-| RN-40 | T6, T9, T129, T7, T73, T74, T62, T83 |
-| RN-41 | T8, T11, T74, T13, T21, T93, T83 |
-| RN-42 | T72, T74, T125, T79 |
+| RN-40 | T6, T9, T129, T7, T73, T74, T62, T132, T83 |
+| RN-41 | T8, T11, T74, T131, T13, T21, T93, T132, T83 |
+| RN-42 | T72, T74, T131, T125, T79, T132 |
 | RN-43 | T50, T115, T59, T98, T68, T100, T122 |
 | RN-44 | T43, T44, T51, T58, T59, T99, T68 |
 | RN-45 | T111, T76, T77, T78, T79, T112, T83 |
 | RN-46 | T79 |
-| RN-47 | T4, T7, T8, T74, T83 |
+| RN-47 | T4, T7, T8, T74, T131, T83 |
 | RN-48 | T67, T51 |
 | RN-49 | T9, T62, T63, T64, T65, T67, T92, T69, T70, T101, T98, T99, T68, T100, T66, T105, T109, T112 |
 | CA-01 | T29 |
@@ -1929,13 +1961,13 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | CA-44 | T60, T104, T66, T123 |
 | CA-45 | T75, T82, T83 |
 | CA-46 | T6, T9, T62 |
-| CA-47 | T8, T11, T74, T82, T93, T83 |
+| CA-47 | T8, T11, T74, T82, T93, T132, T83 |
 | CA-48 | T72, T74, T125 |
 | CA-49 | T59, T100, T122 |
 | CA-50 | T43, T44, T58, T59, T99, T68 |
 | CA-51 | T76, T77, T112, T83 |
 | CA-52 | T79 |
-| CA-53 | T74, T82, T83 |
+| CA-53 | T74, T82, T131, T83 |
 | CA-54 | T33, T109, T124 |
 | CA-55 | T55, T52, T69 |
 | CA-56 | T47b |

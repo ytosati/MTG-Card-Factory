@@ -107,9 +107,9 @@ merged into `main`.
 - [x] T10: Django serves the built frontend
 - [x] T86: CI for the test suites
 - [x] T87: Application log
-- [ ] T127: Configuration re-read on a same-time change
-- [ ] T128: Model values that look like a key
-- [ ] T129: Unreadable configuration file
+- [x] T127: Configuration re-read on a same-time change
+- [x] T128: Model values that look like a key
+- [x] T129: Unreadable configuration file
 - [ ] T12: Milestone 0 review
 
 ### Milestone 1 — Double-click start

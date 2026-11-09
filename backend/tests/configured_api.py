@@ -157,10 +157,25 @@ class ConfiguredApi:
         for value in secrets:
             self._secrets.add(value)
         path = write_env(self.home, text)
+        self._move_mtime_forward(path)
+        return path
+
+    def configure_bytes(self, content, *, secrets=()):
+        """Write `.env` as raw bytes (another encoding, stray bytes) and return its path.
+
+        Each value in `secrets` is checked for in every response, like a key.
+        """
+        for value in secrets:
+            self._secrets.add(value)
+        path = self.env_path
+        path.write_bytes(content)
+        self._move_mtime_forward(path)
+        return path
+
+    def _move_mtime_forward(self, path):
         self._writes += 1
         mtime = time.time_ns() + self._writes * 10_000_000_000
         os.utime(path, ns=(mtime, mtime))
-        return path
 
     def remove_configuration(self):
         """Delete `.env`, so the configuration reads as empty."""

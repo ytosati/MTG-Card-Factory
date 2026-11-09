@@ -12,6 +12,7 @@ import {
   statusInvalidImageProvider,
   statusMissingTextKey,
   statusNextStartPort,
+  statusUnreadableConfiguration,
 } from "../api/contract/samples";
 import { calledUrl, jsonResponse, stubFetch } from "../test/fetchMock";
 
@@ -193,6 +194,22 @@ describe("StatusScreen: settings to fix and ignored settings", () => {
     await renderWithStatus(statusNextStartPort);
 
     expect(itemsIn(settingsToFixRegion())).toHaveLength(0);
+  });
+
+  it("CA-77, RN-40: an unreadable configuration file names .env with its fix as the only setting to fix", async () => {
+    await renderWithStatus(statusUnreadableConfiguration);
+
+    const items = itemsIn(settingsToFixRegion());
+    expect(items).toHaveLength(1);
+    const setting = statusUnreadableConfiguration.settings[0]!;
+    expect(setting.setting).toBe(".env");
+    expect(items[0]!.textContent).toContain(".env");
+    expect(items[0]!.textContent).toContain(setting.message);
+    expect(itemsIn(ignoredSettingsRegion())).toHaveLength(0);
+    expect(document.body.textContent ?? "").not.toMatch(/next start/i);
+    for (const name of ["LLM_PROVIDER", "LLM_API_KEY", "LLM_MODEL", "IMAGE_PROVIDER", "IMAGE_MODEL"]) {
+      expect(document.body.textContent ?? "").not.toContain(name);
+    }
   });
 
   it("RN-08: several settings are split by code and keep the order of the response", async () => {

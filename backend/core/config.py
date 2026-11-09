@@ -2,6 +2,7 @@
 Details: specs/plan.md, section 8.
 """
 
+import codecs
 import os
 import threading
 from dataclasses import dataclass, field
@@ -24,7 +25,14 @@ SETTING_NAMES = (
 )
 
 CODE_SETTING_TO_FIX = "config_invalid"
+# The setting of the item for a file that cannot be read (specs/plan.md, section 6).
+ENV_FILE_SETTING = ".env"
+# Messages never quote the file: it holds the keys.
+CANNOT_OPEN_MESSAGE = "The .env file cannot be opened. Check its permissions and that it is a file, not a folder."
+NOT_TEXT_MESSAGE = "The .env file cannot be read as text. Save it as UTF-8."
 CODE_IGNORED = "ignored"
+# How provider keys start (OpenAI and Anthropic, Google); case-sensitive, as the keys are.
+KEY_PREFIXES = ("sk-", "AIza")
 
 
 class Secret:
@@ -76,6 +84,8 @@ class Config:
     notices: tuple = field(default=())
     # Kept only so the log filter can redact it (see spec RN-06); never used to call a provider.
     ignored_image_api_key: Secret = field(default=Secret(""), repr=False)
+    # The file exists but could not be read; nothing else about it is reported (spec CA-77).
+    unreadable: bool = False
 
 
 def default_path():
@@ -85,8 +95,8 @@ def default_path():
 
 def load_config(path=None):
     """Read `path` (default: `.env` in the application home) and check it; never raises."""
-    values = _read_values(Path(path) if path is not None else default_path())
-    config = _build_config(values)
+    text, problem = _read_text(Path(path) if path is not None else default_path())
+    config = _unreadable_config(problem) if problem else _build_config(_with_overrides(_parse(text)))
     _remember_keys(config)
     return config
 
@@ -104,30 +114,34 @@ _cache_lock = threading.Lock()
 
 
 def get_config(path=None):
-    """The configuration of `path`, read again only when the file's modification time changed."""
+    """The configuration of `path`, read again only when the file's modification time or size changed."""
     file_path = Path(path) if path is not None else default_path()
     key = os.path.abspath(file_path)
-    mtime = _modification_time(file_path)
+    stamp = _file_stamp(file_path)
     with _cache_lock:
         cached = _cache.get(key)
-        if cached is not None and cached[0] == mtime:
+        if cached is not None and cached[0] == stamp:
             # Every read remembers the keys, a cached one as well as a fresh one.
             _remember_keys(cached[1])
             return cached[1]
         config = load_config(file_path)
-        _cache[key] = (mtime, config)
+        # A failed read is tried again on the next call: a fixed permission leaves the stamp unchanged.
+        if not config.unreadable:
+            _cache[key] = (stamp, config)
         return config
 
 
-def _modification_time(path):
+def _file_stamp(path):
+    """Modification time and size; the size catches a save within the timestamp precision."""
     try:
-        return os.stat(path).st_mtime_ns
+        status = os.stat(path)
+        return (status.st_mtime_ns, status.st_size)
     except OSError:
         return None
 
 
-def _read_values(path):
-    values = _parse(_read_text(path))
+def _with_overrides(values):
+    """`values` with the process variables applied in debug mode only."""
     # A global LLM_MODEL must never change a release; see spec RN-05.
     if debug_enabled():
         for name in SETTING_NAMES:
@@ -138,12 +152,40 @@ def _read_values(path):
 
 
 def _read_text(path):
+    """The file's text and the message of its problem, or None; a missing file is empty text (spec RN-40)."""
     try:
-        # utf-8-sig drops the byte-order mark that Notepad may add.
-        with open(path, encoding="utf-8-sig", errors="replace") as handle:
-            return handle.read()
+        with open(path, "rb") as handle:
+            content = handle.read()
+    except FileNotFoundError:
+        return "", None
     except OSError:
-        return ""
+        # Includes a folder at the path.
+        return "", CANNOT_OPEN_MESSAGE
+    if content.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
+        # Notepad "Unicode"; the utf-16 codec reads the byte-order mark and drops it.
+        text = content.decode("utf-16", errors="replace")
+    else:
+        # utf-8-sig drops the byte-order mark that Notepad may add; a stray byte keeps the other lines.
+        text = content.decode("utf-8-sig", errors="replace")
+    # NUL characters mean another encoding, such as UTF-16 with no byte-order mark.
+    if "\x00" in text:
+        return "", NOT_TEXT_MESSAGE
+    return text, None
+
+
+def _unreadable_config(message):
+    """An empty configuration with the single `.env` item: no other setting and no port change (spec CA-77)."""
+    return Config(
+        llm_provider="",
+        llm_api_key=Secret(""),
+        llm_model="",
+        image_provider="",
+        image_api_key=Secret(""),
+        image_model="",
+        app_port=DEFAULT_PORT,
+        settings_to_fix=(_setting_to_fix(ENV_FILE_SETTING, message),),
+        unreadable=True,
+    )
 
 
 def _parse(text):
@@ -192,10 +234,17 @@ def _notice(setting, message):
     return SettingIssue(setting=setting, code=CODE_IGNORED, message=message)
 
 
+def _looks_like_key(value, keys):
+    """Whether a model value is a configured key or starts like one (spec CA-78)."""
+    return value in keys or value.startswith(KEY_PREFIXES)
+
+
 def _build_config(values):
     # Messages never quote a value: a key pasted into the wrong setting would leak.
     to_fix = []
     notices = []
+    # Every key value written in the file, used or not, including an ignored image key.
+    keys = {key for key in (values.get("LLM_API_KEY", ""), values.get("IMAGE_API_KEY", "")) if key}
 
     llm_provider = values.get("LLM_PROVIDER", "").lower()
     llm_key = values.get("LLM_API_KEY", "")
@@ -206,13 +255,22 @@ def _build_config(values):
         to_fix.append(_setting_to_fix("LLM_PROVIDER", "LLM_PROVIDER is not a known provider. Use openai, anthropic or google."))
     if not llm_key:
         to_fix.append(_setting_to_fix("LLM_API_KEY", "Set LLM_API_KEY to the API key of the text provider."))
-    if not llm_model:
+    # A key-like model is not kept, like an unknown provider value (spec RN-06).
+    if llm_model and _looks_like_key(llm_model, keys):
+        llm_model = ""
+        to_fix.append(_setting_to_fix("LLM_MODEL", "LLM_MODEL looks like an API key. Set it to the name of a text model of the provider."))
+    elif not llm_model:
         to_fix.append(_setting_to_fix("LLM_MODEL", "Set LLM_MODEL to the name of a text model of the provider."))
 
     image_provider = values.get("IMAGE_PROVIDER", "").lower()
     image_key = values.get("IMAGE_API_KEY", "")
     image_model = values.get("IMAGE_MODEL", "")
     ignored_image_key = ""
+    # Reported once, even where an empty or ignored image model would be reported too.
+    image_model_looks_like_key = bool(image_model) and _looks_like_key(image_model, keys)
+    if image_model_looks_like_key:
+        image_model = ""
+        to_fix.append(_setting_to_fix("IMAGE_MODEL", "IMAGE_MODEL looks like an API key. Set it to the name of an image model, or leave it empty."))
     # Empty image settings only make art unavailable; see spec RN-07 and RN-08.
     if image_provider:
         if image_provider in TEXT_PROVIDERS and image_provider not in IMAGE_PROVIDERS:
@@ -220,7 +278,7 @@ def _build_config(values):
         elif image_provider not in IMAGE_PROVIDERS:
             to_fix.append(_setting_to_fix("IMAGE_PROVIDER", "IMAGE_PROVIDER is not a known image provider. Use openai or google, or leave it empty."))
         else:
-            if not image_model:
+            if not image_model and not image_model_looks_like_key:
                 to_fix.append(_setting_to_fix("IMAGE_MODEL", "Set IMAGE_MODEL to the name of an image model of the image provider."))
             if not image_key:
                 if image_provider == llm_provider:

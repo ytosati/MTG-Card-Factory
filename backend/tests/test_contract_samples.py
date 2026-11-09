@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from tests.config_files import DEFAULT_PORT, FAKE_IMAGE_KEY, FAKE_TEXT_KEY, full_text_settings
+from tests.config_files import DEFAULT_PORT, FAKE_IMAGE_KEY, FAKE_TEXT_KEY, env_text, full_text_settings
 from tests.configured_api import (
     assert_error_envelope,
     assert_no_key_in_response,
@@ -40,6 +40,12 @@ STATUS_URL = "/api/status"
 UNKNOWN_API_PATH = "/api/no-such-endpoint"
 NEXT_START_PORT = 47900
 
+# A configuration saved as UTF-16 with no byte-order mark: it cannot be read as text (spec CA-77).
+UNREADABLE_MODEL = "fake-text-model-UTF16-NO-BOM"
+UNREADABLE_CONTENT = env_text(
+    full_text_settings(model=UNREADABLE_MODEL) | {"APP_PORT": str(DEFAULT_PORT)}
+).encode("utf-16-le")
+
 STATUS_TYPE = "StatusResponse"
 ERROR_TYPE = "ErrorEnvelope"
 
@@ -56,6 +62,8 @@ class SampleRequest:
     method: str = "GET"
     running_port: int = DEFAULT_PORT
     secrets: tuple = field(default=())
+    # Raw file bytes written instead of `configuration` (another encoding, an unreadable file).
+    content: bytes | None = None
 
 
 SAMPLE_REQUESTS = (
@@ -103,6 +111,15 @@ SAMPLE_REQUESTS = (
         path=STATUS_URL,
     ),
     SampleRequest(
+        name="statusUnreadableConfiguration",
+        client_type=STATUS_TYPE,
+        configuration={},
+        content=UNREADABLE_CONTENT,
+        path=STATUS_URL,
+        running_port=NEXT_START_PORT,
+        secrets=(UNREADABLE_MODEL,),
+    ),
+    SampleRequest(
         name="errorNotFound",
         client_type=ERROR_TYPE,
         configuration=full_text_settings(),
@@ -114,7 +131,10 @@ SAMPLE_REQUESTS = (
 
 def _call(api, request):
     api.set_running_port(request.running_port)
-    api.configure(request.configuration, secrets=request.secrets)
+    if request.content is not None:
+        api.configure_bytes(request.content, secrets=request.secrets)
+    else:
+        api.configure(request.configuration, secrets=request.secrets)
     # configured_api fails here when a key value appears anywhere in the response.
     response = api.request(request.method, request.path)
     assert response.status_code == request.status, (request.name, response.content[:500])
@@ -198,6 +218,22 @@ def test_t126_samples_cover_the_named_cases(configured_api):
     assert {(entry["setting"], entry["code"]) for entry in model_ignored["settings"]} == {("IMAGE_MODEL", "ignored")}
     assert bodies["statusNextStartPort"]["next_start_port"] == NEXT_START_PORT
     assert bodies["statusFullConfiguration"]["next_start_port"] is None
+
+
+def test_t129_ca77_unreadable_configuration_sample_is_the_single_env_item(configured_api):
+    """CA-77 / RN-40 / CA-06 / T129: the unreadable-file sample (UTF-16 with no byte-order mark, running port not
+    the default) holds the single `.env` item, an empty configuration, no port change and no part of the file."""
+    body = _by_name(_collect(configured_api))["statusUnreadableConfiguration"]
+
+    assert [(entry["setting"], entry["code"]) for entry in body["settings"]] == [(".env", "config_invalid")]
+    assert "utf-8" in body["settings"][0]["message"].lower()
+    assert body["text_provider"] is None and body["text_model"] is None
+    assert body["text_key_configured"] is False
+    assert body["image_provider"] is None and body["image_model"] is None
+    assert body["next_start_port"] is None
+    rendered = render_samples([ContractSample("statusUnreadableConfiguration", STATUS_TYPE, body)])
+    assert UNREADABLE_MODEL not in rendered
+    assert FAKE_TEXT_KEY not in rendered
 
 
 def test_t126_error_sample_is_the_not_found_envelope(configured_api):

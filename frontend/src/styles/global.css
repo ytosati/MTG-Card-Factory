@@ -156,6 +156,23 @@ button:hover {
   background: transparent;
 }
 
+.stopped-notice {
+  padding: var(--space-3) var(--space-6);
+  background: var(--color-accent-surface);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-accent);
+}
+
+.stopped-notice p {
+  margin: 0;
+  max-width: var(--content-width);
+}
+
+.stopped-notice-title {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
 .notice {
   padding: var(--space-3) var(--space-4);
   background: var(--color-notice-surface);

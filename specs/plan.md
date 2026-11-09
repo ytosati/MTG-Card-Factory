@@ -158,7 +158,7 @@ branches on `code`, never on `message`: `config_invalid`, `origin_refused`,
 `content_refused`, `art_unavailable`, `card_changed`, `bad_request`, `internal`.
 `bad_request` answers a malformed JSON body (400), an unsupported media type
 (415) and an unacceptable `Accept` header (406), with a fixed message and the
-original status. A settings
+original status. `origin_refused` answers 403. A settings
 list (status, generation, setup) uses the same objects, `{setting, code,
 message}`, with codes as stable as the error codes: `config_invalid` for a
 setting to fix and `ignored` for a setting ignored with a notice (RN-08). A
@@ -553,6 +553,11 @@ waitress as server, Django serves the built frontend.**
      another Card Factory uses it; any other answer, a timeout or a body that
      is not the instance JSON → message naming `APP_PORT` (RN-47). The bind
      stays the authority: a program that does not speak HTTP is caught there.
+     An exclusive bind on `127.0.0.1:<port>`, closed at once and never
+     listening, comes first: when it succeeds, the port is free and the probe
+     is skipped. A timeout while connecting counts as nothing answering
+     (Windows retries a refused loopback connection for about two seconds);
+     a timeout waiting for the response gives the port message.
   6. Backs up the database and migrates (RN-42), marks orphan jobs failed.
   7. Binds waitress to `127.0.0.1` in a thread (exclusive address use, so no
      other program shares the port; a bind failure is a `StartupError` naming

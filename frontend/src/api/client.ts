@@ -1,6 +1,6 @@
 // Typed API client base: every request goes to the local application under /api/.
 // Details: specs/plan.md, section 6.
-import type { ErrorEnvelope, StatusResponse } from "./types";
+import type { ErrorEnvelope, HeartbeatRequest, StatusResponse } from "./types";
 
 /** An error response that carried the error envelope; callers branch on `code`, never on `message`. */
 export class ApiError extends Error {
@@ -69,4 +69,19 @@ async function getJson<T>(path: string): Promise<T> {
 /** GET /api/status: the current configuration, read again on every call. */
 export function getStatus(): Promise<StatusResponse> {
   return getJson<StatusResponse>("/api/status");
+}
+
+const HEARTBEAT_BODY: HeartbeatRequest = {};
+
+/** POST /api/heartbeat: tells the application a tab is still open (spec RN-41). Rejects when it fails. */
+export async function sendHeartbeat(): Promise<void> {
+  // keepalive lets the request outlive the page on pagehide; sendBeacon cannot send JSON (see plan section 6).
+  const response = await fetch("/api/heartbeat", {
+    method: "POST",
+    keepalive: true,
+    cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(HEARTBEAT_BODY),
+  });
+  if (!response.ok) throw new Error(`Heartbeat failed (HTTP ${response.status})`);
 }

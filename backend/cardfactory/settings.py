@@ -36,6 +36,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "api.middleware.OriginCheckMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -94,4 +95,6 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "api.exceptions.exception_handler",
     # JSON only: an API answer is never an HTML page.
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    # JSON only in requests too; the upload endpoint adds multipart when it exists (see plan section 6).
+    "DEFAULT_PARSER_CLASSES": ["api.parsers.StrictJSONParser"],
 }

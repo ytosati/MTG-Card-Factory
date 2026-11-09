@@ -4,7 +4,13 @@ Details: specs/plan.md, section 6 (Contract samples). The samples come from the
 real endpoints, called through tests.configured_api with a temporary `.env`
 (never the repository one), so every response is checked for key values before
 it becomes a sample. The frontend client types the samples satisfy live in
-`frontend/src/api/types.ts`: `StatusResponse` and `ErrorEnvelope`.
+`frontend/src/api/types.ts`: `StatusResponse`, `ErrorEnvelope`,
+`InstanceResponse` (GET /api/instance, T8) and `HeartbeatRequest` (the JSON body
+of POST /api/heartbeat, T8). The heartbeat answers 204 with no body, so its
+sample is the request body the endpoint accepted, not a response.
+
+The same run writes `launcher/tests/fixtures/instance.json` from the real
+GET /api/instance response (T8), for the launcher probe tests (T74).
 
 To add a sample for a new endpoint, append a SampleRequest to SAMPLE_REQUESTS
 and regenerate (see tests.contract_samples).
@@ -35,8 +41,11 @@ from tests.contract_samples import (
     render_value,
     sample_from_response,
 )
+from tests.settings_probe import REPOSITORY_ROOT
 
 STATUS_URL = "/api/status"
+INSTANCE_URL = "/api/instance"
+HEARTBEAT_URL = "/api/heartbeat"
 UNKNOWN_API_PATH = "/api/no-such-endpoint"
 NEXT_START_PORT = 47900
 
@@ -48,6 +57,10 @@ UNREADABLE_CONTENT = env_text(
 
 STATUS_TYPE = "StatusResponse"
 ERROR_TYPE = "ErrorEnvelope"
+INSTANCE_TYPE = "InstanceResponse"
+HEARTBEAT_TYPE = "HeartbeatRequest"
+
+INSTANCE_FIXTURE_PATH = REPOSITORY_ROOT / "launcher" / "tests" / "fixtures" / "instance.json"
 
 
 @dataclass(frozen=True)
@@ -64,6 +77,11 @@ class SampleRequest:
     secrets: tuple = field(default=())
     # Raw file bytes written instead of `configuration` (another encoding, an unreadable file).
     content: bytes | None = None
+    # JSON request body, sent with format="json".
+    data: dict | None = None
+    # "response": the sample is the response body; "request": the sample is `data`
+    # (an endpoint that answers 204 with no body).
+    sample: str = "response"
 
 
 SAMPLE_REQUESTS = (
@@ -126,6 +144,22 @@ SAMPLE_REQUESTS = (
         path=UNKNOWN_API_PATH,
         status=404,
     ),
+    SampleRequest(
+        name="instance",
+        client_type=INSTANCE_TYPE,
+        configuration=full_text_settings(),
+        path=INSTANCE_URL,
+    ),
+    SampleRequest(
+        name="heartbeatRequest",
+        client_type=HEARTBEAT_TYPE,
+        configuration=full_text_settings(),
+        path=HEARTBEAT_URL,
+        method="POST",
+        data={},
+        status=204,
+        sample="request",
+    ),
 )
 
 
@@ -136,7 +170,7 @@ def _call(api, request):
     else:
         api.configure(request.configuration, secrets=request.secrets)
     # configured_api fails here when a key value appears anywhere in the response.
-    response = api.request(request.method, request.path)
+    response = api.request(request.method, request.path, data=request.data)
     assert response.status_code == request.status, (request.name, response.content[:500])
     return response
 
@@ -145,7 +179,11 @@ def _collect(api, requests=SAMPLE_REQUESTS):
     samples = []
     for request in requests:
         response = _call(api, request)
-        samples.append(sample_from_response(request.name, request.client_type, response, home=api.home))
+        if request.sample == "request":
+            assert response.content == b"", (request.name, response.content[:500])
+            samples.append(ContractSample(request.name, request.client_type, Normalizer(api.home)(request.data)))
+        else:
+            samples.append(sample_from_response(request.name, request.client_type, response, home=api.home))
     return samples
 
 
@@ -251,7 +289,47 @@ def test_t126_every_sample_name_and_type_is_declared_once():
     names = [request.name for request in SAMPLE_REQUESTS]
 
     assert len(names) == len(set(names))
-    assert {request.client_type for request in SAMPLE_REQUESTS} == {STATUS_TYPE, ERROR_TYPE}
+    assert {request.client_type for request in SAMPLE_REQUESTS} == {STATUS_TYPE, ERROR_TYPE, INSTANCE_TYPE, HEARTBEAT_TYPE}
+    assert {request.sample for request in SAMPLE_REQUESTS} <= {"response", "request"}
+
+
+# --- Instance and heartbeat samples (T8, RN-41, RN-47) ---
+
+
+def _instance_fixture_text(body):
+    return json.dumps(body, indent=2, ensure_ascii=True) + "\n"
+
+
+def test_t8_rn47_instance_sample_is_the_instance_contract(configured_api):
+    """RN-47 / T8: the instance sample is {app: "card-factory", version, home}, with the home normalized
+    to the fictional placeholder and the version of a home with no VERSION file."""
+    body = _by_name(_collect(configured_api))["instance"]
+
+    assert body == {"app": "card-factory", "version": "0.0.0+unknown", "home": HOME_PLACEHOLDER}
+
+
+def test_t8_rn41_heartbeat_sample_is_the_empty_json_body():
+    """RN-41 / T8: the heartbeat sample is the JSON body `{}` the frontend sends; the endpoint answers 204."""
+    request = next(r for r in SAMPLE_REQUESTS if r.client_type == HEARTBEAT_TYPE)
+
+    assert (request.method, request.path, request.status, request.data, request.sample) == (
+        "POST",
+        HEARTBEAT_URL,
+        204,
+        {},
+        "request",
+    )
+    rendered = render_samples([ContractSample(request.name, request.client_type, request.data)])
+    assert "export const heartbeatRequest = {} satisfies HeartbeatRequest;\n" in rendered
+
+
+def test_t8_rn47_launcher_instance_fixture_matches_the_api(configured_api):
+    """RN-47 / RN-41 / T8: launcher/tests/fixtures/instance.json is the real GET /api/instance response,
+    normalized like the samples (with CARDFACTORY_UPDATE_CONTRACT=1 outside CI, it is rewritten)."""
+    request = next(r for r in SAMPLE_REQUESTS if r.client_type == INSTANCE_TYPE)
+    sample = sample_from_response(request.name, request.client_type, _call(configured_api, request), home=configured_api.home)
+
+    check_or_update(_instance_fixture_text(sample.body), path=INSTANCE_FIXTURE_PATH)
 
 
 # --- The comparison fails on drift ---

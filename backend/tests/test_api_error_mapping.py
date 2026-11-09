@@ -79,17 +79,16 @@ def test_t6_rn40_status_with_a_missing_key_needs_no_database(configured_api):
 
 @pytest.mark.urls("tests.error_views_urls")
 @pytest.mark.parametrize("accept", ["text/html", "application/xml", "image/png"])
-def test_t6_not_acceptable_answers_internal_with_a_fixed_message(configured_api, accept):
-    """T6 / plan section 6: an Accept the API cannot satisfy answers 406 in the JSON envelope with
-    code internal and the fixed message, never DRF's own text."""
+def test_t6_not_acceptable_answers_bad_request_with_a_fixed_message(configured_api, accept):
+    """T6 / T85 / plan section 6: an Accept the API cannot satisfy answers 406 in the JSON envelope
+    with code bad_request and a fixed message, never DRF's own text."""
     configured_api.configure(full_text_settings())
-    fixed = _internal_message(configured_api)
 
     response = configured_api.get(STATUS_URL, HTTP_ACCEPT=accept)
 
-    error = assert_error_envelope(response, 406, "internal")
+    error = assert_error_envelope(response, 406, "bad_request")
     assert DRF_NOT_ACCEPTABLE_TEXT not in error["message"]
-    assert error["message"] == fixed
+    assert accept not in error["message"]
     assert error["setting"] is None
     assert error["fields"] is None
 

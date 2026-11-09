@@ -1,4 +1,4 @@
-"""Django secret key stored in `data/secret_key` (task T5, spec RN-06, plan section 8).
+"""Django secret key stored in `data/secret_key` (tasks T5 and T7, spec RN-06, RN-40, plan section 8).
 
 API under test: `core.secret_key.get_secret_key()` returns the key stored in
 `<home>/data/secret_key`, creating the file (and `data/`) on the first call and
@@ -7,12 +7,17 @@ reading it on later calls. Settings use it as `SECRET_KEY`.
 Every test uses a temporary application home, never the repository data/.
 """
 
+import os
+import stat
+import sys
+
 import pytest
 
 from tests.config_files import (
     FAKE_IMAGE_KEY,
     FAKE_TEXT_KEY,
     clean_environment,  # noqa: F401 (fixture)
+    deny_opening,
     write_settings,
 )
 from tests.settings_probe import BACKEND_DIR, run_probe
@@ -221,3 +226,164 @@ def test_t5_generated_key_passes_django_strength_check(home):
     assert len(key) >= 50
     assert len(set(key)) >= 5
     assert not key.startswith("django-insecure-")
+
+
+# T7: content that is not UTF-8, and a file that cannot be read or written (plan section 8)
+
+
+def _startup_message(error):
+    return f"{error.problem}\n{error.fix}".replace("\\", "/")
+
+
+def _assert_names_the_key_file(error):
+    assert "data/secret_key" in _startup_message(error)
+    assert "check its permissions, or delete it" in error.fix.lower()
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        b"\xff\xfe\x80\x81",
+        b"fictional-secret-0123456789-abcdefghij-\x80-KLMNOPQRST-uvwxyz",
+        "fictional-secret-0123456789-abcdefghij-KLMNOPQRST".encode("utf-16"),
+        b"\xc3",
+        b"\xed\xa0\x80",
+    ],
+    ids=["invalid-bytes", "stray-byte-in-a-key", "utf-16-with-bom", "truncated-sequence", "encoded-surrogate"],
+)
+def test_t7_rn40_key_file_that_is_not_utf8_is_replaced(home, content):
+    """RN-40 / T7 (plan section 8): a secret_key whose content is not UTF-8 is replaced by a new valid key."""
+    _key_file(home).write_bytes(content)
+
+    key = _get_secret_key()
+
+    assert key.strip() == key
+    assert len(key) >= 50
+    assert _key_file(home).read_bytes() != content
+    assert _stored(home) == key
+    assert _get_secret_key() == key
+
+
+def test_t7_rn40_key_file_that_is_a_folder_is_a_startup_error(home):
+    """RN-40 / T7 (plan section 8): a folder named data/secret_key raises StartupError naming the file and the fix."""
+    from core.startup import StartupError
+
+    _key_file(home).mkdir()
+    (_key_file(home) / "fictional-note.txt").write_text("not a key", encoding="utf-8")
+
+    with pytest.raises(StartupError) as raised:
+        _get_secret_key()
+
+    _assert_names_the_key_file(raised.value)
+    assert _key_file(home).is_dir()
+
+
+def test_t7_rn40_key_file_that_cannot_be_read_is_a_startup_error(home, monkeypatch):
+    """RN-40 / T7 (plan section 8): a data/secret_key that cannot be opened raises StartupError naming the file."""
+    from core.startup import StartupError
+
+    stored = "fictional-secret-0123456789-abcdefghij-KLMNOPQRST-uvwxyz"
+    _key_file(home).write_text(stored, encoding="utf-8")
+    deny_opening(monkeypatch, _key_file(home))
+
+    with pytest.raises(StartupError) as raised:
+        _get_secret_key()
+
+    _assert_names_the_key_file(raised.value)
+    assert stored not in _startup_message(raised.value)
+
+
+def test_t7_rn40_unreadable_key_file_is_not_replaced(home, monkeypatch):
+    """RN-40 / T7 (plan section 8): a key file that cannot be read is reported, never overwritten."""
+    from core.startup import StartupError
+
+    stored = "fictional-secret-0123456789-abcdefghij-KLMNOPQRST-uvwxyz"
+    _key_file(home).write_text(stored, encoding="utf-8")
+    denial = deny_opening(monkeypatch, _key_file(home))
+
+    with pytest.raises(StartupError):
+        _get_secret_key()
+
+    denial.allow()
+    assert _key_file(home).read_text(encoding="utf-8") == stored
+
+
+@pytest.fixture
+def read_only_key_file(home):
+    """data/secret_key made read-only (and data/ too where the system honors it); restored afterwards."""
+    if hasattr(os, "geteuid") and os.geteuid() == 0:
+        pytest.skip("permissions do not apply to the root user")
+    path = _key_file(home)
+    folder = path.parent
+
+    def _make(content):
+        path.write_bytes(content)
+        os.chmod(path, stat.S_IREAD)
+        if sys.platform != "win32":
+            # A write through a temporary file and a rename needs the folder.
+            os.chmod(folder, stat.S_IREAD | stat.S_IEXEC)
+        return path
+
+    yield _make
+    if sys.platform != "win32":
+        os.chmod(folder, stat.S_IRWXU)
+    if path.exists():
+        os.chmod(path, stat.S_IREAD | stat.S_IWRITE)
+
+
+@pytest.mark.parametrize(
+    "content",
+    [b"", b"  \r\n", b"\xff\xfe\x80\x81"],
+    ids=["empty", "whitespace", "not-utf8"],
+)
+def test_t7_rn40_key_file_that_cannot_be_written_is_a_startup_error(read_only_key_file, content):
+    """RN-40 / T7 (plan section 8): a key file that must be replaced but cannot be written raises StartupError."""
+    from core.startup import StartupError
+
+    path = read_only_key_file(content)
+
+    with pytest.raises(StartupError) as raised:
+        _get_secret_key()
+
+    _assert_names_the_key_file(raised.value)
+    assert path.read_bytes() == content
+
+
+def test_t7_rn40_read_only_file_with_a_valid_key_is_read(read_only_key_file):
+    """RN-40 / T7 (plan section 8): a read-only file with a valid key is read; it is never rewritten."""
+    stored = "fictional-secret-0123456789-abcdefghij-KLMNOPQRST-uvwxyz"
+    read_only_key_file(stored.encode("utf-8"))
+
+    assert _get_secret_key() == stored
+
+
+STARTUP_ERROR_PROBE = """
+import json
+import django
+from core.startup import StartupError
+try:
+    django.setup()
+except StartupError as error:
+    print(json.dumps({"startup_error": True, "problem": error.problem, "fix": error.fix}))
+else:
+    print(json.dumps({"startup_error": False}))
+"""
+
+
+def test_t7_rn40_settings_load_raises_startup_error_for_a_key_folder(tmp_path):
+    """RN-40 / T7 (plan 8 and 9.5, step 4): loading the settings with a folder at data/secret_key raises StartupError."""
+    home = tmp_path / "home"
+    (home / "data" / "secret_key").mkdir(parents=True)
+    workdir = tmp_path / "cwd"
+    workdir.mkdir()
+    overrides = {
+        "PYTHONPATH": str(BACKEND_DIR),
+        "DJANGO_SETTINGS_MODULE": "cardfactory.settings",
+        "CARDFACTORY_HOME": str(home),
+    }
+
+    result = run_probe(STARTUP_ERROR_PROBE, overrides, cwd=workdir)
+
+    assert result["startup_error"] is True
+    assert "data/secret_key" in f"{result['problem']}\n{result['fix']}".replace("\\", "/")
+    assert "check its permissions, or delete it" in result["fix"].lower()

@@ -22,6 +22,16 @@ export interface StatusResponse {
   next_start_port: number | null;
 }
 
+/** GET /api/instance: identifies a running Card Factory and its home (spec RN-47). */
+export interface InstanceResponse {
+  app: string;
+  version: string;
+  home: string;
+}
+
+/** Body of POST /api/heartbeat: an empty JSON object (spec RN-41). */
+export type HeartbeatRequest = Record<string, never>;
+
 /** The single error envelope of every error response. */
 export interface ErrorEnvelope {
   error: {

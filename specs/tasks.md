@@ -120,7 +120,7 @@ merged into `main`.
 - [ ] T85: Origin check and JSON-only parsers
 - [ ] T11: Frontend heartbeat hook
 - [ ] T72: Database upgrade service
-- [ ] T73: VERSION file and launcher prerequisite checks
+- [x] T73: VERSION file and launcher prerequisite checks
 - [ ] T74: Launcher startup sequence
 - [ ] T75: Local release zip build
 - [ ] T82: Manual acceptance checklist (start and stop)

@@ -1,0 +1,183 @@
+/* Global element and layout styles, built only from the design tokens. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+}
+
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+a {
+  color: var(--color-accent);
+}
+
+code {
+  font-family: var(--font-mono);
+  padding: 0 var(--space-1);
+  background: var(--color-code-surface);
+  border-radius: var(--radius);
+}
+
+button {
+  font: inherit;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-3) var(--space-6);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-name {
+  font-weight: 700;
+}
+
+.app-header a[aria-current="page"] {
+  font-weight: 700;
+}
+
+.screen {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: var(--space-6);
+}
+
+.screen h1 {
+  font-size: var(--font-size-h1);
+  margin: 0 0 var(--space-6);
+}
+
+.screen h1:focus {
+  outline: none;
+}
+
+.screen h1:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+}
+
+.summary {
+  margin: calc(-1 * var(--space-4)) 0 var(--space-4);
+  color: var(--color-text-muted);
+}
+
+.hint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+.actions {
+  margin: var(--space-4) 0;
+}
+
+.value-danger {
+  color: var(--color-danger-text);
+  font-weight: 600;
+}
+
+.screen h2 {
+  font-size: var(--font-size-h2);
+  margin: var(--space-8) 0 var(--space-3);
+}
+
+.fields {
+  margin: 0;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.field {
+  display: grid;
+  grid-template-columns: 12rem 1fr;
+  gap: var(--space-4);
+  padding: var(--space-1) 0;
+}
+
+.field dt {
+  color: var(--color-text-muted);
+}
+
+.field dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.settings {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settings li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow-wrap: anywhere;
+}
+
+.settings-to-fix li {
+  border-left: var(--border-accent-width) solid var(--color-danger-border);
+}
+
+.settings-ignored li {
+  color: var(--color-text-muted);
+  background: transparent;
+}
+
+.notice {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-notice-surface);
+  color: var(--color-notice-text);
+  border-radius: var(--radius);
+}
+
+.error-panel [role="alert"] {
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  background: var(--color-danger-surface);
+  color: var(--color-danger-text);
+  border-radius: var(--radius);
+}
+
+.error-panel [role="alert"] p {
+  margin: 0;
+}
+
+@media (max-width: 32rem) {
+  .field {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

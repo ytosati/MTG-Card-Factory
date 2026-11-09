@@ -1,0 +1,40 @@
+/* Design tokens: the single source of colors, type, spacing and focus styles. */
+:root {
+  --color-background: #f7f6f2;
+  --color-surface: #ffffff;
+  --color-text: #1c1b19;
+  --color-text-muted: #4f4c45;
+  --color-border: #c9c5bb;
+  --color-accent: #5b2a86;
+  --color-accent-hover: #44206a;
+  --color-accent-text: #ffffff;
+  --color-code-surface: #eeece6;
+  --color-danger-surface: #fbeaea;
+  --color-danger-text: #8a1c1c;
+  --color-danger-border: #b42318;
+  --color-notice-surface: #fdf4dc;
+  --color-notice-text: #5c4300;
+
+  --focus-ring-color: #1d4ed8;
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 2px;
+
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --font-size-body: 1rem;
+  --font-size-small: 0.875rem;
+  --font-size-h1: 1.75rem;
+  --font-size-h2: 1.25rem;
+  --line-height-body: 1.5;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  --border-accent-width: 4px;
+  --radius: 6px;
+  --content-width: 48rem;
+}

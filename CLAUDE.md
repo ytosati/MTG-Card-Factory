@@ -53,7 +53,8 @@ Anthropic or Google).
 Development commands. End users start the application with the launcher
 (spec RN-27).
 - Backend (from backend/, with the virtual environment active):
-  python manage.py runserver  |  pytest -q
+  python manage.py runserver 127.0.0.1:47821  |  pytest -q
+  (the Vite development server proxies /api to this port)
 - Launcher and release scripts (from the repository root): pytest launcher release
 - Frontend (from frontend/): npm run dev  |  npm run test  |  npx tsc -b
 - Build the database (from backend/): python manage.py build_catalog

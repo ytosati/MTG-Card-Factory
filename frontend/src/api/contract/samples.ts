@@ -91,6 +91,22 @@ export const statusNextStartPort = {
   next_start_port: 47900,
 } satisfies StatusResponse;
 
+export const statusUnreadableConfiguration = {
+  text_provider: null,
+  text_model: null,
+  text_key_configured: false,
+  image_provider: null,
+  image_model: null,
+  settings: [
+    {
+      setting: ".env",
+      code: "config_invalid",
+      message: "The .env file cannot be read as text. Save it as UTF-8.",
+    },
+  ],
+  next_start_port: null,
+} satisfies StatusResponse;
+
 export const errorNotFound = {
   error: {
     code: "not_found",

@@ -272,7 +272,8 @@ def test_t6_rn40_missing_file_answers_with_every_text_setting_to_fix(configured_
         pytest.param("\n\n# only comments\n   \n", id="comments-only"),
         pytest.param("﻿LLM_PROVIDER=banana\nLLM_MODEL\n=orphan\nAPP_PORT=-1\n", id="malformed-lines"),
         pytest.param("LLM_PROVIDER=" + "x" * 100_000 + "\nAPP_PORT=" + "9" * 5_000 + "\n", id="huge-values"),
-        pytest.param("LLM_PROVIDER=\x00\x01\x7f\nLLM_MODEL=☠\nIMAGE_PROVIDER=🜲\n", id="control-and-symbols"),
+        # No NUL byte here: a NUL after decoding makes the whole file unreadable (T129, CA-77).
+        pytest.param("LLM_PROVIDER=\x01\x7f\nLLM_MODEL=☠\nIMAGE_PROVIDER=🜲\n", id="control-and-symbols"),
     ],
 )
 def test_t6_rn40_invalid_configuration_never_blocks_the_status(configured_api, text):

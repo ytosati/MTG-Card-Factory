@@ -103,15 +103,19 @@ merged into `main`.
 - [x] T5: Django secret key and key redaction in logs
 - [x] T6: Status endpoint (configuration part)
 - [x] T126: API contract samples
-- [ ] T9: Frontend skeleton and Status screen (configuration part)
-- [ ] T10: Django serves the built frontend
-- [ ] T86: CI for the test suites
-- [ ] T87: Application log
-- [ ] T12: Milestone 0 review
+- [x] T9: Frontend skeleton and Status screen (configuration part)
+- [x] T10: Django serves the built frontend
+- [x] T86: CI for the test suites
+- [x] T87: Application log
+- [x] T127: Configuration re-read on a same-time change
+- [x] T128: Model values that look like a key
+- [x] T129: Unreadable configuration file
+- [x] T130: Fictional key values that no secret scanner matches
+- [x] T12: Milestone 0 review
 
 ### Milestone 1 — Double-click start
 
-- [ ] T7: Local server entry point
+- [ ] T7: Local server entry point and startup errors
 - [ ] T8: Instance and heartbeat endpoints with watchdog
 - [ ] T85: Origin check and JSON-only parsers
 - [ ] T11: Frontend heartbeat hook
@@ -364,9 +368,9 @@ loading and error states, every field has a label and focus is visible. All
 interface labels are in English. The Vite development server proxies `/api` to
 the backend and sends the backend's own origin, so the origin check (T85) needs
 no development exception. Approved development dependencies for this
-task: jsdom and @testing-library/react. The client types are written so the
-contract samples (T126) type-check with `satisfies`, and the screen tests
-build their mocks from them.
+task: jsdom, @testing-library/react, @types/react and @types/react-dom. The
+client types are written so the contract samples (T126) type-check with
+`satisfies`, and the screen tests build their mocks from them.
 Covers: RN-08, RN-30, RN-40, RN-49, CA-46, CA-73, CA-74
 Agent: frontend-dev
 Depends on: T6, T126
@@ -396,12 +400,58 @@ Done when: the workflow file passes a syntax check, and a run on a branch (autho
 Log to `<home>/data/logs/app.log` with size-based rotation, through the key
 redaction filter of T5 on every handler. Logs record events, causes and
 identifiers, never card contents, prompts or keys.
-TODO: decide whether a key value under 8 characters, which the log filter leaves alone, needs an explicit exception in RN-06 or CA-06, or is recorded as an accepted risk (RN-06, CA-06).
-TODO: decide whether the log filter keeps redacting key values replaced in `.env` while the process runs (a call made with the old key may log after the fix), and whether log formats are limited to the message, standard fields, the exception and the stack, or the filter also covers `extra` fields (RN-06, CA-06).
+Decided: a key value under 8 characters is left alone and recorded as an accepted risk in the plan, section 8 (RN-06, CA-06).
+Decided: the log filter keeps redacting every key value seen since the process started, in memory only, so a key replaced in `.env` stays redacted until the process stops; the log format is limited to the message, the standard record fields, the exception and the stack, so `extra` fields never reach the file (RN-06, CA-06).
 Covers: RN-06, CA-06
 Agent: backend-dev
 Depends on: T5
 Done when: tests in a temporary home pass for the log file location, the rotation setting, and a logged exception that contains a key value written with the value redacted.
+
+### T127: Configuration re-read on a same-time change
+`get_config()` reads `.env` again when its modification time or its size
+changed, so a fix saved within the timestamp precision of the file system
+(2 seconds on FAT32) is still seen. Found in the Milestone 0 review.
+Covers: RN-08, CA-73
+Agent: backend-dev
+Depends on: T4
+Done when: a test that rewrites the file with different content and the same modification time (`os.utime`) gets the new configuration, and the existing reload tests still pass.
+
+### T128: Model values that look like a key
+A key pasted into `LLM_MODEL` or `IMAGE_MODEL` must not reach the browser or a
+provider. A model value that equals a configured key value, or starts with a
+known key prefix (`sk-`, `AIza`), is not kept in the configuration, like an
+unknown provider value, and is reported as the model setting to fix
+(`config_invalid`); the status returns the model as not set (plan section 8).
+Found in the Milestone 0 review.
+Covers: RN-06, RN-08, CA-06, CA-78
+Agent: backend-dev
+Depends on: T6, T87
+Done when: tests pass for a text model and an image model set to a value with each prefix and to the configured key value (the model setting is named, the model is returned as not set, and the key-sweep helper, given the value as a secret, finds it in no response), and for ordinary model names returned unchanged.
+
+### T129: Unreadable configuration file
+`core.config` reads UTF-8 (with or without a byte-order mark) and UTF-16 with a
+byte-order mark, and replaces an invalid UTF-8 byte. A file that exists but
+cannot be opened, or holds NUL bytes after decoding, reads as empty and is
+reported as the single settings item `config_invalid` with `setting` `.env` and
+a message for its cause (check its permissions, or save it as UTF-8); no other
+setting to fix and no port change are reported while it cannot be read. A read
+that fails is never cached (plan sections 6 and 8). Found in the Milestone 0
+review; it closes the unreadable `.env` question of T73.
+Covers: RN-08, RN-40, CA-06, CA-73, CA-77
+Agent: backend-dev
+Depends on: T127
+Done when: tests pass for a UTF-16 file with a byte-order mark read like UTF-8, a stray invalid byte in a comment that keeps the other settings, a file that cannot be opened and a UTF-16 file with no byte-order mark (each the single `.env` item with its message, no port change, no part of the file in the response), a contract sample of the unreadable case that type-checks, and a file made readable again with the same modification time and size read on the next call (CA-73).
+
+### T130: Fictional key values that no secret scanner matches
+Replace the fictional values in the backend tests that match the format of a
+real provider key (such as `AIza` followed by 35 key characters), so that
+secret scanning on push raises no alert in the public repository. Test values
+that start with a key prefix stay recognizable as fictional and differ in
+length from every real key format. Found in the Milestone 0 review.
+Covers: none (test data)
+Agent: qa
+Depends on: T128
+Done when: `git grep -nE "AIza[0-9A-Za-z_-]{35}"` finds nothing in the repository, and `pytest -q` passes with the CA-78 tests still covering both prefixes.
 
 ### T12: Milestone 0 review
 Run every test suite. Check the coverage of the RN and CA parts that the
@@ -411,7 +461,7 @@ setting, and the fix seen on reopening. Record the findings, and check the
 Milestone 1 tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T1–T6, T9, T10, T86, T87, T126
+Depends on: T1–T6, T9, T10, T86, T87, T126, T127, T128, T129, T130
 Done when: every suite passes, the demo works, the findings are recorded as new tasks or as spec questions, and the blocking items of Milestone 1 are listed.
 
 ## Milestone 1 — Double-click start
@@ -427,29 +477,35 @@ message.
 Later: the license and third-party notices in the zip, the `frontend-dist`
 asset, CI release artifacts and the clone start file (M10).
 
-### T7: Local server entry point
-Provide a backend function that starts waitress on `127.0.0.1` and `APP_PORT`,
-so the launcher calls it later. The host is always `127.0.0.1`; there is no
-setting to change it.
-Covers: RN-29, RN-47, CA-20
+### T7: Local server entry point and startup errors
+Add `core.startup`, the only backend module the launcher calls besides
+`core.config` (plan section 9.5), with `StartupError(problem, fix)` and
+`serve(stop_event)`, which binds waitress to `127.0.0.1` and
+`settings.RUNNING_PORT` with exclusive address use and exposes a stop that
+closes the server. A bind failure raises `StartupError` naming `APP_PORT`.
+`get_secret_key()` replaces a file whose content is not UTF-8 and raises
+`StartupError` naming `data/secret_key` when the file cannot be read or written
+(plan section 8). The host is always `127.0.0.1`; there is no setting to change
+it. The qa step adds a test that imports `core.config` with no Django settings.
+Covers: RN-29, RN-40, RN-47, CA-20
 Agent: backend-dev
 Depends on: T12
-Done when: a test checks that the entry point binds to `127.0.0.1` on the configured port without starting a real listener on another interface.
+Done when: tests pass for the bind to `127.0.0.1` on the configured port without a real listener on another interface, a port already held by a local socket (`StartupError` naming `APP_PORT`), a secret key file that is a folder or cannot be read (`StartupError` naming the file), a secret key file that is not UTF-8 (replaced), and `core.config` imported with no Django settings.
 
 ### T8: Instance and heartbeat endpoints with watchdog
-Add `GET /api/instance`, which identifies Card Factory on the port with
-`{app, version, home}` (a contract between versions: a newer launcher probes an
-older instance), and
-`POST /api/heartbeat`. Add a watchdog that calls a stop callback when no
+Add `GET /api/instance` and `POST /api/heartbeat` with the instance contract of
+plan section 6 (`{app: "card-factory", version, home}`; `version` from the
+`VERSION` file in the home, or `0.0.0+unknown`; the heartbeat takes a JSON body
+and answers 204). Add a watchdog that calls a stop callback when no
 heartbeat has arrived for 180 seconds after the last one, or when no first
-heartbeat arrived within 120 seconds of startup (plan section 8). The watchdog
-has counted holds that running jobs acquire and release; while any hold is
-active it never stops, and after the last one is released it stops 180 seconds
-after the later of the last heartbeat and the release.
+heartbeat arrived within 120 seconds of being armed (the launcher arms it when
+it opens the browser, plan section 9.5). It checks every 5 seconds and calls
+the callback at most once. Only the launcher creates it; with no watchdog, a
+heartbeat does nothing. Holds for running jobs come with T13.
 Covers: RN-41, RN-47, CA-47
 Agent: backend-dev
 Depends on: T12
-Done when: watchdog tests with a fake clock pass: a stop 120 seconds after startup with no heartbeat, no stop while heartbeats arrive (including gaps of 60 seconds), a stop 180 seconds after the last one, no stop while held, no stop while one of two holds remains, and a stop 180 seconds after the last hold is released with no heartbeat.
+Done when: watchdog tests with a fake clock pass (a stop 120 seconds after arming with no heartbeat, no stop while heartbeats arrive, including gaps of 60 seconds, a stop 180 seconds after the last one, a single callback), contract samples for the instance and the heartbeat are generated, and the qa step writes `launcher/tests/fixtures/instance.json` from the real response.
 
 ### T85: Origin check and JSON-only parsers
 Refuse every non-GET request whose `Origin` (or, when absent, `Referer`) is not
@@ -460,66 +516,94 @@ origin. A request with neither header is accepted, since browsers always send
 heartbeat (T11) is sent as JSON with `fetch` and `keepalive`, never with
 `sendBeacon`. Set
 the DRF parsers to JSON only; the upload endpoint adds multipart when it exists.
+Decided: a malformed JSON body (400), an unsupported media type (415) and an unacceptable `Accept` header (406) answer with the new error code `bad_request`, a fixed message and their own status, instead of `internal`; plan section 6 lists the code (Milestone 0 review).
 Covers: RN-29
 Agent: backend-dev
 Depends on: T8
-Done when: tests pass for a POST from another origin (refused), a POST with no `Origin` and a foreign `Referer` (refused), same-origin POSTs from `127.0.0.1` and `localhost` (accepted), a POST with neither header (accepted), and a form-encoded POST (refused).
+Done when: tests pass for a POST from another origin (refused), a POST with no `Origin` and a foreign `Referer` (refused), same-origin POSTs from `127.0.0.1` and `localhost` (accepted), a POST with neither header (accepted), a same-origin form-encoded POST to the heartbeat (`bad_request`, 415), a malformed JSON body (`bad_request`, 400) and a request that accepts only XML (`bad_request`, 406).
 
 ### T11: Frontend heartbeat hook
-Add a hook that sends a heartbeat every 15 seconds, when the tab becomes visible
-again and on `pagehide`, mounted once in the application root. Heartbeats are
-JSON `fetch` calls with `keepalive` (T85). When a heartbeat fails, the root shows
-that the application stopped and how to start it again.
+Add a hook that sends a heartbeat when it mounts, every 15 seconds, when the tab
+becomes visible again and on `pagehide`, mounted once in the application root.
+Heartbeats are JSON `fetch` calls with `keepalive` (T85). When a heartbeat
+fails, the root shows that the application stopped and how to start it again; a
+later heartbeat that succeeds clears the notice.
 Covers: RN-41, CA-47
 Agent: frontend-dev
-Depends on: T8
-Done when: a Vitest test with fake timers shows the heartbeat calls at the right interval, on visibility change and on `pagehide`, and the stopped notice after a failed heartbeat.
+Depends on: T8, T85
+Done when: a Vitest test with fake timers shows the heartbeat calls on mount, at the right interval, on visibility change and on `pagehide`, the stopped notice after a failed heartbeat, and the notice cleared after a later success.
 
 ### T72: Database upgrade service
-A backend function, called by the launcher, that, when migrations are pending,
-copies the database to `data/backups/` with the SQLite backup API of the
-standard library (replacing the previous backup), runs them, and stops with a clear message when the database is newer than the
-application. Housekeeping of orphan jobs is added to this startup step by T13,
-when jobs exist.
+A backend function in `core.startup`, called by the launcher, that, when
+migrations are pending, copies the database to `data/backups/cardfactory.sqlite3`
+with the SQLite backup API of the standard library (replacing the previous
+backup), runs them, and raises `StartupError` when the database is newer than
+the application. There is no backup when the database file does not exist; a
+backup that cannot be written stops before migrating. On a failed migration it
+closes the connections and restores the database from the backup. It never
+writes to stdout or stderr. Housekeeping of orphan jobs is added to this
+startup step by T13, when jobs exist.
 Covers: RN-42, CA-48
 Agent: backend-dev
-Depends on: T12
-Done when: tests pass for an upgrade from an older fixture database that keeps its records, for the refusal of a newer database with the data left unchanged, and for a failed migration that leaves the database as it was. The CA-48 check with cards, versions and images is repeated in T84, once those exist.
+Depends on: T7
+Done when: tests pass for an upgrade from an older fixture database that keeps its records, the refusal of a newer database with the data left unchanged, a failed migration that leaves the database as it was, a backup that cannot be written (no migration), and a run with `sys.stdout` and `sys.stderr` set to None. The CA-48 check with cards, versions and images is repeated in T84, once those exist.
 
 ### T73: VERSION file and launcher prerequisite checks
 Add `VERSION` (Semantic Versioning, `MAJOR.MINOR.PATCH`, equal to the release
-tag without the `v`) and `launcher/start.pyw` checks: not started from inside a zip,
-folder writable, `.env` present, and the port free or held by Card Factory.
-Each failure shows a Windows message box (through `ctypes`) that names the
-problem and the fix.
-TODO: decide whether the launcher reads the port through `core.config`, so that one parser applies the RN-47 rule, and whether an unreadable `.env` at startup is a case of the RN-40 window or of the Status screen (RN-40, RN-47).
-TODO: decide whether a `data/secret_key` that cannot be read or written (no permission, not UTF-8, a folder) stops startup with the RN-40 window or is replaced (RN-40).
-Covers: RN-40, RN-47, CA-17, CA-53
+tag without the `v`), the source of `Start Card Factory.cmd` under `launcher/`
+and the `launcher/start.pyw` checks of plan section 9.5, step 2, with no Django
+and no network: the home and `data/` writable, and `.env` present as a file.
+The `.cmd` checks that `python\pythonw.exe` and `launcher\start.pyw` exist next
+to it (`%~dp0`); when they do not (started from inside the zip, or a partial
+extraction), it shows the problem and the fix in its console and waits for a
+key. Each `start.pyw` check failure shows a Windows message box (through
+`ctypes`) that names the problem and the fix.
+Decided: the port is not read here; the launcher reads it from the Django settings (T74), so one parser applies the RN-47 rule. An unreadable `.env` is a Status screen case (T129, CA-77), not a window. An unreadable `data/secret_key` is a `StartupError` from T7 (RN-40, Milestone 0 review).
+Covers: RN-40, CA-17
 Agent: release-dev
 Depends on: T12
-Done when: unit tests for each check pass with the message box replaced by a recorder, including the message that names `APP_PORT`.
+Done when: unit tests for each check pass with the message box replaced by a recorder (a read-only home, a read-only `data/`, `.env` missing and `.env` as a folder); the `.cmd` started from inside the zip is a manual check in T82 (CA-17).
 
 ### T74: Launcher startup sequence
-When a running Card Factory answers on the port, open a new tab and exit.
-Otherwise run the upgrade service, start the local server entry point, open the
-default browser, and wire the watchdog to stop the process.
-TODO: another Card Factory install (other folder or version) on the same port would get the tab; consider returning the version and home folder from `/api/instance` (RN-41, RN-47).
-Covers: RN-29, RN-41, RN-42, CA-20, CA-47, CA-48
+The startup sequence of plan section 9.5, in order: bootstrap (home from
+`__file__`, code folder and `launcher/` on `sys.path`, `CARDFACTORY_HOME`,
+`os.devnull` for a missing stdout or stderr), the T73 checks, the
+single-instance lock `data/launcher.lock`, the Django settings, the port probe,
+the upgrade (T72), the bind and the server (T7), `data/instance.json`, the
+browser on `http://127.0.0.1:<port>/`, and the watchdog armed (T8). When the
+lock is held, wait up to 30 seconds for `data/instance.json`, open a tab of
+that port and exit. The probe uses `http.client` with a 2-second timeout: a
+Card Factory with the same home (after `os.path.realpath` and
+`os.path.normcase`) → open a tab and exit; a Card Factory with another home →
+message naming `APP_PORT` that says another Card Factory uses it; any other
+answer or a timeout → message naming `APP_PORT`. Every `StartupError` is a
+message box; any other exception is a fixed message box that points to
+`data/logs/app.log`, never the exception text. The qa step puts `backend/` on
+`sys.path` for `pytest launcher release` and uses the instance fixture of T8.
+Decided: only a Card Factory from the same folder gets a tab; one from another folder gets the port message, which says so (RN-41, RN-47, CA-53, Milestone 0 review).
+Covers: RN-29, RN-40, RN-41, RN-42, RN-47, CA-20, CA-47, CA-48, CA-53
 Agent: release-dev
 Depends on: T7, T8, T72, T73
-Done when: unit tests with fakes pass for the order of steps, the second-start path (new tab, no second server) and the stop on watchdog.
+Done when: unit tests with fakes pass for the order of steps, the second-start path (new tab, no second server), a second start after `APP_PORT` changed (tab of the running port), a second launcher started while the first is upgrading (tab, no server), the same home written with another case and a trailing separator (tab), another home on the port (port message naming another Card Factory), a non-JSON answer and a timeout (port message), a `StartupError` and an unexpected exception (message boxes with no exception text), and the stop on watchdog.
 
 ### T75: Local release zip build
 `release/build_release.py` and `release/versions.json` (pinned embeddable
 Python and hashes). It builds the frontend and assembles the Windows zip
 (`python/`, `app/`, `launcher/`, `Start Card Factory.cmd`, `.env` from
-`.env.example`, `README.md`) with the version written into it. The repository
-content check runs first. The license, the third-party notices and the
-`frontend-dist` asset are added in T111.
+`.env.example`, `README.md`, `VERSION`) with the version written into it, from
+tracked files only through an explicit include list (plan section 9.5): no
+tests, `conftest.py`, `__pycache__`, `data/` or local `.env`, and the zip's
+`.env` is a byte copy of `.env.example`. `python312._pth` lists the standard
+library, `Lib\site-packages` and `import site`; the pinned requirements are
+installed with `pip install --target` as binary wheels for win_amd64 and
+Python 3.12. After assembly, a smoke test runs the zip's own `python.exe`
+(imports Django, Django REST Framework and waitress, and creates an FTS5
+table). The repository content check runs first. The license, the third-party
+notices and the `frontend-dist` asset are added in T111.
 Covers: RN-02, RN-27, CA-23, CA-45
 Agent: release-dev
-Depends on: T2, T74
-Done when: running the script on a Windows machine produces the zip with the expected layout and the version written into it.
+Depends on: T2, T11, T74, T85
+Done when: running the script on a Windows machine produces the zip with the expected layout and the version written into it, and the smoke test passes; a test in `release/tests` assembles the layout from fake entries and asserts that no `data/`, test file or local `.env` is included and that the `.env` equals `.env.example`.
 
 ### T82: Manual acceptance checklist (start and stop)
 Create `specs/manual-checks.md` with step-by-step checks on a Windows computer
@@ -535,9 +619,8 @@ Done when: each listed CA has steps and an expected result.
 ### T88: Milestone 1 review
 Run every test suite. Check the coverage of the RN and CA parts of this
 milestone. Run the demo from the zip on a Windows computer with no Python
-installed, following `specs/manual-checks.md`. Confirm that the embeddable
-Python 3.12 package in the zip has `sqlite3` with FTS5 enabled, and record the
-result (plan section 9.1). Record the findings, and check the Milestone 2 tasks
+installed, following `specs/manual-checks.md`. Record the result of the FTS5
+smoke test of the zip build (T75; plan section 9.1). Record the findings, and check the Milestone 2 tasks
 against the spec.
 Covers: none (review)
 Agent: maintainer
@@ -564,15 +647,17 @@ running whose id this runner does not know is stored and reported as failed;
 the startup step of T72 also cleans them up. `Job.error` stores the error
 envelope of plan section 6, never the text of an exception. Add the in-memory
 usage queue that a build flushes when it ends (plan section 7, Concurrency).
-Every running job holds the watchdog (T8) and releases it when it ends,
-whatever the outcome. Add `GET /api/jobs/{id}` with the shape of plan
+Add counted holds to the watchdog (T8): while any hold is active it never
+stops, and after the last one is released it stops 180 seconds after the later
+of the last heartbeat and the release. Every running job holds the watchdog
+and releases it when it ends, whatever the outcome. Add `GET /api/jobs/{id}` with the shape of plan
 section 6. The test database is a file in the temporary home, and job tests
 that use threads run with `transaction=True`.
 TODO: answer the open question on simultaneous generations and cancellation before this task; it sets the size of the pool (T88).
 Covers: RN-03, RN-10, RN-41, CA-70
 Agent: backend-dev
 Depends on: T88
-Done when: tests pass for a successful job, a failing job (error envelope, no partial result, no exception text stored), an orphan reported as failed by `get_job` and cleaned at startup, and the watchdog held while a job runs and released after it succeeds or fails (CA-70).
+Done when: tests pass for a successful job, a failing job (error envelope, no partial result, no exception text stored), an orphan reported as failed by `get_job` and cleaned at startup, the watchdog held while a job runs and released after it succeeds or fails (CA-70), and watchdog tests with a fake clock for no stop while held, no stop while one of two holds remains, and a stop 180 seconds after the last hold is released with no heartbeat.
 
 ### T14: Catalog models and card full-text table
 Add `SourceRecord`, `BuildRun` (completed builds only, with their
@@ -679,11 +764,14 @@ Done when: Vitest tests pass for no build before the person starts it (CA-18), p
 
 ### T64: Status screen: data sources and readiness
 Extend the Status screen with the database readiness and the origin,
-publication date and download date of each source.
-Covers: RN-01, RN-49, CA-08
+publication date and download date of each source. While the configuration
+file cannot be read (the `.env` settings item, CA-77), the configuration fields
+are not shown as missing values: the screen shows the `.env` item in their
+place. Found in the Milestone 0 review.
+Covers: RN-01, RN-49, CA-08, CA-77
 Agent: frontend-dev
 Depends on: T62
-Done when: Vitest tests pass for the listed sources with their origin and both dates, and for a database that is not ready.
+Done when: Vitest tests pass for the listed sources with their origin and both dates, for a database that is not ready, for an unreadable configuration file shown with no "Not set" field and no missing key (mock from the contract sample of CA-77), and for visible focus on the screen's controls reached with the keyboard (RN-49).
 
 ### T116: Milestone 2 end-to-end flow test
 Create the end-to-end suite in `backend/tests/e2e/` with its shared fixtures
@@ -774,10 +862,10 @@ adapter; T41 and T42 register theirs. Until then, `anthropic` or `google` as
 development state ends with T41 and T42. Tests replace the factory functions with a pytest fixture that returns the
 fake adapter; the fake is never selectable from `.env`. The image side of the
 factory comes with T90.
-Covers: RN-05, RN-06, RN-07, RN-08
+Covers: RN-05, RN-06, RN-07, RN-08, CA-78
 Agent: llm-engineer
 Depends on: T35, T40
-Done when: tests pass for `openai` returning its adapter, an invalid configuration returning no adapter with the setting named, and the key revealed only inside the factory.
+Done when: tests pass for `openai` returning its adapter, an invalid configuration returning no adapter with the setting named (including a model value that looks like a key, CA-78, with no adapter call), and the key revealed only inside the factory.
 
 ### T37: Card models and version service
 Add `Card`, `CardVersion` (immutable, numbered per card) and `UsageRecord` with
@@ -1255,10 +1343,11 @@ with `image_adapter()` and `art_availability()`
 (reason and setting that enables art); it is the only module that branches on
 `IMAGE_PROVIDER`.
 Extend `GET /api/status` with art availability and its reason.
+Decided: an invalid `IMAGE_PROVIDER` is stored as empty, while the image key and model set with it stay in the configuration; art availability reads the settings to fix, so an invalid image provider makes art unavailable and never falls back to the text provider with the image key (RN-08, Milestone 0 review).
 Covers: RN-05, RN-07, RN-08, CA-32, CA-33, CA-67, CA-68, CA-74
 Agent: llm-engineer
 Depends on: T97
-Done when: tests pass for Anthropic with no image provider (art unavailable, setting named), Anthropic with an image provider (image adapter returned), invalid image settings (text still available), the same provider with an empty image key using the text key (CA-67), and an image provider with no image model (art unavailable, image model named, CA-68).
+Done when: tests pass for Anthropic with no image provider (art unavailable, setting named), Anthropic with an image provider (image adapter returned), invalid image settings (text still available; with OpenAI or Google as text provider and an invalid image provider, art unavailable and the image provider named), the same provider with an empty image key using the text key (CA-67), and an image provider with no image model (art unavailable, image model named, CA-68).
 
 ### T43: OpenAI image adapter
 Image generation without a template, adding multipart support to the shared
@@ -1731,7 +1820,7 @@ Done when: every suite and the content check pass, and the coverage table has no
 
 Interface quality tasks (design guidelines, accessibility, the generation wait
 experience, screen review passes, a final consistency pass) will be appended
-with the next free IDs, starting at T127. Design guidelines and accessibility
+with the next free IDs, starting at T130. Design guidelines and accessibility
 basics fit in Milestone 2, before the first screens beyond Status. The wait
 experience fits in Milestone 3. A screen review pass fits in each milestone that
 changes screens, before its review task, and the final consistency pass before
@@ -1752,9 +1841,9 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | RN-03 | T13, T14, T15, T21, T116 |
 | RN-04 | T14, T16, T23, T26 |
 | RN-05 | T4, T36, T90 |
-| RN-06 | T4, T5, T6, T126, T87, T39, T36, T61 |
+| RN-06 | T4, T5, T6, T126, T87, T128, T39, T36, T61 |
 | RN-07 | T4, T35, T40, T36, T41, T42, T118, T93, T90, T115, T58, T101, T98 |
-| RN-08 | T4, T6, T9, T40, T36, T49, T41, T42, T45, T92, T90, T91, T101 |
+| RN-08 | T4, T6, T9, T127, T128, T129, T40, T36, T49, T41, T42, T45, T92, T90, T91, T101 |
 | RN-09 | T38, T48, T67, T52, T50, T51, T68 |
 | RN-10 | T13, T35, T39, T40, T48, T117, T41, T42 |
 | RN-11 | T49, T65, T117, T115, T33 |
@@ -1785,14 +1874,14 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | RN-37 | T103, T105, T123 |
 | RN-38 | T17, T104, T105, T114, T123 |
 | RN-39 | T60, T104, T66, T123 |
-| RN-40 | T6, T9, T73, T62, T83 |
+| RN-40 | T6, T9, T129, T7, T73, T74, T62, T83 |
 | RN-41 | T8, T11, T74, T13, T21, T93, T83 |
 | RN-42 | T72, T74, T125, T79 |
 | RN-43 | T50, T115, T59, T98, T68, T100, T122 |
 | RN-44 | T43, T44, T51, T58, T59, T99, T68 |
 | RN-45 | T111, T76, T77, T78, T79, T112, T83 |
 | RN-46 | T79 |
-| RN-47 | T4, T7, T8, T73, T83 |
+| RN-47 | T4, T7, T8, T74, T83 |
 | RN-48 | T67, T51 |
 | RN-49 | T9, T62, T63, T64, T65, T67, T92, T69, T70, T101, T98, T99, T68, T100, T66, T105, T109, T112 |
 | CA-01 | T29 |
@@ -1800,7 +1889,7 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | CA-03 | T30, T120 |
 | CA-04 | T31, T120 |
 | CA-05 | T4, T49 |
-| CA-06 | T5, T6, T126, T87, T40, T61, T41, T42 |
+| CA-06 | T5, T6, T126, T87, T128, T129, T40, T61, T41, T42 |
 | CA-07 | T21, T116 |
 | CA-08 | T21, T22, T64, T116 |
 | CA-10 | T48, T117 |
@@ -1846,7 +1935,7 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | CA-50 | T43, T44, T58, T59, T99, T68 |
 | CA-51 | T76, T77, T112, T83 |
 | CA-52 | T79 |
-| CA-53 | T73, T82, T83 |
+| CA-53 | T74, T82, T83 |
 | CA-54 | T33, T109, T124 |
 | CA-55 | T55, T52, T69 |
 | CA-56 | T47b |
@@ -1860,13 +1949,15 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | CA-64 | T31 |
 | CA-65 | T18, T30, T31 |
 | CA-66 | T28 |
-| CA-67 | T90 |
-| CA-68 | T90 |
+| CA-67 | T4, T90 |
+| CA-68 | T4, T90 |
 | CA-69 | T50, T51, T122 |
 | CA-70 | T13 |
 | CA-71 | T104, T105 |
 | CA-72 | T29 |
-| CA-73 | T4, T6, T9 |
+| CA-73 | T4, T6, T9, T127, T129 |
 | CA-74 | T4, T6, T9, T90, T101 |
 | CA-75 | T4, T6 |
 | CA-76 | T40, T41, T42 |
+| CA-77 | T129, T64 |
+| CA-78 | T128, T36 |

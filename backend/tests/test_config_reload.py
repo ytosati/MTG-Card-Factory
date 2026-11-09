@@ -1,8 +1,10 @@
-"""Reading `.env` again and the `.env.example` template (task T4, spec RN-08, RN-27, CA-73).
+"""Reading `.env` again and the `.env.example` template (tasks T4 and T127, spec RN-08, RN-27, CA-73).
 
 Every loader test uses a temporary file and a cleared environment, never the
 repository `.env`.
 """
+
+import os
 
 import pytest
 
@@ -12,6 +14,7 @@ from tests.config_files import (
     bump_mtime,
     clean_environment,  # noqa: F401 (fixture)
     full_text_settings,
+    set_mtime_ns,
     settings_named,
     write_settings,
 )
@@ -54,6 +57,35 @@ def test_t4_ca73_changed_model_is_seen_without_restart(tmp_path):
     bump_mtime(path)
 
     assert _get(path).llm_model == "fake-text-model-2"
+
+
+def test_t127_ca73_size_change_with_same_mtime_is_read_again(tmp_path):
+    """CA-73 / RN-08 / T127: a rewrite of a different size and the same modification time is read again."""
+    path = write_settings(tmp_path, full_text_settings(model="fake-text-model-1"))
+    original_mtime_ns = os.stat(path).st_mtime_ns
+    original_size = os.stat(path).st_size
+    assert _get(path).llm_model == "fake-text-model-1"
+
+    write_settings(tmp_path, full_text_settings(model="fake-text-model-with-a-longer-name-2"))
+    set_mtime_ns(path, original_mtime_ns)
+    assert os.stat(path).st_mtime_ns == original_mtime_ns
+    assert os.stat(path).st_size != original_size
+
+    assert _get(path).llm_model == "fake-text-model-with-a-longer-name-2"
+
+
+def test_t127_ca73_added_key_with_same_mtime_is_seen(tmp_path):
+    """CA-73 / RN-08 / T127: a key added within the timestamp precision (same modification time) is seen."""
+    path = write_settings(tmp_path, _without_key())
+    original_mtime_ns = os.stat(path).st_mtime_ns
+    assert settings_named(_get(path).settings_to_fix) == {"LLM_API_KEY"}
+
+    write_settings(tmp_path, full_text_settings())
+    set_mtime_ns(path, original_mtime_ns)
+    config = _get(path)
+
+    assert config.settings_to_fix == ()
+    assert config.llm_api_key.reveal() == FAKE_TEXT_KEY
 
 
 def test_t4_ca73_unchanged_file_is_not_read_again(tmp_path):

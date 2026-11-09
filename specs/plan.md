@@ -155,10 +155,15 @@ branches on `code`, never on `message`: `config_invalid`, `origin_refused`,
 `rate_limited`, `model_not_found`, `provider_unavailable`,
 `provider_not_available_yet`
 (development state of Milestone 3 only), `invalid_response`,
-`content_refused`, `art_unavailable`, `card_changed`, `internal`. A settings
+`content_refused`, `art_unavailable`, `card_changed`, `bad_request`, `internal`.
+`bad_request` answers a malformed JSON body (400), an unsupported media type
+(415) and an unacceptable `Accept` header (406), with a fixed message and the
+original status. A settings
 list (status, generation, setup) uses the same objects, `{setting, code,
 message}`, with codes as stable as the error codes: `config_invalid` for a
-setting to fix and `ignored` for a setting ignored with a notice (RN-08).
+setting to fix and `ignored` for a setting ignored with a notice (RN-08). A
+configuration file that cannot be read is the single item `config_invalid`
+with `setting` equal to `.env` and a message for its cause (RN-40, CA-77).
 
 **Jobs.** `GET /api/jobs/{id}` returns `{id, kind, status, progress, result,
 error}`, where `error` is the envelope above. A job never stores the text of an
@@ -198,6 +203,13 @@ serializers and the client types with no new dependency.
 | GET `images/{id}` | serves the stored file unchanged | 33, 44 |
 | GET `usage?card=` | usage records | 09 |
 | POST `heartbeat` / GET `instance` | tab liveness / identifies Card Factory on the port | 41, 47 |
+
+**Instance contract.** `GET /api/instance` returns `{app: "card-factory",
+version, home}` and is a contract between versions (a newer launcher probes an
+older instance): these fields never change meaning, and readers ignore extra
+fields. `version` comes from the `VERSION` file in the home, or
+`0.0.0+unknown` when it is missing. `POST /api/heartbeat` takes a JSON body
+(`{}`) and answers 204 with no body.
 
 Every non-API path returns the built `index.html`; `/assets/*` is served from
 the built frontend (section 9.5).
@@ -295,9 +307,23 @@ application (unknown migrations), it stops with a message instead of migrating.
   strips quotes, spaces and the UTF-8 byte-order mark that Notepad may add, and
   lets process environment variables override only when `CARDFACTORY_DEBUG=1`.
   It returns a frozen config object; keys are `Secret` objects whose text form
-  is `***`. `get_config()` reads the file again when its modification time
-  changed, so the Status screen and each generation see a fix without a restart
-  (RN-08). The port is read once at startup; a changed port is reported as
+  is `***`. `get_config()` reads the file again when its modification time or
+  its size changed, so the Status screen and each generation see a fix without
+  a restart (RN-08); the size catches most saves made within the 2-second
+  timestamp precision of FAT32. A read that fails is never cached: the next
+  call tries the file again, so a permission fixed without editing the file is
+  seen. The parser reads UTF-8, with or without a byte-order mark, and UTF-16
+  with a byte-order mark (Notepad "Unicode"); an invalid UTF-8 byte is
+  replaced, so one stray character in a comment does not discard the file. A
+  file that exists but cannot be opened, or holds NUL bytes after decoding
+  (UTF-16 with no byte-order mark), reads as empty and is reported as the
+  single item for `.env` (section 6): no other setting to fix and no port
+  change are reported while it cannot be read (RN-40, CA-77). `core.config`
+  imports nothing from Django, so the launcher can use it before the settings
+  load. A model value (`LLM_MODEL`, `IMAGE_MODEL`) equal to a configured key
+  value or starting with a known key prefix (`sk-`, `AIza`) is a setting to
+  fix; it is not kept in the config, like an unknown provider value, so it is
+  never shown, logged or sent to a provider (RN-06, RN-08, CA-78). The port is read once at startup; a changed port is reported as
   taking effect at the next start. An invalid `APP_PORT` falls back to 47821
   and is reported as a setting to fix (RN-47). Empty image settings only make
   art unavailable; set but invalid ones are settings to fix; `IMAGE_API_KEY`
@@ -319,9 +345,13 @@ application (unknown migrations), it stops with a message instead of migrating.
   `data/secret_key` with a random value from the standard library (`secrets`,
   at least 50 characters, so Django's key check passes) and reads it on later
   loads, without surrounding whitespace. A file that is empty or holds only
-  whitespace is replaced by a new value; a file with content is never
-  rewritten. It is not the API key and is never shown. No action from the
-  person.
+  whitespace, or whose content is not UTF-8, is replaced by a new value: in v1
+  the key signs nothing that persists (no sessions, no accounts), so replacing
+  it is harmless. A readable file with valid content is never rewritten. A file
+  that cannot be read or written (no permission, a folder in its place) raises
+  `core.startup.StartupError` naming `data/secret_key`, with the fix "check its
+  permissions, or delete it"; the launcher shows it in a message box (RN-40).
+  It is not the API key and is never shown. No action from the person.
 - **Key protection (RN-06).** In application code, only `providers.factory`
   and the log filter (`core.log_redaction`, which needs the values to remove
   them) call `reveal()`. Adapters never put the key in exception text. As a
@@ -330,8 +360,12 @@ application (unknown migrations), it stops with a message instead of migrating.
   the image key held in the config (the effective one after the fallback, or
   the one set with an invalid `IMAGE_PROVIDER`), and an `IMAGE_API_KEY` ignored
   for lack of `IMAGE_PROVIDER`, kept in the config as a `Secret` for this
-  purpose. A value under 8 characters is left alone, since replacing it would
-  garble ordinary text. The filter covers the formatted message, its arguments
+  purpose. Every key value seen since the process started stays redacted
+  until the process stops, so a call made with a key replaced in `.env`
+  cannot log the old value; these values are kept in memory only. A value
+  under 8 characters is left alone, since replacing it would garble ordinary
+  text. This is an accepted risk: real provider keys are far longer, and a key
+  that short is not valid. The filter covers the formatted message, its arguments
   when they do not match the message, the exception text and `stack_info`; it
   never drops a record. Serializers list fields explicitly; the
   status serializer has booleans only. A test sends every endpoint through a
@@ -347,8 +381,10 @@ application (unknown migrations), it stops with a message instead of migrating.
   before it reaches a provider.
 - **Logs.** With `pythonw.exe` there is no console, so the application logs to
   `data/logs/app.log` with size-based rotation. The key redaction filter applies
-  to every handler. Logs record events, causes and identifiers, never card
-  contents, prompts or keys.
+  to every handler. The log format uses only the message, the standard record
+  fields, the exception and the stack, so `extra` fields, which the filter
+  does not cover, never reach the file. Logs record events, causes and
+  identifiers, never card contents, prompts or keys.
 
 ## 9. Topics with alternatives
 
@@ -467,32 +503,85 @@ waitress as server, Django serves the built frontend.**
 - **Zip layout:** `python/` (embeddable Python with the dependencies in its
   site-packages), `app/backend/`, `app/frontend/` (built), `launcher/`,
   `Start Card Factory.cmd`, `.env` (from `.env.example`), `data/` (created on
-  first start), `README.md`.
-- **Start file:** a `.cmd` that runs `start "" python\pythonw.exe
-  launcher\start.pyw` and exits; the console flashes for under a second. A
-  Windows shortcut needs absolute paths, and Windows Script Host is being
-  deprecated, so both were set aside.
+  first start), `README.md`, `VERSION`. The zip is assembled from tracked files
+  only, through an explicit include list (no tests, `conftest.py`,
+  `__pycache__`, `data/` or local `.env`); its `.env` is a byte copy of
+  `.env.example`. `python312._pth` lists the standard library,
+  `Lib\site-packages` and `import site`; the pinned requirements are installed
+  with `pip install --target` as binary wheels for win_amd64 and Python 3.12.
+  After assembly, a smoke test runs the zip's own `python.exe`: it imports
+  Django, Django REST Framework and waitress and creates an FTS5 table, so FTS5
+  and the embeddable package are checked on every build.
+- **Start file:** a `.cmd` (source under `launcher/`) that first checks that
+  `python\pythonw.exe` and `launcher\start.pyw` exist next to it (`%~dp0`). When
+  they do not (started from inside the zip, where Explorer extracts only the
+  clicked file, or a partial extraction), it shows the problem and the fix in
+  its console and waits for a key (RN-40, CA-17). Otherwise it runs
+  `start "" python\pythonw.exe launcher\start.pyw` and exits; the console
+  flashes for under a second. A Windows shortcut needs absolute paths, and
+  Windows Script Host is being deprecated, so both were set aside.
+- **Boundary with the backend.** The launcher imports only `core.config` and
+  `core.startup`, which holds `StartupError(problem, fix)`, the running port,
+  the upgrade service and `serve()`. Every `StartupError` becomes a message box;
+  any other exception shows a fixed message box that points to
+  `data/logs/app.log` (never the exception text, which could hold a key), and
+  its traceback goes to the redacted log when logging is configured.
 - **Launcher (`start.pyw`):**
-  1. Checks that it is not running from inside a zip (path under the temporary
-     folder of the Explorer zip view), that the folder is writable, and that
-     `.env` exists; failures open a Windows message box through `ctypes`
-     (tkinter is not part of the embeddable package) (RN-40).
-  2. Probes `127.0.0.1:APP_PORT/api/instance`: Card Factory answers → opens a
-     tab and exits (RN-41); another program holds the port → message naming
-     `APP_PORT` (RN-47).
-  3. Backs up the database and migrates (RN-42), marks orphan jobs failed.
-  4. Starts waitress on `127.0.0.1` in a thread, opens the default browser.
-  5. A watchdog stops the process when no heartbeat arrived for 180 seconds
+  1. Bootstrap, before any other import: resolve the home from its own
+     `__file__` (the parent of `launcher/`), put the code folder (`app/backend`
+     in the zip, `backend` in a clone) and `launcher/` on `sys.path` (the
+     embeddable package ignores the script folder and `PYTHONPATH`), set
+     `CARDFACTORY_HOME`, and replace `sys.stdout` and `sys.stderr` with
+     `os.devnull` handles when they are None (`pythonw.exe` has neither).
+  2. Checks, with no Django and no network: the home and `data/` are writable
+     and `.env` exists as a file; failures open a Windows message box through
+     `ctypes` (tkinter is not part of the embeddable package) (RN-40).
+  3. Takes the single-instance lock `data/launcher.lock` (`msvcrt.locking`) and
+     keeps it for the life of the process. When the lock is held, a Card
+     Factory from this folder is starting or running: the launcher waits up to
+     30 seconds for `data/instance.json` (written by the running process with
+     its port and process id), probes that port and opens a tab of it (RN-41,
+     even when `APP_PORT` changed since it started), then exits.
+  4. Loads the Django settings inside the `StartupError` handling; the port is
+     `settings.RUNNING_PORT`, the single source for the probe, the bind and the
+     status.
+  5. Probes `http://127.0.0.1:<port>/api/instance` with `http.client` (never
+     `urllib`, which applies the system proxy) and a 2-second timeout. Nothing
+     answers → continue. A Card Factory whose home equals this one (compared
+     after `os.path.realpath` and `os.path.normcase`) → opens a tab and exits; a
+     Card Factory with another home → message naming `APP_PORT` that says
+     another Card Factory uses it; any other answer, a timeout or a body that
+     is not the instance JSON → message naming `APP_PORT` (RN-47). The bind
+     stays the authority: a program that does not speak HTTP is caught there.
+  6. Backs up the database and migrates (RN-42), marks orphan jobs failed.
+  7. Binds waitress to `127.0.0.1` in a thread (exclusive address use, so no
+     other program shares the port; a bind failure is a `StartupError` naming
+     `APP_PORT`), writes `data/instance.json`, opens the default browser on
+     `http://127.0.0.1:<port>/` (not `localhost`, which may try `::1` first).
+  8. A watchdog stops the process when no heartbeat arrived for 180 seconds
      after the last one, or when no first heartbeat arrived within 120 seconds
-     of startup (RN-41). The margin tolerates the timer throttling browsers
+     of the browser being opened, so a long upgrade does not use up the window
+     (RN-41). It checks every 5 seconds and calls its stop callback at most
+     once. The margin tolerates the timer throttling browsers
      apply to background tabs. Every running job (build, generation, art,
-     quick adjustment) holds it; holds are counted. The frontend sends a
-     heartbeat every 15 seconds, when the tab becomes visible again and on
-     `pagehide`; when heartbeats fail, it shows that the application stopped
-     and how to start it again.
-- **Serving the frontend:** a catch-all Django view returns `index.html`; assets
-  are served by Django's static file view mapped explicitly to the built folder,
-  which works with `DEBUG` off. No extra package.
+     quick adjustment) holds it; holds are counted (added with jobs, T13). Only
+     the launcher creates the watchdog, never the app configuration or the
+     settings, so `runserver` and the tests never stop on their own; a
+     heartbeat with no watchdog does nothing. The frontend sends a
+     heartbeat when it mounts, every 15 seconds, when the tab becomes visible
+     again and on `pagehide`; when a heartbeat fails, it shows that the
+     application stopped and how to start it again, and a later heartbeat that
+     succeeds clears the notice. Accepted risks: a probe that reaches an
+     instance in the moment its watchdog stops opens a tab that says the
+     application stopped; a computer that sleeps for more than 180 seconds
+     with no tab awake finds the application stopped.
+- **Serving the frontend:** a catch-all Django view returns `index.html`; an
+  explicit asset view serves `/assets/*` from the built folder, which works
+  with `DEBUG` off. It sets the content types of `.js`, `.mjs` and `.css`
+  itself, because Django's static file view guesses them through the Windows
+  registry, which can map `.js` to `text/plain` and block the module script.
+  `core.paths` resolves the built folder and keeps every asset inside it
+  (no `..`, no NTFS stream names). No extra package.
 - **Clone (`start.cmd`, RN-45):** prepares `runtime/` and then calls the same
   launcher.
   - Downloads the embeddable Python (pinned version and SHA-256 in
@@ -588,7 +677,7 @@ The T26 evaluation measures whether the patterns plus keywords are good enough.
 | 36 | catalog.selectors.find_base_cards, list_printings | search fixture |
 | 37 | generation.text prompt includes base snapshot | fake receives base |
 | 38–39 | generation.art template; fetch_base_image cache and fallback | no-network fallback |
-| 40, 47 | launcher checks and messages | manual check |
+| 40, 47 | launcher checks and messages; `core.startup` errors; `core.config` unreadable file | launcher unit tests with a message recorder; CA-77 backend test; manual check |
 | 41 | heartbeat endpoint, launcher watchdog, job runner hold, frontend hook | watchdog unit test; runner hold test |
 | 42 | launcher backup and migrate | migration from older fixture database |
 | 43 | cards.services.upload_image with header checks | renamed text file |
@@ -624,10 +713,12 @@ task names exactly one agent.
 - Runtime (approved): Django, Django REST Framework, waitress; embeddable Python
   for the zip.
 - Development: pytest, pytest-django (backend); Vite, TypeScript, React, Vitest,
-  jsdom and @testing-library/react (frontend, approved for T9). Further testing
-  helpers need approval in the task that first needs them.
+  jsdom, @testing-library/react, @types/react and @types/react-dom (frontend,
+  approved for T9). JSX is compiled by Vite's own esbuild, with no React
+  plugin. Further testing helpers need approval in the task that first needs them.
 - Versions: Python 3.12 (development and the embeddable package); Django 5.2
-  LTS.
+  LTS; Node 22.22.2 or later for frontend development, tests and the release
+  build (required by jsdom), declared in `engines` of `frontend/package.json`.
 - Not added: SDKs of the providers, `python-dotenv`, an image library, a router
   library (the frontend uses a small hash-based switch), a task queue (jobs run
   in a thread pool inside the process).
@@ -651,7 +742,7 @@ sources.
 
 | Milestone | Demonstrable capability | Layers it adds |
 |---|---|---|
-| M0 Foundation | Status screen shows the configuration and the settings to fix | config, status endpoint, origin check, log, frontend skeleton served by Django, CI |
+| M0 Foundation | Status screen shows the configuration and the settings to fix | config, status endpoint, log, frontend skeleton served by Django, CI |
 | M1 Double-click start | the locally built zip starts with a double click and stops after the last tab closes | server entry point, instance and heartbeat, watchdog, upgrade service, launcher, release zip, manual checklist |
 | M2 Reference database | Setup screen builds the database from Oracle Cards; Status lists the source | jobs, catalog models, downloader, Oracle import, roles, build, setup endpoints and gate, Setup screen |
 | M3 First card | a request becomes a validated, saved card shown on the Result screen, with OpenAI | provider protocol, OpenAI text adapter, factory, card models, usage, mana cost and color identity validators, comparables search, generation pipeline, Request and Result screens, key-leak sweep |

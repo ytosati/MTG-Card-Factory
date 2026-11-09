@@ -12,6 +12,10 @@ from tests.project_environment import is_project_variable
 FAKE_TEXT_KEY = "sk-fake-text-0000-TEXTKEY-not-real-1111"
 FAKE_IMAGE_KEY = "sk-fake-image-2222-IMAGEKEY-not-real-3333"
 
+# A model value that starts like a Google key (spec CA-78). It is kept shorter
+# than a real Google key so that no secret scanner matches it.
+FAKE_AIZA_MODEL_VALUE = "AIzaFake-model-PASTED-not-real"
+
 DEFAULT_PORT = 47821
 
 SETTING_NAMES = (
@@ -52,6 +56,86 @@ def bump_mtime(path, seconds=10):
     """Move the modification time forward so a change is visible on any file system."""
     stat = os.stat(path)
     os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns + seconds * 1_000_000_000))
+
+
+def set_mtime_ns(path, mtime_ns):
+    """Set the modification time to an exact value, keeping the access time."""
+    stat = os.stat(path)
+    os.utime(path, ns=(stat.st_atime_ns, mtime_ns))
+
+
+def write_env_bytes(directory, content, name=".env"):
+    """Write raw bytes to `directory/name` (other encodings, stray bytes) and return the path."""
+    path = directory / name
+    path.write_bytes(content)
+    return path
+
+
+def _same_file(candidate, target):
+    try:
+        text = os.fspath(candidate)
+    except TypeError:
+        # A file descriptor or another object that is not a path.
+        return False
+    if isinstance(text, bytes):
+        text = os.fsdecode(text)
+    return os.path.normcase(os.path.abspath(text)) == os.path.normcase(os.path.abspath(target))
+
+
+class OpeningDenied:
+    """Makes every attempt to open one file fail with a permission error, as a Windows ACL would.
+
+    Granting real permissions back and forth is not portable in tests, so the
+    opening functions of the standard library (`open`, `io.open`, `os.open`)
+    are wrapped: a call for the target path raises PermissionError while the
+    denial is on; every other path, and `os.stat` of the target, work as usual.
+    The file itself is never changed, so its modification time and size stay
+    the same when the denial is lifted (spec CA-73).
+    """
+
+    def __init__(self, monkeypatch, path):
+        import builtins
+        import io
+
+        self.path = path
+        self.denied = True
+        self.attempts = 0
+        original_open = builtins.open
+        original_io_open = io.open
+        original_os_open = os.open
+
+        def guard(file):
+            if self.denied and _same_file(file, self.path):
+                self.attempts += 1
+                raise PermissionError(13, "Permission denied (simulated by the test)", os.fspath(self.path))
+
+        def fake_open(file, *args, **kwargs):
+            guard(file)
+            return original_open(file, *args, **kwargs)
+
+        def fake_io_open(file, *args, **kwargs):
+            guard(file)
+            return original_io_open(file, *args, **kwargs)
+
+        def fake_os_open(file, *args, **kwargs):
+            guard(file)
+            return original_os_open(file, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "open", fake_open)
+        monkeypatch.setattr(io, "open", fake_io_open)
+        monkeypatch.setattr(os, "open", fake_os_open)
+
+    def allow(self):
+        """The file can be opened again (a permission fixed without editing the file)."""
+        self.denied = False
+
+    def deny(self):
+        self.denied = True
+
+
+def deny_opening(monkeypatch, path):
+    """Deny opening `path` until `.allow()` is called on the returned OpeningDenied."""
+    return OpeningDenied(monkeypatch, path)
 
 
 def settings_named(entries):

@@ -121,7 +121,7 @@ merged into `main`.
 - [x] T11: Frontend heartbeat hook
 - [x] T72: Database upgrade service
 - [x] T73: VERSION file and launcher prerequisite checks
-- [ ] T74: Launcher startup sequence
+- [x] T74: Launcher startup sequence
 - [ ] T75: Local release zip build
 - [ ] T82: Manual acceptance checklist (start and stop)
 - [ ] T88: Milestone 1 review

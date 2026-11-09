@@ -142,16 +142,25 @@ def _failed_migration_error():
     )
 
 
-def serve(stop_event):
-    """Serve the application on `127.0.0.1` at the running port until `stop_event` is set."""
+def bind():
+    """A socket listening on `127.0.0.1` at the running port, or StartupError naming APP_PORT."""
     # Imported here: the launcher imports this module before the settings load.
     from django.conf import settings
+
+    return _bind(settings.RUNNING_PORT)
+
+
+def serve(stop_event, sock=None):
+    """Serve the application on `127.0.0.1` at the running port until `stop_event` is set.
+
+    `sock` is a socket from `bind()`; without one, serve() binds it first.
+    """
     from waitress.server import create_server
 
     from cardfactory.wsgi import application
 
-    port = settings.RUNNING_PORT
-    sock = _bind(port)
+    if sock is None:
+        sock = bind()
     try:
         # Waitress would set SO_REUSEADDR on a socket it binds itself, so it gets this one bound.
         server = create_server(application, sockets=[sock])

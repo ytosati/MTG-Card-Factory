@@ -76,6 +76,14 @@ Fields listed are the ones the spec needs; types are left to the tasks.
   type_line, oracle_text, colors, color_identity, keywords, power, toughness,
   layout, faces (JSON), commander_legality (legal, banned, not_legal),
   game_changer, edhrec_rank, roles (JSON list, section 9.6).
+  Import mapping (T16): Commander `restricted` is stored as legal and any other
+  or missing value as not_legal; non-card layouts (token, double_faced_token,
+  emblem, art_series, vanguard, scheme, planar) are not imported; a card
+  without top-level mana_cost, oracle_text, colors, type_line or cmc takes
+  them from its faces (front face mana cost and cmc, face texts joined with
+  `//`, union of face colors, face type lines joined with ` // `); a record
+  without a top-level oracle_id takes the first face's; a repeated oracle_id
+  is stored once.
 - `Printing`: `scryfall_id` (primary key), oracle_card, set_code,
   collector_number, lang, frame, border_color, frame_effects, released_at,
   image URLs per face (png 745 × 1040).
@@ -634,7 +642,8 @@ The T26 evaluation measures whether the patterns plus keywords are good enough.
   (printings in English, for base card printings and images), All Cards
   (streamed, keeping only Portuguese printings for terms). Bulk files are large JSON arrays, so they are read as a stream, one
   record at a time, with the standard library, never loaded whole (the exact
-  layout is verified against a real file in T16).
+  layout is verified against a real file in the Milestone 2 review, T89; the
+  tests use hand-written fictional files).
   Requests send a descriptive User-Agent and Accept header, as Scryfall asks.
 - Comprehensive Rules: the text file linked from the Wizards rules page; the
   importer finds the link and stores the sections. Keyword abilities (702),

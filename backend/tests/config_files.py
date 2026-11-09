@@ -12,6 +12,10 @@ from tests.project_environment import is_project_variable
 FAKE_TEXT_KEY = "sk-fake-text-0000-TEXTKEY-not-real-1111"
 FAKE_IMAGE_KEY = "sk-fake-image-2222-IMAGEKEY-not-real-3333"
 
+# A model value that starts like a Google key (spec CA-78). It is kept shorter
+# than a real Google key so that no secret scanner matches it.
+FAKE_AIZA_MODEL_VALUE = "AIzaFake-model-PASTED-not-real"
+
 DEFAULT_PORT = 47821
 
 SETTING_NAMES = (

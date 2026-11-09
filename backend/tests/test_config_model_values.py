@@ -19,6 +19,7 @@ repository `.env`. Values are fictional; keys only look like keys.
 import pytest
 
 from tests.config_files import (
+    FAKE_AIZA_MODEL_VALUE,
     FAKE_IMAGE_KEY,
     FAKE_TEXT_KEY,
     clean_environment,  # noqa: F401 (fixture)
@@ -42,7 +43,7 @@ PREFIXED_VALUES = [
     pytest.param("sk-fake-model-6666-PASTEDKEY-not-real-7777", id="sk-long"),
     pytest.param("sk-proj-fake-0000-PASTED-not-real", id="sk-proj"),
     pytest.param("sk-ant-fake-api03-PASTED-not-real-0000", id="sk-ant"),
-    pytest.param("AIzaFakeModel8888PastedKeyNotReal9999xyz", id="AIza-long"),
+    pytest.param(FAKE_AIZA_MODEL_VALUE, id="AIza-mixed"),
     pytest.param("AIzaSy-fake_0000-PASTED-not-real", id="AIza-dash-underscore"),
     pytest.param("sk-", id="sk-prefix-only"),
     pytest.param("AIza", id="AIza-prefix-only"),
@@ -137,7 +138,7 @@ def test_t128_rn06_text_model_with_key_prefix_is_not_kept(tmp_path, value):
 @pytest.mark.parametrize("provider", ["openai", "anthropic", "google"])
 def test_t128_ca78_text_model_with_key_prefix_is_dropped_for_every_text_provider(tmp_path, provider):
     """CA-78 / RN-07 / T128: the check does not depend on the text provider."""
-    for value in ("sk-fake-model-6666-PASTEDKEY-not-real-7777", "AIzaFakeModel8888PastedKeyNotReal9999xyz"):
+    for value in ("sk-fake-model-6666-PASTEDKEY-not-real-7777", FAKE_AIZA_MODEL_VALUE):
         config = _load(tmp_path, full_text_settings(provider=provider, model=value))
 
         assert config.llm_model == ""
@@ -162,7 +163,7 @@ def test_t128_ca78_image_model_with_key_prefix_is_a_setting_to_fix(tmp_path, val
 
 @pytest.mark.parametrize("text_provider", ["openai", "google"])
 @pytest.mark.parametrize(
-    "value", ["sk-fake-model-6666-PASTEDKEY-not-real-7777", "AIzaFakeModel8888PastedKeyNotReal9999xyz"]
+    "value", ["sk-fake-model-6666-PASTEDKEY-not-real-7777", FAKE_AIZA_MODEL_VALUE]
 )
 def test_t128_ca78_image_model_with_key_prefix_and_image_capable_text_is_a_setting_to_fix(
     tmp_path, text_provider, value
@@ -178,7 +179,7 @@ def test_t128_ca78_image_model_with_key_prefix_and_image_capable_text_is_a_setti
 
 
 @pytest.mark.parametrize(
-    "value", ["sk-fake-model-6666-PASTEDKEY-not-real-7777", "AIzaFakeModel8888PastedKeyNotReal9999xyz"]
+    "value", ["sk-fake-model-6666-PASTEDKEY-not-real-7777", FAKE_AIZA_MODEL_VALUE]
 )
 def test_t128_ca78_ignored_image_model_with_key_prefix_is_a_setting_to_fix(tmp_path, value):
     """CA-78 / RN-06 / T128: with no IMAGE_PROVIDER and Anthropic text, a key-like IMAGE_MODEL is reported once, to fix.
@@ -208,7 +209,7 @@ def test_t128_ca78_ignored_image_model_with_key_prefix_keeps_the_ignored_key_not
 
 
 @pytest.mark.parametrize(
-    "value", ["sk-fake-model-6666-PASTEDKEY-not-real-7777", "AIzaFakeModel8888PastedKeyNotReal9999xyz"]
+    "value", ["sk-fake-model-6666-PASTEDKEY-not-real-7777", FAKE_AIZA_MODEL_VALUE]
 )
 def test_t128_ca78_anthropic_image_provider_with_key_like_model_names_both_settings(tmp_path, value):
     """CA-78 / CA-74 / RN-08 / T128: IMAGE_PROVIDER=anthropic and a key-like IMAGE_MODEL name both settings once
@@ -351,7 +352,7 @@ def test_t128_ca78_quoted_and_padded_model_equal_to_key_is_dropped(tmp_path):
 
 def test_t128_ca78_quoted_model_with_key_prefix_is_dropped(tmp_path):
     """CA-78 / RN-06 / T128: a quoted, padded value with a key prefix is checked after quotes and spaces are stripped."""
-    value = "AIzaFakeModel8888PastedKeyNotReal9999xyz"
+    value = FAKE_AIZA_MODEL_VALUE
     content = env_text(full_text_settings()).replace("LLM_MODEL=fake-text-model-1", f"LLM_MODEL= ' {value} ' ")
     from core.config import load_config
 
@@ -377,7 +378,7 @@ def test_t128_ca78_debug_override_with_key_like_model_is_dropped(tmp_path, monke
 
 def test_t128_ca78_key_like_model_leaves_the_keys_in_place(tmp_path):
     """RN-08 / T128: dropping a key-like model never drops the keys or names a key setting."""
-    settings = _image_settings_with_model("AIzaFakeModel8888PastedKeyNotReal9999xyz") | {
+    settings = _image_settings_with_model(FAKE_AIZA_MODEL_VALUE) | {
         "LLM_MODEL": "sk-fake-model-6666-PASTEDKEY-not-real-7777"
     }
     config = _load(tmp_path, settings)

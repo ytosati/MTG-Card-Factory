@@ -110,7 +110,7 @@ merged into `main`.
 - [x] T127: Configuration re-read on a same-time change
 - [x] T128: Model values that look like a key
 - [x] T129: Unreadable configuration file
-- [ ] T130: Fictional key values that no secret scanner matches
+- [x] T130: Fictional key values that no secret scanner matches
 - [ ] T12: Milestone 0 review
 
 ### Milestone 1 — Double-click start

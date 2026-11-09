@@ -16,7 +16,7 @@ Values are fictional; keys only look like keys.
 
 import pytest
 
-from tests.config_files import FAKE_IMAGE_KEY, FAKE_TEXT_KEY, full_text_settings
+from tests.config_files import FAKE_AIZA_MODEL_VALUE, FAKE_IMAGE_KEY, FAKE_TEXT_KEY, full_text_settings
 from tests.configured_api import configured_api  # noqa: F401 (fixture)
 
 STATUS_URL = "/api/status"
@@ -27,7 +27,7 @@ UNPREFIXED_TEXT_KEY = "fake-text-key-1212-NOPREFIX-not-real-3434"
 UNPREFIXED_IMAGE_KEY = "fake-image-key-5656-NOPREFIX-not-real-7878"
 
 SK_VALUE = "sk-fake-model-6666-PASTEDKEY-not-real-7777"
-AIZA_VALUE = "AIzaFakeModel8888PastedKeyNotReal9999xyz"
+AIZA_VALUE = FAKE_AIZA_MODEL_VALUE
 
 PREFIXED_VALUES = [
     pytest.param(SK_VALUE, id="sk"),

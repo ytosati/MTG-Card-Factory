@@ -115,7 +115,7 @@ merged into `main`.
 
 ### Milestone 1 — Double-click start
 
-- [ ] T7: Local server entry point and startup errors
+- [x] T7: Local server entry point and startup errors
 - [ ] T8: Instance and heartbeat endpoints with watchdog
 - [ ] T85: Origin check and JSON-only parsers
 - [ ] T11: Frontend heartbeat hook

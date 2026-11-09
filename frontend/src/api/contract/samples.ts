@@ -5,7 +5,7 @@
 // Then review the diff and run again without CARDFACTORY_UPDATE_CONTRACT.
 // Details: specs/plan.md, section 6 (Contract samples).
 
-import type { ErrorEnvelope, HeartbeatRequest, InstanceResponse, StatusResponse } from "../types";
+import type { ErrorEnvelope, HeartbeatRequest, InstanceResponse, JobResponse, StatusResponse } from "../types";
 
 export const statusFullConfiguration = {
   text_provider: "openai",
@@ -123,3 +123,28 @@ export const instance = {
 } satisfies InstanceResponse;
 
 export const heartbeatRequest = {} satisfies HeartbeatRequest;
+
+export const jobBuildDone = {
+  id: "00000000-0000-4000-8000-000000000001",
+  kind: "build",
+  status: "done",
+  progress: 1.0,
+  result: null,
+  error: null,
+} satisfies JobResponse;
+
+export const jobBuildFailed = {
+  id: "00000000-0000-4000-8000-000000000001",
+  kind: "build",
+  status: "failed",
+  progress: 0.0,
+  result: null,
+  error: {
+    error: {
+      code: "internal",
+      message: "Something went wrong in Card Factory. Try again.",
+      setting: null,
+      fields: null,
+    },
+  },
+} satisfies JobResponse;

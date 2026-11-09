@@ -5,8 +5,8 @@ real endpoints, called through tests.configured_api with a temporary `.env`
 (never the repository one), so every response is checked for key values before
 it becomes a sample. The frontend client types the samples satisfy live in
 `frontend/src/api/types.ts`: `StatusResponse`, `ErrorEnvelope`,
-`InstanceResponse` (GET /api/instance, T8) and `HeartbeatRequest` (the JSON body
-of POST /api/heartbeat, T8). The heartbeat answers 204 with no body, so its
+`InstanceResponse` (GET /api/instance, T8), `HeartbeatRequest` (the JSON body
+of POST /api/heartbeat, T8) and `JobResponse` (GET /api/jobs/{id}, T13). The heartbeat answers 204 with no body, so its
 sample is the request body the endpoint accepted, not a response.
 
 The same run writes `launcher/tests/fixtures/instance.json` from the real
@@ -41,11 +41,16 @@ from tests.contract_samples import (
     render_value,
     sample_from_response,
 )
+from tests.job_helpers import JOB_FIELDS, envelope_error, inline_runner
 from tests.settings_probe import REPOSITORY_ROOT
+
+# The job samples are read from jobs stored in the test database.
+pytestmark = pytest.mark.django_db
 
 STATUS_URL = "/api/status"
 INSTANCE_URL = "/api/instance"
 HEARTBEAT_URL = "/api/heartbeat"
+JOBS_URL = "/api/jobs"
 UNKNOWN_API_PATH = "/api/no-such-endpoint"
 NEXT_START_PORT = 47900
 
@@ -59,6 +64,7 @@ STATUS_TYPE = "StatusResponse"
 ERROR_TYPE = "ErrorEnvelope"
 INSTANCE_TYPE = "InstanceResponse"
 HEARTBEAT_TYPE = "HeartbeatRequest"
+JOB_TYPE = "JobResponse"
 
 INSTANCE_FIXTURE_PATH = REPOSITORY_ROOT / "launcher" / "tests" / "fixtures" / "instance.json"
 
@@ -82,6 +88,25 @@ class SampleRequest:
     # "response": the sample is the response body; "request": the sample is `data`
     # (an endpoint that answers 204 with no body).
     sample: str = "response"
+    # Called before the request; returns the path to request instead of `path` (a stored job's URL).
+    prepare: object = None
+
+
+def _job_path(kind, fn):
+    """Run one job inline and return its GET /api/jobs/{id} path."""
+    from core.jobs import submit
+
+    with inline_runner():
+        job = submit(kind, fn)
+    return f"{JOBS_URL}/{job.id}"
+
+
+def _build_succeeds(report):
+    return None
+
+
+def _build_fails(report):
+    raise RuntimeError("fictional build failure detail")
 
 
 SAMPLE_REQUESTS = (
@@ -160,6 +185,20 @@ SAMPLE_REQUESTS = (
         status=204,
         sample="request",
     ),
+    SampleRequest(
+        name="jobBuildDone",
+        client_type=JOB_TYPE,
+        configuration=full_text_settings(),
+        path=JOBS_URL,
+        prepare=lambda: _job_path("build", _build_succeeds),
+    ),
+    SampleRequest(
+        name="jobBuildFailed",
+        client_type=JOB_TYPE,
+        configuration=full_text_settings(),
+        path=JOBS_URL,
+        prepare=lambda: _job_path("build", _build_fails),
+    ),
 )
 
 
@@ -169,8 +208,9 @@ def _call(api, request):
         api.configure_bytes(request.content, secrets=request.secrets)
     else:
         api.configure(request.configuration, secrets=request.secrets)
+    path = request.prepare() if request.prepare is not None else request.path
     # configured_api fails here when a key value appears anywhere in the response.
-    response = api.request(request.method, request.path, data=request.data)
+    response = api.request(request.method, path, data=request.data)
     assert response.status_code == request.status, (request.name, response.content[:500])
     return response
 
@@ -289,7 +329,13 @@ def test_t126_every_sample_name_and_type_is_declared_once():
     names = [request.name for request in SAMPLE_REQUESTS]
 
     assert len(names) == len(set(names))
-    assert {request.client_type for request in SAMPLE_REQUESTS} == {STATUS_TYPE, ERROR_TYPE, INSTANCE_TYPE, HEARTBEAT_TYPE}
+    assert {request.client_type for request in SAMPLE_REQUESTS} == {
+        STATUS_TYPE,
+        ERROR_TYPE,
+        INSTANCE_TYPE,
+        HEARTBEAT_TYPE,
+        JOB_TYPE,
+    }
     assert {request.sample for request in SAMPLE_REQUESTS} <= {"response", "request"}
 
 
@@ -321,6 +367,21 @@ def test_t8_rn41_heartbeat_sample_is_the_empty_json_body():
     )
     rendered = render_samples([ContractSample(request.name, request.client_type, request.data)])
     assert "export const heartbeatRequest = {} satisfies HeartbeatRequest;\n" in rendered
+
+
+def test_t13_rn10_job_samples_are_a_done_and_a_failed_build(configured_api):
+    """RN-10 / RN-03 / T13: the job samples have the plan shape: a done build with no error, and a
+    failed build with the `internal` envelope and none of the exception text."""
+    bodies = _by_name(_collect(configured_api))
+
+    done = bodies["jobBuildDone"]
+    assert set(done) == JOB_FIELDS
+    assert (done["kind"], done["status"], done["result"], done["error"]) == ("build", "done", None, None)
+    failed = bodies["jobBuildFailed"]
+    assert set(failed) == JOB_FIELDS
+    assert (failed["kind"], failed["status"], failed["result"]) == ("build", "failed", None)
+    assert envelope_error(failed["error"])["code"] == "internal"
+    assert "fictional build failure detail" not in json.dumps(failed)
 
 
 def test_t8_rn47_launcher_instance_fixture_matches_the_api(configured_api):

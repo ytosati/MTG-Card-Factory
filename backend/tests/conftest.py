@@ -15,3 +15,17 @@ def empty_seen_keys(monkeypatch):
     import core.log_redaction
 
     monkeypatch.setattr(core.log_redaction, "_seen_keys", set())
+
+
+@pytest.fixture(scope="session")
+def django_db_modify_db_settings():
+    """The test database is a SQLite file in the temporary home (task T13).
+
+    Job threads open their own connections; an in-memory database is not
+    shared reliably between them, a file is.
+    """
+    from django.conf import settings
+
+    from tests.isolation import TEST_HOME
+
+    settings.DATABASES["default"].setdefault("TEST", {})["NAME"] = str(TEST_HOME / "data" / "test-cardfactory.sqlite3")

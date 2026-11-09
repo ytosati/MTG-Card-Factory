@@ -129,7 +129,7 @@ merged into `main`.
 
 ### Milestone 2 — Reference database
 
-- [ ] T13: Job model and in-process runner
+- [x] T13: Job model and in-process runner
 - [ ] T14: Catalog models and card full-text table
 - [ ] T15: Source downloader
 - [ ] T16: Oracle cards import with Commander legality

@@ -2,6 +2,8 @@
 
 from rest_framework import serializers
 
+from core.models import Job
+
 
 class SettingIssueSerializer(serializers.Serializer):
     """A setting to fix or a notice."""
@@ -29,3 +31,11 @@ class InstanceSerializer(serializers.Serializer):
     app = serializers.CharField()
     version = serializers.CharField()
     home = serializers.CharField()
+
+
+class JobSerializer(serializers.ModelSerializer):
+    """A job's progress and outcome; `error` is the error envelope or None."""
+
+    class Meta:
+        model = Job
+        fields = ["id", "kind", "status", "progress", "result", "error"]

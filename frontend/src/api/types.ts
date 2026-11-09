@@ -41,3 +41,19 @@ export interface ErrorEnvelope {
     fields: Record<string, string[]> | null;
   };
 }
+
+/** Kinds of a background job. */
+export type JobKind = "build" | "generate" | "adjust" | "art";
+
+/** States of a background job. */
+export type JobStatus = "queued" | "running" | "done" | "failed";
+
+/** GET /api/jobs/{id}: progress, result (a card id) and error of a long operation (spec RN-10). */
+export interface JobResponse {
+  id: string;
+  kind: JobKind;
+  status: JobStatus;
+  progress: number;
+  result: string | null;
+  error: ErrorEnvelope | null;
+}

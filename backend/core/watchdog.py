@@ -17,7 +17,10 @@ _current = None
 
 
 class Watchdog:
-    """Calls `stop` once when no first heartbeat or no further heartbeat arrives in time."""
+    """Calls `stop` once when no first heartbeat or no further heartbeat arrives in time.
+
+    A running job holds it (see spec RN-41): while any hold is active it never stops.
+    """
 
     def __init__(self, stop, clock=time.monotonic):
         self._stop = stop
@@ -25,6 +28,8 @@ class Watchdog:
         self._lock = threading.Lock()
         self._armed_at = None
         self._last_heartbeat = None
+        self._holds = 0
+        self._last_release = None
         self._stopped = False
 
     def arm(self):
@@ -36,6 +41,17 @@ class Watchdog:
         """Record a heartbeat from a tab."""
         with self._lock:
             self._last_heartbeat = self._clock()
+
+    def hold(self):
+        """One more running job."""
+        with self._lock:
+            self._holds += 1
+
+    def release(self):
+        """One running job ended; the idle window then counts from the later of this and the last heartbeat."""
+        with self._lock:
+            self._holds = max(0, self._holds - 1)
+            self._last_release = self._clock()
 
     def check(self):
         """Call `stop` when the stop time is reached; never more than once."""
@@ -57,11 +73,14 @@ class Watchdog:
             self.check()
 
     def _expired(self):
-        if self._armed_at is None:
+        if self._armed_at is None or self._holds:
             return False
         now = self._clock()
-        if self._last_heartbeat is not None:
-            return now - self._last_heartbeat >= IDLE_SECONDS
+        last_activity = max(
+            (moment for moment in (self._last_heartbeat, self._last_release) if moment is not None), default=None
+        )
+        if last_activity is not None:
+            return now - last_activity >= IDLE_SECONDS
         return now - self._armed_at >= FIRST_HEARTBEAT_SECONDS
 
 
@@ -87,3 +106,17 @@ def heartbeat():
     watchdog = _current
     if watchdog is not None:
         watchdog.heartbeat()
+
+
+def hold():
+    """Forward a job's hold to the registered watchdog; nothing happens with none registered."""
+    watchdog = _current
+    if watchdog is not None:
+        watchdog.hold()
+
+
+def release():
+    """Forward a job's release to the registered watchdog; nothing happens with none registered."""
+    watchdog = _current
+    if watchdog is not None:
+        watchdog.release()

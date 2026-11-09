@@ -6,9 +6,10 @@ from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from api.serializers import InstanceSerializer, StatusSerializer
+from api.serializers import InstanceSerializer, JobSerializer, StatusSerializer
 from core import watchdog
 from core.instance import instance_snapshot
+from core.jobs import get_job
 from core.status import status_snapshot
 
 ANY_METHOD = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
@@ -36,6 +37,16 @@ class HeartbeatView(APIView):
         request.data
         watchdog.heartbeat()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class JobView(APIView):
+    """A long operation's progress, result or error."""
+
+    def get(self, request, job_id):
+        job = get_job(job_id)
+        if job is None:
+            raise NotFound()
+        return Response(JobSerializer(job).data)
 
 
 @api_view(ANY_METHOD)

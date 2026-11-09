@@ -10,21 +10,16 @@ from rest_framework import exceptions, status
 from rest_framework.response import Response
 from rest_framework.views import set_rollback
 
+from core.errors import CODE_INTERNAL, INTERNAL_MESSAGE, error_body
+
 logger = logging.getLogger(__name__)
 
 CODE_NOT_FOUND = "not_found"
 CODE_METHOD_NOT_ALLOWED = "method_not_allowed"
 CODE_BAD_REQUEST = "bad_request"
-CODE_INTERNAL = "internal"
 
 NOT_FOUND_MESSAGE = "This API path does not exist."
 BAD_REQUEST_MESSAGE = "Card Factory could not read this request: it must be JSON and accept a JSON answer."
-INTERNAL_MESSAGE = "Something went wrong in Card Factory. Try again."
-
-
-def error_body(code, message, setting=None, fields=None):
-    """The envelope `{"error": {code, message, setting, fields}}`."""
-    return {"error": {"code": code, "message": message, "setting": setting, "fields": fields}}
 
 
 def exception_handler(exc, context):

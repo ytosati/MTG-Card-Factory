@@ -1,9 +1,10 @@
-"""Catalog build steps: streaming the bulk files and importing their records.
-Details: specs/plan.md, sections 4, 5, 7 and 10.
+"""Catalog build steps: streaming the bulk files, importing their records and tagging their roles.
+Details: specs/plan.md, sections 4, 5, 7, 9.6 and 10.
 """
 
 import codecs
 import json
+import re
 import uuid
 from collections.abc import Iterable, Iterator
 
@@ -190,3 +191,149 @@ def _commander_legality(legalities: dict) -> str:
     if value == "banned":
         return OracleCard.CommanderLegality.BANNED.value
     return OracleCard.CommanderLegality.NOT_LEGAL.value
+
+
+# --- Role tagging (see spec RN-12, specs/plan.md section 9.6) ---------------------------
+
+ROLES = (
+    "ramp",
+    "card_draw",
+    "removal",
+    "board_wipe",
+    "counterspell",
+    "tutor",
+    "recursion",
+    "tokens",
+    "life_gain",
+    "protection",
+    "combat_boost",
+    "mana_fixing",
+    "sacrifice_outlet",
+    "graveyard_fill",
+    "evasion",
+)
+
+# Patterns run on lowercased text. Every gap is bounded ({0,n}) and stays inside a sentence,
+# so matching is linear in the text length.
+_NUMBER = r"(?:a|an|one|two|three|four|five|six|seven|eight|nine|ten|x|\d+)"
+_EVASION_KEYWORDS = r"(?:flying|menace|shadow|fear|intimidate|horsemanship|skulk)"
+_BASIC_LAND_TYPES = re.compile(r"\b(?:plains|island|swamp|mountain|forest)\b")
+# Effects done by an opponent or by another permanent's controller (see specs/plan.md, section 9.6).
+_NOT_YOURS = r"(?<!opponent )(?<!controller )(?<!that player )"
+
+
+def _any_of(*patterns: str) -> re.Pattern:
+    return re.compile("|".join(f"(?:{pattern})" for pattern in patterns), re.MULTILINE)
+
+
+_ROLE_PATTERNS = {
+    "ramp": _any_of(
+        r"\bput (?:a|an|up to \w{1,10}|\w{1,10}) (?:basic )?land cards? [^.\n]{0,60}?onto the battlefield",
+        r"\bplay (?:an|two) additional lands?\b",
+    ),
+    "card_draw": _any_of(rf"{_NOT_YOURS}\bdraws? (?:[\w-]{{1,20}} ){{0,3}}?cards?\b"),
+    "removal": _any_of(
+        r"\b(?:destroy|exile) (?:up to )?(?:(?:one|two|three|four|five|x|any number of) )?(?:other |another )?"
+        r"target (?!player|opponent|spell)(?!(?:[\w-]{1,20},? ){0,3}cards?\b)(?![^.;\n]{0,80}?\byou control\b)",
+        r"\bdeals? [^.\n]{0,60}?damage to (?:any target|target (?:[\w-]{1,20} )?(?:creature|planeswalker|permanent|battle))",
+        r"\btarget (?:[\w-]{1,20} )?(?:creature|permanent) [^.\n]{0,40}?gets? -(?:\d+|x)/-(?:\d+|x)",
+        r"\b(?:each opponent|target player|target opponent) sacrifices\b",
+    ),
+    "board_wipe": _any_of(
+        r"\b(?:destroy|exile) all (?:other )?(?:[\w-]{1,20} )?"
+        r"(?:creatures|permanents|artifacts|enchantments|planeswalkers|lands)\b",
+        r"\bdeals? [^.\n]{0,40}?damage to each (?:other )?creature",
+        r"\b(?:all|each) (?:other )?creatures? [^.\n]{0,30}?gets? -(?:\d+|x)/-(?:\d+|x)",
+        r"\breturn all (?:[\w-]{1,20} )?(?:creatures|permanents) [^.\n]{0,40}?to (?:their|its) owners?'? hands?",
+    ),
+    "counterspell": _any_of(
+        r"\bcounter (?:up to \w{1,10} )?(?:other |another )?target [^.\n]{0,60}?\b(?:spell|ability)",
+        r"\bcounter (?:that|the chosen) (?:spell|ability)\b",
+        r"\bcounter (?:all|each) (?:[\w-]{1,20} )?spells?\b",
+    ),
+    "recursion": _any_of(
+        r"\b(?:return|put) [^.\n]{0,60}?\bcards? from (?:your|a|any|target player's) graveyards? (?:to|onto|into)\b",
+        r"\breturn ~ from your graveyard\b",
+    ),
+    "tokens": _any_of(
+        rf"{_NOT_YOURS}\bcreates? [^.\n]{{0,80}}?\btokens?\b",
+        r"\b(?:amass|populate|investigate|incubate)\b",
+    ),
+    "life_gain": _any_of(
+        rf"{_NOT_YOURS}\bgains? (?:{_NUMBER} life|that much life|life equal)\b",
+        r"\blifelink\b",
+    ),
+    "protection": _any_of(
+        r"(?<!~ )\b(?:gains?|have|has)\b [^.\n]{0,60}?\b(?:hexproof|indestructible|shroud|protection from|ward)\b",
+        r"\bprevent all (?:combat )?damage that would be dealt to (?!~)",
+        r"\bphases? out\b",
+    ),
+    "combat_boost": _any_of(r"\bgets? \+(?:\d+|x)/\+(?:\d+|x)\b"),
+    "mana_fixing": _any_of(
+        r"\bmana of any (?:one )?color\b",
+        r"\badd \{[wubrg]\}(?:, \{[wubrg]\}){0,4},? or \{[wubrg]\}",
+    ),
+    "sacrifice_outlet": _any_of(
+        r"\bsacrifice (?:a|an|another|one|two|three|x|any number of) (?:(?:other|nontoken|untapped) )?"
+        r"(?:creatures?|permanents?|artifacts?)\b[^.:\n]{0,40}:",
+    ),
+    "graveyard_fill": _any_of(
+        r"(?<!opponent )\bmills?\b",
+        r"\bsurveil\b",
+        rf"{_NOT_YOURS}(?<!target player )\bdiscards? (?:a|an|one|two|three|x|that|those|your|their|\w{{1,10}} cards?)\b",
+        r"\bput the top [^.\n]{0,60}?into (?:your|their|its owner's) graveyards?\b",
+    ),
+    "evasion": _any_of(
+        rf"^(?:[a-z ]{{1,30}}, ){{0,6}}{_EVASION_KEYWORDS}(?:,|$)",
+        rf"\b(?:has|have|gains?)\b [^.\n]{{0,40}}?\b{_EVASION_KEYWORDS}\b",
+        r"\bcan't be blocked\b",
+    ),
+}
+
+_LIBRARY_SEARCH = re.compile(r"\bsearch your library for ([^.\n]{0,200})")
+_LAND_TO_BATTLEFIELD = re.compile(
+    r"\b(?:lands?|plains|islands?|swamps?|mountains?|forests?)\b[^.\n]{0,200}?\bonto the battlefield\b"
+)
+_MANA_ABILITY = re.compile(r"\badd (?:\{|one mana|two mana|three mana|x mana|an amount|that much)")
+_LAND_TYPE = re.compile(r"\bland\b")
+_REMINDER_TEXT = re.compile(r"\([^()\n]{0,500}\)")
+
+
+def tag_roles(type_line: str, oracle_text: str, name: str = "") -> list[str]:
+    """Roles of a card from fixed patterns over its rules text and type line, in the order of ROLES."""
+    type_line = (type_line or "").lower()
+    text = _rules_text(oracle_text, name, type_line)
+    found = {role for role, pattern in _ROLE_PATTERNS.items() if pattern.search(text)}
+
+    # Ramp, tutor and fixing also depend on the face's type line (see specs/plan.md, section 9.6).
+    faces = text.split(FACE_TEXT_SEPARATOR)
+    face_types = type_line.split(" // ")
+    if len(face_types) != len(faces):
+        face_types = [type_line] * len(faces)
+    for face, face_type in zip(faces, face_types):
+        is_land = bool(_LAND_TYPE.search(face_type))
+        for match in _LIBRARY_SEARCH.finditer(face):
+            if not _LAND_TO_BATTLEFIELD.search(match.group(1)):
+                found.add("tutor")
+            else:
+                found.add("mana_fixing" if is_land else "ramp")
+        if _MANA_ABILITY.search(face) and not is_land:
+            found.add("ramp")
+        if len(set(_BASIC_LAND_TYPES.findall(face_type))) >= 2:
+            found.add("mana_fixing")
+
+    return [role for role in ROLES if role in found]
+
+
+def _rules_text(oracle_text: str, name: str, type_line: str) -> str:
+    """Lowercased rules text without reminder text, with the card's names replaced by "~"."""
+    text = _REMINDER_TEXT.sub("", (oracle_text or "").lower())
+    full_name = (name or "").strip().lower()
+    names = {full_name}
+    if " // " in full_name:
+        names.update(face.strip() for face in full_name.split(" // "))
+    if "legendary" in type_line:
+        names.update(part.split(", ", 1)[0] for part in list(names) if ", " in part)
+    for card_name in sorted(filter(None, names), key=len, reverse=True):
+        text = re.sub(rf"(?<!\w){re.escape(card_name)}(?!\w)", "~", text)
+    return text

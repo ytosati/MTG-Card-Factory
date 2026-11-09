@@ -133,7 +133,7 @@ merged into `main`.
 - [x] T14: Catalog models and card full-text table
 - [x] T15: Source downloader
 - [x] T16: Oracle cards import with Commander legality
-- [ ] T20: Role tagging
+- [x] T20: Role tagging
 - [ ] T21: All-or-nothing build and management command
 - [ ] T22: Setup endpoints and readiness gate
 - [ ] T62: App shell, job polling and readiness gate

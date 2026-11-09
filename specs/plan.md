@@ -627,6 +627,20 @@ life gain, protection, combat boost, mana fixing, sacrifice outlet, graveyard
 fill, evasion. Patterns are plain code, tested with fictional cards. Cards with
 no match keep an empty list and are still found by FTS.
 
+Classification rules (T20): reminder text in parentheses is ignored, and the
+card's name and face names (and the short name of a legendary card) count as
+the card itself. A mana ability is ramp only on a nonland face; a land or basic
+land type card searched for and put onto the battlefield is ramp, or mana
+fixing when the searching card is a land; any other library search is a tutor.
+A land with two or more basic land types is mana fixing. Returning a permanent
+to its owner's hand is not removal; exiling your own creature or a card in a
+graveyard is not removal; an edict on opponents is removal, not a sacrifice
+outlet, which needs a cost of sacrificing a creature, artifact or other
+permanent. Lifelink is life gain. Trample is not evasion. Discard, milling and
+surveil count as graveyard fill only for your own cards. A keyword the card
+gives only itself (hexproof, indestructible) is not protection. Effects for an
+opponent or a spell's target controller (draws, life, tokens) give no role.
+
 | Option | For | Against |
 |---|---|---|
 | Patterns at build (chosen) | deterministic, fast, free, testable | misses unusual wordings |

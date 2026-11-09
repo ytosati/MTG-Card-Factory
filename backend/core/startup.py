@@ -5,6 +5,9 @@ Details: specs/plan.md, section 9.5.
 import socket
 import sys
 
+# Re-exported for the launcher, which imports only core.config and core.startup.
+from core.watchdog import Watchdog, install  # noqa: F401
+
 # The server listens only on the local machine; no setting changes it (see spec RN-29).
 HOST = "127.0.0.1"
 # How often the serving loop checks the stop event, in seconds.

@@ -5,7 +5,7 @@
 // Then review the diff and run again without CARDFACTORY_UPDATE_CONTRACT.
 // Details: specs/plan.md, section 6 (Contract samples).
 
-import type { ErrorEnvelope, StatusResponse } from "../types";
+import type { ErrorEnvelope, HeartbeatRequest, InstanceResponse, StatusResponse } from "../types";
 
 export const statusFullConfiguration = {
   text_provider: "openai",
@@ -115,3 +115,11 @@ export const errorNotFound = {
     fields: null,
   },
 } satisfies ErrorEnvelope;
+
+export const instance = {
+  app: "card-factory",
+  version: "0.0.0+unknown",
+  home: "C:\\CardFactory",
+} satisfies InstanceResponse;
+
+export const heartbeatRequest = {} satisfies HeartbeatRequest;

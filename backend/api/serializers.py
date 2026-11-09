@@ -21,3 +21,11 @@ class StatusSerializer(serializers.Serializer):
     image_model = serializers.CharField(allow_null=True)
     settings = SettingIssueSerializer(many=True)
     next_start_port = serializers.IntegerField(allow_null=True)
+
+
+class InstanceSerializer(serializers.Serializer):
+    """The instance contract: a newer launcher reads it from an older instance (see spec RN-47)."""
+
+    app = serializers.CharField()
+    version = serializers.CharField()
+    home = serializers.CharField()

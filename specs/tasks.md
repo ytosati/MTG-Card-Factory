@@ -123,7 +123,7 @@ merged into `main`.
 - [x] T73: VERSION file and launcher prerequisite checks
 - [x] T74: Launcher startup sequence
 - [x] T75: Local release zip build
-- [ ] T82: Manual acceptance checklist (start and stop)
+- [x] T82: Manual acceptance checklist (start and stop)
 - [ ] T88: Milestone 1 review
 
 ### Milestone 2 — Reference database

@@ -69,7 +69,7 @@ Django, Django REST Framework and waitress and creates an FTS5 table
 
 | Version | Date | Smoke test line | Result |
 |---|---|---|---|
-| | | | [ ] FTS5 ok |
+| 0.1.0 | 2026-11-09 | `django 5.2.19 \| sqlite 3.49.1 \| FTS5 ok` | [x] FTS5 ok |
 
 ## Milestone 1 — Double-click start
 

@@ -158,7 +158,7 @@ branches on `code`, never on `message`: `config_invalid`, `origin_refused`,
 `content_refused`, `art_unavailable`, `card_changed`, `bad_request`, `internal`.
 `bad_request` answers a malformed JSON body (400), an unsupported media type
 (415) and an unacceptable `Accept` header (406), with a fixed message and the
-original status. A settings
+original status. `origin_refused` answers 403. A settings
 list (status, generation, setup) uses the same objects, `{setting, code,
 message}`, with codes as stable as the error codes: `config_invalid` for a
 setting to fix and `ignored` for a setting ignored with a notice (RN-08). A

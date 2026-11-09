@@ -32,6 +32,8 @@ class HeartbeatView(APIView):
     """A tab is still open: keeps the launcher's watchdog from stopping the application."""
 
     def post(self, request):
+        # Reading the body makes a non-JSON or malformed one answer bad_request before the heartbeat counts.
+        request.data
         watchdog.heartbeat()
         return Response(status=status.HTTP_204_NO_CONTENT)
 

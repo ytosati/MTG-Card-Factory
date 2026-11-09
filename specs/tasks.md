@@ -117,7 +117,7 @@ merged into `main`.
 
 - [x] T7: Local server entry point and startup errors
 - [x] T8: Instance and heartbeat endpoints with watchdog
-- [ ] T85: Origin check and JSON-only parsers
+- [x] T85: Origin check and JSON-only parsers
 - [ ] T11: Frontend heartbeat hook
 - [ ] T72: Database upgrade service
 - [x] T73: VERSION file and launcher prerequisite checks

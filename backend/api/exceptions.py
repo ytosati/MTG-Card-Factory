@@ -14,9 +14,11 @@ logger = logging.getLogger(__name__)
 
 CODE_NOT_FOUND = "not_found"
 CODE_METHOD_NOT_ALLOWED = "method_not_allowed"
+CODE_BAD_REQUEST = "bad_request"
 CODE_INTERNAL = "internal"
 
 NOT_FOUND_MESSAGE = "This API path does not exist."
+BAD_REQUEST_MESSAGE = "Card Factory could not read this request: it must be JSON and accept a JSON answer."
 INTERNAL_MESSAGE = "Something went wrong in Card Factory. Try again."
 
 
@@ -37,6 +39,8 @@ def exception_handler(exc, context):
         return Response(error_body(CODE_NOT_FOUND, NOT_FOUND_MESSAGE), status=exc.status_code)
     if isinstance(exc, exceptions.MethodNotAllowed):
         return Response(error_body(CODE_METHOD_NOT_ALLOWED, str(exc.detail)), status=exc.status_code)
+    if isinstance(exc, (exceptions.ParseError, exceptions.UnsupportedMediaType, exceptions.NotAcceptable)):
+        return Response(error_body(CODE_BAD_REQUEST, BAD_REQUEST_MESSAGE), status=exc.status_code)
     # The exception text stays out of the response, since it may quote a value; only the log gets it.
     if isinstance(exc, exceptions.APIException):
         return Response(error_body(CODE_INTERNAL, INTERNAL_MESSAGE), status=exc.status_code)

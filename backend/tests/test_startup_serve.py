@@ -167,6 +167,14 @@ def test_t7_rn29_serve_answers_http_with_the_django_application(loopback, port, 
     assert received.startswith(b"HTTP/1.1 "), received[:80]
 
 
+def _local_address(sock):
+    # A socket of an earlier test may close between the scan and this call.
+    try:
+        return sock.getsockname()
+    except OSError:
+        return None
+
+
 @pytest.mark.skipif(not ON_WINDOWS, reason="SO_EXCLUSIVEADDRUSE exists only on Windows")
 def test_t7_rn47_listening_socket_uses_exclusive_address_use(loopback, port, runners):
     """RN-47 / T7 (plan 9.5): on Windows the listening socket has SO_EXCLUSIVEADDRUSE set."""
@@ -175,7 +183,7 @@ def test_t7_rn47_listening_socket_uses_exclusive_address_use(loopback, port, run
     listeners = [
         sock
         for sock in open_sockets()
-        if sock.family == socket.AF_INET and sock.getsockname() == (LOOPBACK, port)
+        if sock.family == socket.AF_INET and _local_address(sock) == (LOOPBACK, port)
     ]
     assert listeners
     assert any(sock.getsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE) for sock in listeners)

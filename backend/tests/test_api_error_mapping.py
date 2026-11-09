@@ -39,6 +39,7 @@ def _internal_message(api):
 # --- M1: no account and no database for the status ---
 
 
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     "authorization",
     [
@@ -63,8 +64,10 @@ def test_t6_rn40_status_ignores_authorization_headers(configured_api, authorizat
     assert body["settings"] == []
 
 
-def test_t6_rn40_status_with_a_missing_key_needs_no_database(configured_api):
-    """RN-40 / CA-46 / T6: with a missing key the status answers without any database access."""
+@pytest.mark.django_db
+def test_t6_rn40_status_with_a_missing_key_still_answers(configured_api):
+    """RN-40 / CA-46 / T6: with a missing key the status still answers and lists the key
+    to fix (from T22 it also reads the catalog readiness)."""
     configured_api.configure(full_text_settings(key=""))
 
     response = configured_api.get(STATUS_URL)

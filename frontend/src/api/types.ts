@@ -11,7 +11,15 @@ export interface SettingIssue {
   message: string;
 }
 
-/** Configuration part of GET /api/status. */
+/** Origin, publication date and download date of a data source (spec RN-01). */
+export interface SourceInfo {
+  source: string;
+  url: string;
+  published_at: string;
+  downloaded_at: string;
+}
+
+/** GET /api/status: configuration, database readiness and data sources. */
 export interface StatusResponse {
   text_provider: string | null;
   text_model: string | null;
@@ -20,6 +28,8 @@ export interface StatusResponse {
   image_model: string | null;
   settings: SettingIssue[];
   next_start_port: number | null;
+  database_ready: boolean;
+  sources: SourceInfo[];
 }
 
 /** GET /api/instance: identifies a running Card Factory and its home (spec RN-47). */
@@ -56,4 +66,15 @@ export interface JobResponse {
   progress: number;
   result: string | null;
   error: ErrorEnvelope | null;
+}
+
+/** GET /api/setup: build state, sizes in bytes and settings to fix (spec RN-28). */
+export interface SetupResponse {
+  database_ready: boolean;
+  job: JobResponse | null;
+  download_size: number | null;
+  space_needed: number | null;
+  free_space: number | null;
+  listing_error: ErrorEnvelope | null;
+  settings: SettingIssue[];
 }

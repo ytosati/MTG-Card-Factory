@@ -5,7 +5,7 @@
 // Then review the diff and run again without CARDFACTORY_UPDATE_CONTRACT.
 // Details: specs/plan.md, section 6 (Contract samples).
 
-import type { ErrorEnvelope, HeartbeatRequest, InstanceResponse, JobResponse, StatusResponse } from "../types";
+import type { ErrorEnvelope, HeartbeatRequest, InstanceResponse, JobResponse, SetupResponse, StatusResponse } from "../types";
 
 export const statusFullConfiguration = {
   text_provider: "openai",
@@ -15,6 +15,8 @@ export const statusFullConfiguration = {
   image_model: "fake-image-model-1",
   settings: [],
   next_start_port: null,
+  database_ready: false,
+  sources: [],
 } satisfies StatusResponse;
 
 export const statusMissingTextKey = {
@@ -31,6 +33,8 @@ export const statusMissingTextKey = {
     },
   ],
   next_start_port: null,
+  database_ready: false,
+  sources: [],
 } satisfies StatusResponse;
 
 export const statusInvalidImageProvider = {
@@ -47,6 +51,8 @@ export const statusInvalidImageProvider = {
     },
   ],
   next_start_port: null,
+  database_ready: false,
+  sources: [],
 } satisfies StatusResponse;
 
 export const statusImageKeyIgnored = {
@@ -63,6 +69,8 @@ export const statusImageKeyIgnored = {
     },
   ],
   next_start_port: null,
+  database_ready: false,
+  sources: [],
 } satisfies StatusResponse;
 
 export const statusImageModelIgnored = {
@@ -79,6 +87,8 @@ export const statusImageModelIgnored = {
     },
   ],
   next_start_port: null,
+  database_ready: false,
+  sources: [],
 } satisfies StatusResponse;
 
 export const statusNextStartPort = {
@@ -89,6 +99,8 @@ export const statusNextStartPort = {
   image_model: null,
   settings: [],
   next_start_port: 47900,
+  database_ready: false,
+  sources: [],
 } satisfies StatusResponse;
 
 export const statusUnreadableConfiguration = {
@@ -105,6 +117,8 @@ export const statusUnreadableConfiguration = {
     },
   ],
   next_start_port: null,
+  database_ready: false,
+  sources: [],
 } satisfies StatusResponse;
 
 export const errorNotFound = {
@@ -148,3 +162,146 @@ export const jobBuildFailed = {
     },
   },
 } satisfies JobResponse;
+
+export const statusNotReady = {
+  text_provider: "openai",
+  text_model: "fake-text-model-1",
+  text_key_configured: true,
+  image_provider: null,
+  image_model: null,
+  settings: [],
+  next_start_port: null,
+  database_ready: false,
+  sources: [],
+} satisfies StatusResponse;
+
+export const statusWithSources = {
+  text_provider: "openai",
+  text_model: "fake-text-model-1",
+  text_key_configured: true,
+  image_provider: null,
+  image_model: null,
+  settings: [],
+  next_start_port: null,
+  database_ready: true,
+  sources: [
+    {
+      source: "scryfall_oracle",
+      url: "https://data.scryfall.io/oracle-cards/fictional-oracle-cards-20261108220423.json",
+      published_at: "2000-01-01T00:00:00Z",
+      downloaded_at: "2000-01-01T00:00:00Z",
+    },
+  ],
+} satisfies StatusResponse;
+
+export const setupNotReady = {
+  database_ready: false,
+  job: null,
+  download_size: 26451,
+  space_needed: 79353,
+  free_space: 1000000000000000,
+  listing_error: null,
+  settings: [],
+} satisfies SetupResponse;
+
+export const setupSettingsToFix = {
+  database_ready: false,
+  job: null,
+  download_size: 26451,
+  space_needed: 79353,
+  free_space: 1000000000000000,
+  listing_error: null,
+  settings: [
+    {
+      setting: "LLM_API_KEY",
+      code: "config_invalid",
+      message: "Set LLM_API_KEY to the API key of the text provider.",
+    },
+  ],
+} satisfies SetupResponse;
+
+export const setupFreeSpaceUnknown = {
+  database_ready: false,
+  job: null,
+  download_size: 26451,
+  space_needed: 79353,
+  free_space: null,
+  listing_error: null,
+  settings: [],
+} satisfies SetupResponse;
+
+export const setupBuilding = {
+  database_ready: false,
+  job: {
+    id: "00000000-0000-4000-8000-000000000001",
+    kind: "build",
+    status: "running",
+    progress: 0.05,
+    result: null,
+    error: null,
+  },
+  download_size: 26451,
+  space_needed: 79353,
+  free_space: 1000000000000000,
+  listing_error: null,
+  settings: [],
+} satisfies SetupResponse;
+
+export const setupBuildFailed = {
+  database_ready: false,
+  job: {
+    id: "00000000-0000-4000-8000-000000000001",
+    kind: "build",
+    status: "failed",
+    progress: 0.0,
+    result: null,
+    error: {
+      error: {
+        code: "source_unreachable",
+        message: "Could not reach the data source: there is no network connection or the connection dropped. Check the internet connection and try again.",
+        setting: null,
+        fields: null,
+      },
+    },
+  },
+  download_size: 26451,
+  space_needed: 79353,
+  free_space: 1000000000000000,
+  listing_error: null,
+  settings: [],
+} satisfies SetupResponse;
+
+export const setupListingUnreachable = {
+  database_ready: false,
+  job: null,
+  download_size: null,
+  space_needed: null,
+  free_space: 1000000000000000,
+  listing_error: {
+    error: {
+      code: "source_unreachable",
+      message: "The data source answered with an error (HTTP 503). Try again later.",
+      setting: null,
+      fields: null,
+    },
+  },
+  settings: [],
+} satisfies SetupResponse;
+
+export const setupBuildAccepted = {
+  id: "00000000-0000-4000-8000-000000000001",
+  kind: "build",
+  status: "queued",
+  progress: 0.0,
+  result: null,
+  error: null,
+} satisfies JobResponse;
+
+export const setupBuildRefusedForSpace = {
+  error: {
+    code: "insufficient_space",
+    message: "There is not enough free space on the disk that holds the data folder to build the reference database. Free some space and try again.",
+    setting: null,
+    fields: null,
+  },
+} satisfies ErrorEnvelope;

@@ -118,10 +118,10 @@ def is_allowed_url(url, hosts):
     )
 
 
-def read_listing(*, transport=None, sleep=None):
-    """The listing entry of each registry source, keyed by source name."""
+def read_listing(*, transport=None, sleep=None, attempts=DOWNLOAD_ATTEMPTS):
+    """The listing entry of each registry source, keyed by source name, in at most `attempts` attempts."""
     transport, sleep = _seams(transport, sleep)
-    return _with_attempts(lambda: _read_listing_once(transport), sleep)
+    return _with_attempts(lambda: _read_listing_once(transport), sleep, attempts)
 
 
 def download_file(url, filename, *, expected_size=None, transport=None, sleep=None, open_file=open):
@@ -205,13 +205,13 @@ def _seams(transport, sleep):
     return transport, sleep
 
 
-def _with_attempts(attempt, sleep):
-    for number in range(1, DOWNLOAD_ATTEMPTS + 1):
+def _with_attempts(attempt, sleep, attempts=DOWNLOAD_ATTEMPTS):
+    for number in range(1, attempts + 1):
         try:
             return attempt()
         except _AttemptFailed as failure:
-            logger.warning("Download attempt %s of %s failed: %s", number, DOWNLOAD_ATTEMPTS, failure.message)
-            if number == DOWNLOAD_ATTEMPTS:
+            logger.warning("Download attempt %s of %s failed: %s", number, attempts, failure.message)
+            if number == attempts:
                 raise DownloadError(CODE_SOURCE_UNREACHABLE, failure.message) from None
             sleep(PAUSE_STEP_SECONDS * number)
     raise AssertionError("unreachable")

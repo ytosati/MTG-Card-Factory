@@ -135,7 +135,7 @@ merged into `main`.
 - [x] T16: Oracle cards import with Commander legality
 - [x] T20: Role tagging
 - [x] T21: All-or-nothing build and management command
-- [ ] T22: Setup endpoints and readiness gate
+- [x] T22: Setup endpoints and readiness gate
 - [ ] T62: App shell, job polling and readiness gate
 - [ ] T63: Setup screen
 - [ ] T64: Status screen: data sources and readiness

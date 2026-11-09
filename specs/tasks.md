@@ -119,7 +119,7 @@ merged into `main`.
 - [x] T8: Instance and heartbeat endpoints with watchdog
 - [x] T85: Origin check and JSON-only parsers
 - [ ] T11: Frontend heartbeat hook
-- [ ] T72: Database upgrade service
+- [x] T72: Database upgrade service
 - [x] T73: VERSION file and launcher prerequisite checks
 - [ ] T74: Launcher startup sequence
 - [ ] T75: Local release zip build

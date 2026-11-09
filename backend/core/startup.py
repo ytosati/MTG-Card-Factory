@@ -1,9 +1,12 @@
-"""Startup errors and the local server entry point used by the launcher.
-Details: specs/plan.md, section 9.5.
+"""Startup errors, the database upgrade and the local server entry point used by the launcher.
+Details: specs/plan.md, sections 7 and 9.5.
 """
 
+import io
 import socket
+import sqlite3
 import sys
+from pathlib import Path
 
 # Re-exported for the launcher, which imports only core.config and core.startup.
 from core.watchdog import Watchdog, install  # noqa: F401
@@ -21,6 +24,122 @@ class StartupError(Exception):
         super().__init__(problem, fix)
         self.problem = problem
         self.fix = fix
+
+
+def upgrade_database():
+    """Back up and migrate the default database when migrations are pending (see spec RN-42).
+
+    Refuses a database from a newer version, and restores the backup when a migration fails.
+    """
+    # Imported here: the launcher imports this module before the settings load.
+    from django.core.management import call_command
+    from django.db import connections
+    from django.db.migrations.executor import MigrationExecutor
+
+    from core.paths import data_dir
+
+    database = Path(connections["default"].settings_dict["NAME"])
+    existed = database.is_file()
+    try:
+        executor = MigrationExecutor(connections["default"])
+        if existed and _unknown_migrations(executor.loader):
+            raise _newer_database_error()
+        if not executor.migration_plan(executor.loader.graph.leaf_nodes()):
+            return
+    finally:
+        connections.close_all()
+
+    backup = data_dir() / "backups" / database.name
+    if existed:
+        _write_backup(database, backup)
+    try:
+        # Quiet buffers, not the standard streams: under pythonw.exe they are None.
+        call_command(
+            "migrate", verbosity=0, interactive=False, stdout=io.StringIO(), stderr=io.StringIO()
+        )
+    except Exception as error:
+        connections.close_all()
+        _undo_failed_migration(database, backup, existed)
+        raise _failed_migration_error() from error
+    finally:
+        connections.close_all()
+
+
+def _unknown_migrations(loader):
+    """Migrations recorded in the database that this version of the code does not have."""
+    known = set(loader.disk_migrations)
+    for migration in loader.disk_migrations.values():
+        known.update(migration.replaces)
+    return set(loader.applied_migrations) - known
+
+
+def _write_backup(database, backup):
+    """Copy `database` to `backup` with the SQLite backup API, replacing any previous backup."""
+    try:
+        backup.parent.mkdir(exist_ok=True)
+        # Removed first: an old backup that is not a valid database would make the copy fail.
+        backup.unlink(missing_ok=True)
+        _sqlite_copy(database, backup)
+    except (OSError, sqlite3.Error) as error:
+        raise StartupError(
+            "Card Factory could not save a backup of its data before upgrading it, "
+            "so the data was not changed.",
+            "Make sure the data\\backups folder can be written (free some disk space, or "
+            "remove a file named backups from the data folder), then start Card Factory again.",
+        ) from error
+
+
+def _undo_failed_migration(database, backup, existed):
+    """Put the database back as it was before the failed migration."""
+    try:
+        if existed:
+            _sqlite_copy(backup, database)
+        else:
+            # There was no data: the partly created file goes, so the next start begins anew.
+            for suffix in ("", "-wal", "-shm", "-journal"):
+                Path(f"{database}{suffix}").unlink(missing_ok=True)
+    except (OSError, sqlite3.Error) as error:
+        if existed:
+            fix = (
+                "Copy data\\backups\\cardfactory.sqlite3 over data\\cardfactory.sqlite3, "
+                "then start Card Factory again."
+            )
+        else:
+            fix = "Delete data\\cardfactory.sqlite3, then start Card Factory again."
+        raise StartupError(
+            "Card Factory could not upgrade its data, and could not put the data back as it was.",
+            fix,
+        ) from error
+
+
+def _sqlite_copy(source, target):
+    """Copy one SQLite database into another with the backup API, write-ahead log included."""
+    source_connection = sqlite3.connect(source)
+    try:
+        target_connection = sqlite3.connect(target)
+        try:
+            source_connection.backup(target_connection)
+        finally:
+            target_connection.close()
+    finally:
+        source_connection.close()
+
+
+def _newer_database_error():
+    return StartupError(
+        "The data folder comes from a newer version of Card Factory, "
+        "so this version cannot use it. The data was not changed.",
+        "Start the newer version of Card Factory with this data folder, "
+        "or install the latest version.",
+    )
+
+
+def _failed_migration_error():
+    return StartupError(
+        "Card Factory could not upgrade its data to this version. The data was left as it was.",
+        "Start the previous version of Card Factory, then report the problem "
+        "on the project's GitHub page.",
+    )
 
 
 def serve(stop_event):

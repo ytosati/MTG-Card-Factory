@@ -119,7 +119,9 @@ and key for art. The person pays the providers directly for usage.
   tried only by the connection test on the Status screen and by a generation; if
   the provider rejects the key, the model name or the usage limit, the system
   states the cause, names the setting to fix when there is one (an unknown model
-  names the model setting), and creates no card. The same checks apply to the image settings: a problem in
+  names the model setting), and creates no card. A model value that looks like
+  a key (equal to a configured key, or starting the way provider keys start) is
+  a setting to fix: it is never shown and never sent to a provider. The same checks apply to the image settings: a problem in
   them makes art unavailable and names the setting to fix, while text generation
   keeps working. Leaving the image settings empty only makes art unavailable,
   with the reason; it is not a setting to fix. An image setting that is set but
@@ -314,18 +316,27 @@ and key for art. The person pays the providers directly for usage.
   port in use by another program), it shows a window with a message that names
   the problem and the fix. Problems with the values in the configuration file do
   not block startup: the interface opens on the Status screen and names the
-  setting to fix.
+  setting to fix. The configuration file is read as UTF-8 or as Unicode text
+  (UTF-16 with a byte-order mark, as Notepad offers); a stray character that is
+  not valid UTF-8 does not discard the file. A configuration file that exists
+  but cannot be read, or cannot be read as text (such as UTF-16 without a
+  byte-order mark), does not block startup either: the Status screen names the
+  configuration file and the fix (check its permissions, or save it as UTF-8),
+  and lists no other setting to fix and no port change while it cannot be read.
 - RN-47: The application listens on a fixed default port rarely used by other
   programs, which the configuration file can change. An invalid port value is
   replaced by the default port, and the Status screen names the port setting.
   Spaces and quotes around the value are ignored. A missing or empty port value
   means the default port and is not a setting to fix. A valid value is a whole
   number from 1 to 65535 written only with the digits 0 to 9, leading zeros
-  allowed; any other value is invalid. If the port is in use by a
-  running Card Factory, RN-41 applies. If it is in use by another program, the
-  message names the port and the setting that changes it.
+  allowed; any other value is invalid. If a Card Factory started from the same
+  folder is running, RN-41 applies, even when the port setting changed since it
+  started. If the port is in use by another program, the message names the port
+  and the setting that changes it; when that program is a Card Factory started
+  from another folder, the message says so.
 - RN-41: Starting the application opens the interface in the default browser.
-  Starting it again while it runs opens a new tab of the running instance. The
+  Starting it again from the same folder while it runs opens a new tab of the
+  running instance. The
   application stops on its own within four minutes after the last tab is
   closed; reloading a page or leaving a tab in the background does not stop it
   while the browser keeps the tab running. If no tab connects within two
@@ -533,9 +544,10 @@ never use the network or a real provider.
 - CA-52 (RN-46): The README user guide covers every setting of the configuration
   file, for the zip and for a clone, including the image model with an example
   value for OpenAI and for Google.
-- CA-53 (RN-47, manual): With the default port in use by another program, the
-  application shows a window that names the port and the setting that changes
-  it; after changing that setting, it starts.
+- CA-53 (RN-47, manual): With the default port in use by another program, or by
+  a Card Factory started from another folder, the application shows a window
+  that names the port and the setting that changes it (and, for another Card
+  Factory, says so); after changing that setting, it starts.
 - CA-54 (RN-30): Given a Portuguese card with an unknown term where a keyword
   goes, it is rejected. Given a Portuguese card that writes, with its official
   English name, a keyword whose Portuguese term is not known to the database,
@@ -603,6 +615,17 @@ never use the network or a real provider.
   no setting to fix is reported.
 - CA-76 (RN-08): When the provider does not know the configured model name, the
   person sees that cause with the model setting named, and no card is saved.
+- CA-77 (RN-40): Given a configuration file that cannot be read, or that cannot
+  be read as text (such as UTF-16 without a byte-order mark), the application
+  starts, the
+  Status screen names the configuration file and the fix for that cause, no
+  other setting to fix is listed, and no response contains any part of the
+  file's content. After the file is fixed, reopening the Status screen shows
+  its settings without a restart.
+- CA-78 (RN-06, RN-08): Given a text or image model value equal to a configured
+  key or starting the way a provider key starts, the Status screen names the
+  model setting to fix, no response contains the value, and a generation calls
+  no provider and creates no card.
 
 ## Screens
 - First-run setup: the expected download size and free disk space needed, the

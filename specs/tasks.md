@@ -137,7 +137,7 @@ merged into `main`.
 - [x] T21: All-or-nothing build and management command
 - [x] T22: Setup endpoints and readiness gate
 - [x] T62: App shell, job polling and readiness gate
-- [ ] T63: Setup screen
+- [x] T63: Setup screen
 - [x] T64: Status screen: data sources and readiness
 - [x] T116: Milestone 2 end-to-end flow test
 - [ ] T89: Milestone 2 review

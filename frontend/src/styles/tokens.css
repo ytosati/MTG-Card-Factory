@@ -15,8 +15,13 @@
   --color-danger-border: #b42318;
   --color-notice-surface: #fdf4dc;
   --color-notice-text: #5c4300;
+  --color-notice-border: #c9a227;
+  --color-success-surface: #e9f4ec;
+  --color-success-text: #1d5b33;
+  --color-success-border: #5c9a72;
 
-  --focus-ring-color: #1d4ed8;
+  /* A light violet from the accent: at least 3:1 against the page and against the accent button. */
+  --focus-ring-color: #a272ff;
   --focus-ring-width: 3px;
   --focus-ring-offset: 2px;
 
@@ -35,7 +40,7 @@
   --space-6: 1.5rem;
   --space-8: 2rem;
 
-  --border-accent-width: 4px;
+  --icon-size: 1.125rem;
   --nav-indicator-width: 2px;
   --radius: 6px;
   --content-width: 48rem;

@@ -1,9 +1,11 @@
 // Application shell: a small hash-based screen switch (no router library) behind the readiness gate.
 // Details: specs/plan.md, section 13; spec RN-28, RN-40, RN-49.
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { getStatus } from "./api/client";
+import { BrandMark } from "./components/BrandMark";
+import { StatusIcon } from "./components/StatusIcon";
 import type { StatusResponse } from "./api/types";
 import { useHeartbeat } from "./hooks/useHeartbeat";
 import { SetupScreen } from "./screens/SetupScreen";
@@ -69,8 +71,13 @@ function gate(readiness: Readiness): { screens: ScreenEntry[]; fallback: ScreenE
 function StoppedNotice() {
   return (
     <div className="stopped-notice" role="alert">
-      <p className="stopped-notice-title">Card Factory has stopped.</p>
-      <p>To start it again, double-click the start file in its folder and use the new tab it opens.</p>
+      <div className="app-bar-inner tone">
+        <StatusIcon tone="danger" />
+        <div>
+          <p className="stopped-notice-title">Card Factory has stopped.</p>
+          <p>To start it again, double-click the start file in its folder and use the new tab it opens.</p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -78,10 +85,13 @@ function StoppedNotice() {
 function ReadinessNotice({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="shell-notice" role="alert">
-      <p>Card Factory could not tell whether the card database is ready, so only Status is shown.</p>
-      <button type="button" className="button-quiet" onClick={onRetry}>
-        Try again
-      </button>
+      <div className="app-bar-inner tone">
+        <StatusIcon tone="notice" />
+        <p>Card Factory could not tell whether the card database is ready, so only Status is shown.</p>
+        <button type="button" className="button-quiet" onClick={onRetry}>
+          Try again
+        </button>
+      </div>
     </div>
   );
 }
@@ -92,12 +102,16 @@ export function App() {
   const [readiness, setReadiness] = useState<Readiness>({ kind: "loading" });
   const [reads, setReads] = useState(0);
   const { stopped } = useHeartbeat();
+  // Set by a screen change the person made, so the new screen's heading takes focus.
+  const focusHeadingRef = useRef(false);
+  const shownRouteRef = useRef<string | null>(null);
 
   const readAgain = useCallback(() => setReads((value) => value + 1), []);
 
   // Every screen change reads readiness again, so a build finished in another tab opens the gate.
   useEffect(() => {
     const onHashChange = () => {
+      focusHeadingRef.current = true;
       setHash(window.location.hash);
       readAgain();
     };
@@ -137,18 +151,39 @@ export function App() {
     }
   }, [current, hash]);
 
+  useEffect(() => {
+    document.title = current === null ? "Card Factory" : `${current.label} · Card Factory`;
+  }, [current]);
+
+  // A new screen replaces the control that had focus; its heading takes it, except on the first screen.
+  useEffect(() => {
+    if (current === null) return;
+    const previous = shownRouteRef.current;
+    shownRouteRef.current = current.route;
+    if (previous === null || previous === current.route) return;
+    const focusLost = document.activeElement === null || document.activeElement === document.body;
+    if (!focusHeadingRef.current && !focusLost) return;
+    focusHeadingRef.current = false;
+    document.querySelector<HTMLElement>("main h1")?.focus();
+  }, [current]);
+
   return (
     <div className="app">
       {stopped && <StoppedNotice />}
       <header className="app-header">
-        <span className="app-name">Card Factory</span>
-        <nav aria-label="Screens" className="app-nav">
-          {screens.map((entry) => (
-            <a key={entry.route} href={entry.route} aria-current={entry === current ? "page" : undefined}>
-              {entry.label}
-            </a>
-          ))}
-        </nav>
+        <div className="app-bar-inner app-header-inner">
+          <span className="app-name">
+            <BrandMark />
+            Card Factory
+          </span>
+          <nav aria-label="Screens" className="app-nav">
+            {screens.map((entry) => (
+              <a key={entry.route} href={entry.route} aria-current={entry === current ? "page" : undefined}>
+                {entry.label}
+              </a>
+            ))}
+          </nav>
+        </div>
       </header>
       {readiness.kind === "unknown" && <ReadinessNotice onRetry={retry} />}
       {current === null ? (

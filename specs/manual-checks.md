@@ -312,3 +312,33 @@ folder, while the first one keeps running on port 47821.
 - [ ] Passed
 
 Notes:
+
+## Milestone 2 — Reference database
+
+Run record: version 0.1.0 · date 2026-11-09 · Windows 11 Pro, development
+machine, from the locally built zip.
+
+Demo (specs/tasks.md, Milestone 2): the Setup screen shows the download size
+and the free space needed, the build runs with progress until ready, an
+interrupted build is rebuilt without duplicates, and the Status screen lists
+the source with its publication and download dates.
+
+- [x] Passed
+
+### Build measurements
+
+| Measure | Value |
+|---|---|
+| Source | Scryfall Oracle Cards, gzip-compressed JSON Lines |
+| Download size (`compressed_size`) | 25,444,300 bytes |
+| Downloaded bytes equal `compressed_size` | yes (the build checks the size before the import) |
+| Database file after the build | 30,144 KB |
+| Import transaction (write lock held) | 4.05 s |
+| Total build time | not measured |
+| Free space asked (download × 10) | 254,443,000 bytes |
+
+Notes: before this run, the listing format of the source had changed from a
+JSON array (`download_uri`, `size`) to gzip-compressed JSON Lines
+(`jsonl_download_uri`, `compressed_size`); the build reads both. The space
+factor of 10 covers the download, the extract, a database of about 30 MB and
+its write-ahead log with a wide margin.

@@ -150,7 +150,7 @@ merged into `main`.
 - [x] T36: Provider factory for text
 - [x] T37: Card models and version service
 - [x] T38: Usage recording and usage endpoint (text)
-- [ ] T28: Validation result and mana cost validator
+- [x] T28: Validation result and mana cost validator
 - [ ] T29: Color identity validator
 - [ ] T138: Name validator against existing cards
 - [ ] T23: Comparables search

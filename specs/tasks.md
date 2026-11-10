@@ -145,7 +145,7 @@ merged into `main`.
 ### Milestone 3 — First card
 
 - [x] T35: Provider protocol, error set and fake adapter
-- [ ] T39: Shared HTTP transport for adapters
+- [x] T39: Shared HTTP transport for adapters
 - [ ] T40: OpenAI text adapter
 - [ ] T36: Provider factory for text
 - [ ] T37: Card models and version service

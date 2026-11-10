@@ -234,7 +234,10 @@ and key for art. The person pays the providers directly for usage.
   and can retry art generation alone. No partial image is saved.
 - RN-33: Generated images are received by the application and stored in the
   data folder with the card. The browser loads images only from the local
-  application. Deleting a card deletes the images of all its versions.
+  application. More broadly, the browser loads no image, font, script or
+  style sheet from outside the local application; fonts installed on the
+  computer may be used, and links the person follows are not loads.
+  Deleting a card deletes the images of all its versions.
 - RN-34: Editing fields and quick adjustments keep the current art and never
   call the image provider. After such a change, the Result screen notes that the
   image may show outdated text until new art is generated. Generating new art
@@ -398,7 +401,14 @@ and key for art. The person pays the providers directly for usage.
   draw it in the artist line, and the Result screen shows it with the card
   text.
 - RN-49: Every screen is usable with the keyboard alone; every field has a
-  label; keyboard focus is always visible; text meets WCAG 2.1 AA contrast.
+  label; every image has a text alternative; keyboard focus is always
+  visible; text meets WCAG 2.1 AA contrast.
+- RN-52: Each screen of the interface sets the browser tab title to the name
+  of the screen shown, a space, a middle dot (·), a space and "Card Factory".
+  Screen names: Setup, Status, Request, Result, Library, Versions. Before a
+  screen is shown, the title is "Card Factory"; it does not change when the
+  application stops. The tab shows the application's own icon, not a
+  framework default.
 
 ### Language
 - RN-30: The interface is in English. The generated card text is in English by
@@ -515,8 +525,10 @@ never use the network or a real provider.
   card stays saved without art, no image file is left, the cause is shown, and
   retrying art alone generates it without generating the text again. A rejected
   card with art requested also receives art.
-- CA-38 (RN-33): The browser loads no image from an address outside the local
-  application.
+- CA-38 (RN-33): The built interface references no address outside the local
+  application for images, fonts, scripts or style sheets (a small icon
+  inlined in the page counts as local), and the browser loads no image from
+  outside it.
 - CA-39 (RN-34): Editing a field or applying a quick adjustment keeps the art,
   makes no image request and shows the outdated-text notice. Generating new art
   creates a version, and restoring the earlier version restores the earlier art.
@@ -588,7 +600,8 @@ never use the network or a real provider.
 - CA-58 (RN-48): Every image request asks for "Card Factory" as the artist
   credit, and the Result screen shows "Card Factory" as the artist.
 - CA-59 (RN-49): Every screen can be operated with the keyboard alone, every
-  field has a label, and focus is visible; contrast is checked by hand.
+  field has a label, every image has a text alternative, and focus is
+  visible; contrast is checked by hand.
 - CA-60 (RN-28): Given less free disk space than the build needs, the setup
   screen names the space needed and the build does not start. When the disk
   fills up during the build, the database is not marked ready and the cause is
@@ -662,6 +675,10 @@ never use the network or a real provider.
 - CA-81 (RN-42, RN-28): Given a data folder whose reference database lacks
   data the new version needs, the Setup screen opens and says a rebuild is
   needed; after the rebuild every saved card, version and image is listed.
+- CA-82 (RN-52): Each screen sets its title; given the database not ready,
+  opening the Request address shows "Setup · Card Factory"; while readiness
+  loads, the title is "Card Factory"; the built index.html links an icon
+  served by the application. Manual: the tab shows the icon.
 
 ## Screens
 - First-run setup: the expected download size and free disk space needed, the

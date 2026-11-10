@@ -35,7 +35,9 @@ frontend/
   src/screens/          Setup, Status, Request, Result, Library, Versions
   src/components/       shared components
   src/styles/           design tokens (single source)
+  src/assets/           favicon and any approved local font or icon files
   src/hooks/            heartbeat, job polling
+  index.html            document shell; links the favicon from src/assets/
 launcher/               start.pyw (zip and clone), Windows message boxes, tests
 release/                release build script, pinned versions and hashes,
                         repository content check, tests
@@ -603,6 +605,12 @@ waitress as server, Django serves the built frontend.**
   registry, which can map `.js` to `text/plain` and block the module script.
   `core.paths` resolves the built folder and keeps every asset inside it
   (no `..`, no NTFS stream names). No extra package.
+- **Interface files:** the frontend has no `public/` folder. Only `index.html`
+  and `/assets/*` are served, so a root file such as `/favicon.ico` would get
+  `index.html` back. The favicon (SVG) lives in `frontend/src/assets/` and is
+  linked from `index.html`, so Vite emits it under `/assets/` (or inlines it);
+  fonts and icons follow the same path. SVG takes its type from the standard
+  table (`image/svg+xml`). Nothing is loaded from a CDN or font service.
 - **Clone (`start.cmd`, RN-45):** prepares `runtime/` and then calls the same
   launcher.
   - Downloads the embeddable Python (pinned version and SHA-256 in
@@ -726,7 +734,8 @@ The T26 evaluation measures whether the patterns plus keywords are good enough.
 | 45 | start.cmd, `runtime/prepared.json` | manual check |
 | 46 | README user guide | review |
 | 48 | art prompt artist credit; Result screen | fake adapter receives the credit; component test |
-| 49 | frontend components and screens | component tests, manual check |
+| 49 | frontend components and screens; Interface rules of `specs/code-standards.md` | component tests, manual check |
+| 52 | screen switch sets the tab title; icon in `src/assets/` linked from `index.html` | title tests; built-file check; manual check of the icon |
 
 Cross-site requests are refused by an origin check (section 8), tested on
 every non-GET endpoint. Tests block outgoing connections globally (a fixture that fails any socket
@@ -762,7 +771,9 @@ task names exactly one agent.
   build (required by jsdom), declared in `engines` of `frontend/package.json`.
 - Not added: SDKs of the providers, `python-dotenv`, an image library, a router
   library (the frontend uses a small hash-based switch), a task queue (jobs run
-  in a thread pool inside the process).
+  in a thread pool inside the process), an animation library, a component or
+  icon library, and fonts from a CDN (the interface uses CSS transitions and
+  local files; specs/code-standards.md, Interface).
 
 ### Tooling
 
@@ -820,7 +831,12 @@ public release, the migrations are replaced by one initial migration per app
 
 - Backend: `pytest -q` with the fake provider and the network guard; every test
   names the RN or CA it covers. It includes the end-to-end suite of section 14.
-- Frontend: `npm run test` and `npx tsc -b`.
+- Frontend: `npm run test` and `npx tsc -b`. Screen tests check the document
+  title (`<Screen> · Card Factory`, CA-82) and a single `h1`; a check of the
+  built files finds no external address (CA-38); the reviewer checks the
+  rest of the Interface section of `specs/code-standards.md` (no gradients or
+  pill shapes outside the tokens, no emojis in UI text, motion off
+  under reduced motion, alt text on images).
 - Manual checks on a Windows machine: the CAs marked manual (zip start,
   clone start, port in use, firewall prompt, browser close), listed in
   `specs/manual-checks.md` from Milestone 1 on and extended by later

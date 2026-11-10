@@ -161,6 +161,7 @@ merged into `main`.
 - [ ] T61: Key-leak and outgoing connection sweep
 - [ ] T65: Request screen (idea, color identity, power level)
 - [ ] T67: Result screen: card text
+- [ ] T139: Tab title, application icon and no external loads
 - [ ] T133: Database busy errors in the API
 - [ ] T137: Error codes in one place and module table
 - [ ] T117: Milestone 3 end-to-end flow test
@@ -1057,6 +1058,20 @@ Agent: frontend-dev
 Depends on: T62, T49
 Done when: Vitest tests pass for an approved card, a rejected card with its causes, a "too strong" indicator on an approved card, the artist credit shown (CA-58) and the text usage shown.
 
+### T139: Tab title, application icon and no external loads
+Every screen sets the tab title from its fixed name (Setup, Status, Request,
+Result, Library, Versions) as `<Screen> · Card Factory`, and the title is
+"Card Factory" before a screen is shown. An original SVG icon in the project's
+accent color lives in `frontend/src/assets/` and is linked from `index.html`,
+so it is built under `/assets/` (plan 9.5). A check of the built files fails
+when they reference an address outside the local application for images,
+fonts, scripts or style sheets. Screens added later set their titles in their
+own tasks.
+Covers: RN-33, RN-52, CA-38, CA-82
+Agent: frontend-dev
+Depends on: T65, T67
+Done when: Vitest tests pass for the title of each M3 screen, the Setup title when the database is not ready and the Request address is opened, and "Card Factory" while readiness loads; the built `index.html` links an icon under `/assets/` (or inlined); the external-address check passes on the build; the icon is seen in the tab by hand.
+
 ### T138: Name validator against existing cards
 Reject a card whose name is the name of an existing card or face in the
 reference database (RN-51), with the cause. The pipeline passes the set of
@@ -1111,7 +1126,7 @@ embeddings). Commit only the counts. Confirm that only the factory reveals keys.
 findings, and check the Milestone 4 tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T23, T26, T28, T29, T35–T40, T46–T49, T61, T65, T67, T117, T133, T137, T138
+Depends on: T23, T26, T28, T29, T35–T40, T46–T49, T61, T65, T67, T117, T133, T137, T138, T139
 Done when: every suite passes, a card was generated with OpenAI, the T26 counts are recorded with the pass rule applied, the findings are recorded, and the blocking items of Milestone 4 are listed.
 
 ## Milestone 4 — Text providers
@@ -1922,10 +1937,9 @@ Done when: every suite and the content check pass, and the coverage table has no
 
 ## Reserved
 
-Interface quality tasks (design guidelines, accessibility, the generation wait
-experience, screen review passes, a final consistency pass) will be appended
-with the next free IDs, starting at T130. Design guidelines and accessibility
-basics fit in Milestone 2, before the first screens beyond Status. The wait
+Interface quality tasks (the generation wait experience, screen review passes,
+a final consistency pass) will be appended with the next free IDs. The design
+guidelines live in the Interface section of `specs/code-standards.md`. The wait
 experience fits in Milestone 3. A screen review pass fits in each milestone that
 changes screens, before its review task, and the final consistency pass before
 T84; those review tasks then add the new IDs to their dependencies.
@@ -1971,7 +1985,7 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | RN-30 | T9, T19, T107, T33, T108, T109, T124 |
 | RN-31 | T43, T44, T51, T58, T113, T122 |
 | RN-32 | T43, T44, T50, T51, T58, T68, T122 |
-| RN-33 | T10, T50, T58, T99, T100, T122 |
+| RN-33 | T10, T50, T58, T99, T100, T122, T139 |
 | RN-34 | T50, T68, T100, T122 |
 | RN-35 | T98, T68 |
 | RN-36 | T17, T25, T60, T66, T123 |
@@ -1990,6 +2004,7 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | RN-49 | T9, T62, T63, T64, T65, T67, T92, T69, T70, T101, T98, T99, T68, T100, T66, T105, T109, T112 |
 | RN-50 | T13, T49 |
 | RN-51 | T138 |
+| RN-52 | T139 |
 | CA-01 | T29 |
 | CA-02 | T28 |
 | CA-03 | T30, T120 |
@@ -2026,7 +2041,7 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | CA-35 | T50, T51, T68 |
 | CA-36 | T51 |
 | CA-37 | T51, T58, T68, T122 |
-| CA-38 | T10, T58, T99 |
+| CA-38 | T10, T58, T99, T139 |
 | CA-39 | T50, T68, T100, T122 |
 | CA-40 | T98, T68 |
 | CA-41 | T25, T60, T66, T123 |
@@ -2070,3 +2085,4 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | CA-79 | T138 |
 | CA-80 | T49, T65, T115 |
 | CA-81 | T121 |
+| CA-82 | T139 |

@@ -146,7 +146,7 @@ merged into `main`.
 
 - [x] T35: Provider protocol, error set and fake adapter
 - [x] T39: Shared HTTP transport for adapters
-- [ ] T40: OpenAI text adapter
+- [x] T40: OpenAI text adapter
 - [ ] T36: Provider factory for text
 - [ ] T37: Card models and version service
 - [ ] T38: Usage recording and usage endpoint (text)

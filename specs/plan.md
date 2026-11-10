@@ -417,10 +417,15 @@ application (unknown migrations), it stops with a message instead of migrating.
    name, type line and rules text. Power level shapes the candidate set: strong
    includes Game Changer cards and ranks by EDHREC rank; casual excludes Game
    Changer cards; medium allows Game Changer cards without prioritizing them
-   and ranks by BM25 alone. User text passed to `MATCH` is quoted per token.
-3. If fewer than a minimum number of results come back (a named constant,
-   10), the selector widens the filters deterministically (drop mana value,
-   then types). No second model call.
+   and ranks by BM25 alone. User text passed to `MATCH` is quoted per token,
+   and the tokens are joined with OR so BM25 ranks cards that match more of
+   them first. The selector keeps the best `MAX_RESULTS` (40) by BM25; strong
+   then orders those by EDHREC rank, unranked last. A search plan with no
+   usable keyword runs the filters alone, ordered by EDHREC rank.
+3. If fewer than a minimum number of legal results come back (a named
+   constant, 10), the selector widens the filters deterministically (drop
+   mana value, then types). Identity, legality, roles and the casual
+   exclusion of Game Changer cards are never dropped. No second model call.
 4. The model writes the card and cites comparables from the candidates; cited
    cards not returned as legal are discarded (RN-12).
 5. `search_rules` uses FTS5 over `RuleSection` with the same keywords and adds

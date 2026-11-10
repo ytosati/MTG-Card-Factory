@@ -153,7 +153,7 @@ merged into `main`.
 - [x] T28: Validation result and mana cost validator
 - [x] T29: Color identity validator
 - [x] T138: Name validator against existing cards
-- [ ] T23: Comparables search
+- [x] T23: Comparables search
 - [ ] T26: Search quality evaluation script
 - [ ] T46: Generation prompts and output schemas
 - [ ] T48: Validation, one automatic revision and saving

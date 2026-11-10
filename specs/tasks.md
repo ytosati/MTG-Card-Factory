@@ -147,7 +147,7 @@ merged into `main`.
 - [x] T35: Provider protocol, error set and fake adapter
 - [x] T39: Shared HTTP transport for adapters
 - [x] T40: OpenAI text adapter
-- [ ] T36: Provider factory for text
+- [x] T36: Provider factory for text
 - [ ] T37: Card models and version service
 - [ ] T38: Usage recording and usage endpoint (text)
 - [ ] T28: Validation result and mana cost validator
@@ -880,7 +880,7 @@ Done when: tests with recorded fictional responses pass for success, rejected ke
 
 ### T36: Provider factory for text
 Implement `providers.factory`, the only reader of `LLM_PROVIDER` and the only
-caller of `Secret.reveal()`. It provides `text_adapter()`, with the OpenAI
+caller of `Secret.reveal()` apart from the log filter (plan section 8). It provides `text_adapter()`, with the OpenAI
 adapter; T41 and T42 register theirs. Until then, `anthropic` or `google` as
 `LLM_PROVIDER` returns no adapter with the error code
 `provider_not_available_yet` and no setting (the value is valid); this
@@ -890,7 +890,7 @@ factory comes with T90.
 Covers: RN-05, RN-06, RN-07, RN-08, CA-78
 Agent: llm-engineer
 Depends on: T35, T40
-Done when: tests pass for `openai` returning its adapter, an invalid configuration returning no adapter with the setting named (including a model value that looks like a key, CA-78, with no adapter call), and the key revealed only inside the factory.
+Done when: tests pass for `openai` returning its adapter, an invalid configuration returning no adapter with the setting named (including a model value that looks like a key, CA-78, with no adapter call), and the key revealed only inside the factory and the log filter (plan section 8).
 
 ### T37: Card models and version service
 Add `Card`, `CardVersion` (immutable, numbered per card) and `UsageRecord` with
@@ -1122,7 +1122,7 @@ the zip with OpenAI and a real key. Run the T26 script, mark
 the relevant cards in each top ten, and apply the pass rule: at least 16 of 20
 requests with five or more relevant cards. On a fail, list the failed requests
 with a proposal for approval (better role patterns and keywords, or
-embeddings). Commit only the counts. Confirm that only the factory reveals keys. Record the
+embeddings). Commit only the counts. Confirm that only the factory and the log filter reveal keys. Record the
 findings, and check the Milestone 4 tasks against the spec.
 Covers: none (review)
 Agent: maintainer

@@ -44,7 +44,7 @@ class Secret:
         self._value = value
 
     def reveal(self):
-        """The key itself, for the provider factory only (see specs/plan.md, section 8)."""
+        """The key itself, for the provider factory and the log filter only (specs/plan.md, section 8)."""
         return self._value
 
     def __str__(self):

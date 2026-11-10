@@ -2,6 +2,8 @@
 
 import pytest
 
+from tests.provider_fixtures import fake_text_adapter  # noqa: F401 (fixture for every test)
+
 
 @pytest.fixture(autouse=True)
 def empty_seen_keys(monkeypatch):

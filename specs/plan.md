@@ -76,6 +76,14 @@ Fields listed are the ones the spec needs; types are left to the tasks.
   type_line, oracle_text, colors, color_identity, keywords, power, toughness,
   layout, faces (JSON), commander_legality (legal, banned, not_legal),
   game_changer, edhrec_rank, roles (JSON list, section 9.6).
+  Import mapping (T16): Commander `restricted` is stored as legal and any other
+  or missing value as not_legal; non-card layouts (token, double_faced_token,
+  emblem, art_series, vanguard, scheme, planar) are not imported; a card
+  without top-level mana_cost, oracle_text, colors, type_line or cmc takes
+  them from its faces (front face mana cost and cmc, face texts joined with
+  `//`, union of face colors, face type lines joined with ` // `); a record
+  without a top-level oracle_id takes the first face's; a repeated oracle_id
+  is stored once.
 - `Printing`: `scryfall_id` (primary key), oracle_card, set_code,
   collector_number, lang, frame, border_color, frame_effects, released_at,
   image URLs per face (png 745 × 1040).
@@ -129,7 +137,7 @@ Fields listed are the ones the spec needs; types are left to the tasks.
 | core.config | `load_config()`, `get_config()`; `Secret.reveal()` used only by providers.factory and core.log_redaction |
 | core.jobs | `submit(kind, fn)`, `get_job(id)`, `fail_orphan_jobs()` |
 | core.status | `status_snapshot()` (no key values) |
-| catalog.ingest | `run_build()`, `download_sources()`, `import_oracle()`, `import_printings()`, `import_rules()`, `import_pt_terms()`, `tag_roles()` |
+| catalog.build, catalog.ingest | `run_build()` and `start_build()` (catalog.build); `download_sources()`, `import_oracle()`, `import_printings()`, `import_rules()`, `import_pt_terms()`, `tag_roles()` |
 | catalog.selectors | `is_ready()`, `search_cards(query, filters)`, `search_rules(keywords)`, `get_lexicon(lang)`, `find_base_cards(name)`, `list_printings(oracle_id)` |
 | providers.factory | `text_adapter()`, `image_adapter()`, `art_availability()` |
 | validators | `validate(card, lexicon, request) -> ValidationResult` composed of color identity, mana cost, type line, keywords, limits; `request` gives the requested identity (possibly colorless) and the idea text |
@@ -155,10 +163,12 @@ branches on `code`, never on `message`: `config_invalid`, `origin_refused`,
 `rate_limited`, `model_not_found`, `provider_unavailable`,
 `provider_not_available_yet`
 (development state of Milestone 3 only), `invalid_response`,
-`content_refused`, `art_unavailable`, `card_changed`, `bad_request`, `internal`.
+`content_refused`, `art_unavailable`, `card_changed`, `generation_running`,
+`bad_request`, `internal`.
 `bad_request` answers a malformed JSON body (400), an unsupported media type
 (415) and an unacceptable `Accept` header (406), with a fixed message and the
-original status. `origin_refused` answers 403. A settings
+original status. `origin_refused` answers 403. `database_not_ready` answers 503,
+`insufficient_space` 507, `source_unreachable` 502 and `generation_running` 409. A settings
 list (status, generation, setup) uses the same objects, `{setting, code,
 message}`, with codes as stable as the error codes: `config_invalid` for a
 setting to fix and `ignored` for a setting ignored with a notice (RN-08). A
@@ -242,6 +252,9 @@ changes (queued, running, done, failed), so the import transaction never blocks
 progress reads. Rules:
 - While a build runs, no other writing job starts; the readiness gate already
   blocks generation, adjustments and art.
+- One generation job (card generation, art generation or quick adjustment)
+  runs at a time (RN-50); submitting another while one runs is refused with
+  `generation_running`. There is no cancellation in v1.
 - The only write possible during a build is the usage record of a connection
   test; it waits in a small in-memory queue in `core` that the build job flushes
   when it ends, whatever the outcome.
@@ -264,14 +277,17 @@ untouched. The setup download size is the sum over the registry.
 **All-or-nothing build (RN-03).** Two phases.
 1. Outside any transaction, and resumable: download each source to
    `data/downloads/` and check size and checksum, then stream it once and
-   extract only the needed fields into a compact JSON-lines file next to it. A
+   extract only the needed fields, with the roles already tagged, into a
+   compact JSON-lines file next to it. A
    download resumes with `If-Range` (ETag or Last-Modified), so a source that
    changed since the partial download starts over. Nothing is marked ready.
 2. Import in a single short SQLite transaction: delete reference rows, insert
-   the extracted rows, rebuild the FTS tables, tag roles, write the
+   the extracted rows, rebuild the FTS tables, write the
    `SourceRecord` rows and the ready `BuildRun`, commit. An interruption rolls
    the transaction back; user tables are never touched. The review of each
    milestone that adds a source records how long the write lock was held.
+   A failed build keeps the complete downloads for the next run, except
+   after a disk-full failure; the JSON-lines file is always deleted.
 
 *Alternative considered:* build into a second database file and swap it in.
 Rejected: the user tables live in the same file (CLAUDE.md: a single SQLite
@@ -615,6 +631,20 @@ life gain, protection, combat boost, mana fixing, sacrifice outlet, graveyard
 fill, evasion. Patterns are plain code, tested with fictional cards. Cards with
 no match keep an empty list and are still found by FTS.
 
+Classification rules (T20): reminder text in parentheses is ignored, and the
+card's name and face names (and the short name of a legendary card) count as
+the card itself. A mana ability is ramp only on a nonland face; a land or basic
+land type card searched for and put onto the battlefield is ramp, or mana
+fixing when the searching card is a land; any other library search is a tutor.
+A land with two or more basic land types is mana fixing. Returning a permanent
+to its owner's hand is not removal; exiling your own creature or a card in a
+graveyard is not removal; an edict on opponents is removal, not a sacrifice
+outlet, which needs a cost of sacrificing a creature, artifact or other
+permanent. Lifelink is life gain. Trample is not evasion. Discard, milling and
+surveil count as graveyard fill only for your own cards. A keyword the card
+gives only itself (hexproof, indestructible) is not protection. Effects for an
+opponent or a spell's target controller (draws, life, tokens) give no role.
+
 | Option | For | Against |
 |---|---|---|
 | Patterns at build (chosen) | deterministic, fast, free, testable | misses unusual wordings |
@@ -628,9 +658,15 @@ The T26 evaluation measures whether the patterns plus keywords are good enough.
 
 - Scryfall bulk files: Oracle Cards (one record per card), Default Cards
   (printings in English, for base card printings and images), All Cards
-  (streamed, keeping only Portuguese printings for terms). Bulk files are large JSON arrays, so they are read as a stream, one
-  record at a time, with the standard library, never loaded whole (the exact
-  layout is verified against a real file in T16).
+  (streamed, keeping only Portuguese printings for terms). The bulk-data
+  listing gives each file as gzip-compressed JSON Lines
+  (`jsonl_download_uri`, `compressed_size`, one record per line); the older
+  uncompressed JSON array (`download_uri`, `size`) is still accepted. Files are
+  read as a stream, one record at a time, with the standard library, never
+  loaded whole. Because the listed size is compressed, the free space needed
+  is the download size times `BUILD_SPACE_FACTOR` = 10 (download, extract,
+  database and the write-ahead log of the import); the Milestone 2 review
+  checks it against a real build. Tests use hand-written fictional files.
   Requests send a descriptive User-Agent and Accept header, as Scryfall asks.
 - Comprehensive Rules: the text file linked from the Wizards rules page; the
   importer finds the link and stores the sections. Keyword abilities (702),

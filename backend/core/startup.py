@@ -30,6 +30,7 @@ def upgrade_database():
     """Back up and migrate the default database when migrations are pending (see spec RN-42).
 
     Refuses a database from a newer version, and restores the backup when a migration fails.
+    Then fails the jobs an earlier process left queued or running (see spec RN-03).
     """
     # Imported here: the launcher imports this module before the settings load.
     from django.core.management import call_command
@@ -45,6 +46,7 @@ def upgrade_database():
         if existed and _unknown_migrations(executor.loader):
             raise _newer_database_error()
         if not executor.migration_plan(executor.loader.graph.leaf_nodes()):
+            _fail_orphan_jobs()
             return
     finally:
         connections.close_all()
@@ -63,6 +65,17 @@ def upgrade_database():
         raise _failed_migration_error() from error
     finally:
         connections.close_all()
+    try:
+        _fail_orphan_jobs()
+    finally:
+        connections.close_all()
+
+
+def _fail_orphan_jobs():
+    # Imported here: the models load only once Django is set up.
+    from core.jobs import fail_orphan_jobs
+
+    fail_orphan_jobs()
 
 
 def _unknown_migrations(loader):

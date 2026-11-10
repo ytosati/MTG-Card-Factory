@@ -5,9 +5,16 @@ real endpoints, called through tests.configured_api with a temporary `.env`
 (never the repository one), so every response is checked for key values before
 it becomes a sample. The frontend client types the samples satisfy live in
 `frontend/src/api/types.ts`: `StatusResponse`, `ErrorEnvelope`,
-`InstanceResponse` (GET /api/instance, T8) and `HeartbeatRequest` (the JSON body
-of POST /api/heartbeat, T8). The heartbeat answers 204 with no body, so its
-sample is the request body the endpoint accepted, not a response.
+`InstanceResponse` (GET /api/instance, T8), `HeartbeatRequest` (the JSON body
+of POST /api/heartbeat, T8), `JobResponse` (GET /api/jobs/{id}, T13, and the 202
+answer of POST /api/setup/build, T22) and `SetupResponse` (GET /api/setup, T22).
+The heartbeat answers 204 with no body, so its sample is the request body the
+endpoint accepted, not a response.
+
+The setup and readiness samples (T22) use the seams of tests.setup_api_helpers:
+a fictional data source served by a fake transport, a fake free disk space and
+an inline job runner. Each sample starts from a database with no build, no job
+and an empty listing cache.
 
 The same run writes `launcher/tests/fixtures/instance.json` from the real
 GET /api/instance response (T8), for the launcher probe tests (T74).
@@ -41,11 +48,27 @@ from tests.contract_samples import (
     render_value,
     sample_from_response,
 )
+from tests.catalog_build_helpers import ORACLE_URI, FakeDataSource, bulk_bytes
+from tests.job_helpers import JOB_FIELDS, envelope_error, inline_runner
 from tests.settings_probe import REPOSITORY_ROOT
+from tests.setup_api_helpers import (
+    BUILD_URL,
+    EXPECTED_SPACE_FACTOR,
+    PLENTY_OF_SPACE,
+    SETUP_URL,
+    DuringDownload,
+    SetupEnvironment,
+    clear_listing_cache,
+    own_origin,
+)
+
+# The job samples are read from jobs stored in the test database.
+pytestmark = pytest.mark.django_db
 
 STATUS_URL = "/api/status"
 INSTANCE_URL = "/api/instance"
 HEARTBEAT_URL = "/api/heartbeat"
+JOBS_URL = "/api/jobs"
 UNKNOWN_API_PATH = "/api/no-such-endpoint"
 NEXT_START_PORT = 47900
 
@@ -59,6 +82,10 @@ STATUS_TYPE = "StatusResponse"
 ERROR_TYPE = "ErrorEnvelope"
 INSTANCE_TYPE = "InstanceResponse"
 HEARTBEAT_TYPE = "HeartbeatRequest"
+JOB_TYPE = "JobResponse"
+SETUP_TYPE = "SetupResponse"
+
+OWN_ORIGIN = own_origin(DEFAULT_PORT)
 
 INSTANCE_FIXTURE_PATH = REPOSITORY_ROOT / "launcher" / "tests" / "fixtures" / "instance.json"
 
@@ -82,6 +109,70 @@ class SampleRequest:
     # "response": the sample is the response body; "request": the sample is `data`
     # (an endpoint that answers 204 with no body).
     sample: str = "response"
+    # Called before the request; returns the path to request instead of `path` (a stored job's URL).
+    prepare: object = None
+    # Called with the SetupEnvironment before the request, to set the data source or the free space.
+    arrange: object = None
+    # Called with (api, environment) instead of the plain request; returns the response of the sample.
+    obtain: object = None
+
+
+def _job_path(kind, fn):
+    """Run one job inline and return its GET /api/jobs/{id} path."""
+    from core.jobs import submit
+
+    with inline_runner():
+        job = submit(kind, fn)
+    return f"{JOBS_URL}/{job.id}"
+
+
+def _build_succeeds(report):
+    return None
+
+
+def _build_fails(report):
+    raise RuntimeError("fictional build failure detail")
+
+
+def _post_build(api):
+    return api.request("POST", BUILD_URL, data={}, **OWN_ORIGIN)
+
+
+def _status_after_build(api, environment):
+    response = _post_build(api)
+    assert response.status_code == 202, response.content[:500]
+    return api.get(STATUS_URL)
+
+
+def _setup_during_build(api, environment):
+    watcher = DuringDownload(lambda: api.get(SETUP_URL))
+    environment.source.on_request = watcher
+    response = _post_build(api)
+    assert response.status_code == 202, response.content[:500]
+    assert watcher.results, "The bulk file was never requested."
+    return watcher.results[0]
+
+
+def _setup_after_build(api, environment):
+    response = _post_build(api)
+    assert response.status_code == 202, response.content[:500]
+    return api.get(SETUP_URL)
+
+
+def _cut_bulk(environment):
+    environment.use_source(FakeDataSource(cut_bulk=True))
+
+
+def _listing_unavailable(environment):
+    environment.use_source(FakeDataSource(listing_status=503))
+
+
+def _no_free_space(environment):
+    environment.set_free_space(0)
+
+
+def _unreadable_free_space(environment):
+    environment.disk.error = PermissionError(13, "fictional access denied")
 
 
 SAMPLE_REQUESTS = (
@@ -160,7 +251,122 @@ SAMPLE_REQUESTS = (
         status=204,
         sample="request",
     ),
+    SampleRequest(
+        name="jobBuildDone",
+        client_type=JOB_TYPE,
+        configuration=full_text_settings(),
+        path=JOBS_URL,
+        prepare=lambda: _job_path("build", _build_succeeds),
+    ),
+    SampleRequest(
+        name="jobBuildFailed",
+        client_type=JOB_TYPE,
+        configuration=full_text_settings(),
+        path=JOBS_URL,
+        prepare=lambda: _job_path("build", _build_fails),
+    ),
+    SampleRequest(
+        name="statusNotReady",
+        client_type=STATUS_TYPE,
+        configuration=full_text_settings(),
+        path=STATUS_URL,
+    ),
+    SampleRequest(
+        name="statusWithSources",
+        client_type=STATUS_TYPE,
+        configuration=full_text_settings(),
+        path=STATUS_URL,
+        obtain=_status_after_build,
+    ),
+    SampleRequest(
+        name="setupNotReady",
+        client_type=SETUP_TYPE,
+        configuration=full_text_settings(),
+        path=SETUP_URL,
+    ),
+    SampleRequest(
+        name="setupSettingsToFix",
+        client_type=SETUP_TYPE,
+        configuration=full_text_settings(key=""),
+        path=SETUP_URL,
+    ),
+    SampleRequest(
+        name="setupFreeSpaceUnknown",
+        client_type=SETUP_TYPE,
+        configuration=full_text_settings(),
+        path=SETUP_URL,
+        arrange=_unreadable_free_space,
+    ),
+    SampleRequest(
+        name="setupBuilding",
+        client_type=SETUP_TYPE,
+        configuration=full_text_settings(),
+        path=SETUP_URL,
+        obtain=_setup_during_build,
+    ),
+    SampleRequest(
+        name="setupBuildFailed",
+        client_type=SETUP_TYPE,
+        configuration=full_text_settings(),
+        path=SETUP_URL,
+        arrange=_cut_bulk,
+        obtain=_setup_after_build,
+    ),
+    SampleRequest(
+        name="setupListingUnreachable",
+        client_type=SETUP_TYPE,
+        configuration=full_text_settings(),
+        path=SETUP_URL,
+        arrange=_listing_unavailable,
+    ),
+    SampleRequest(
+        name="setupBuildAccepted",
+        client_type=JOB_TYPE,
+        configuration=full_text_settings(),
+        path=BUILD_URL,
+        method="POST",
+        status=202,
+        obtain=lambda api, environment: _post_build(api),
+    ),
+    SampleRequest(
+        name="setupBuildRefusedForSpace",
+        client_type=ERROR_TYPE,
+        configuration=full_text_settings(),
+        path=BUILD_URL,
+        method="POST",
+        status=507,
+        arrange=_no_free_space,
+        obtain=lambda api, environment: _post_build(api),
+    ),
 )
+
+
+@pytest.fixture(autouse=True)
+def setup_seams(request, monkeypatch):
+    """For tests that call the API: the fictional data source, plenty of free space and an inline runner (T22)."""
+    if "configured_api" not in request.fixturenames:
+        yield None
+        return
+    api = request.getfixturevalue("configured_api")
+    with inline_runner():
+        api.setup_environment = SetupEnvironment(monkeypatch)
+        yield api.setup_environment
+    clear_listing_cache()
+
+
+def _fresh_catalog(environment):
+    """No build, no job, an empty listing cache, the default data source and plenty of free space."""
+    from catalog.models import BuildRun, OracleCard, SourceRecord
+    from core.models import Job
+
+    BuildRun.objects.all().delete()
+    SourceRecord.objects.all().delete()
+    OracleCard.objects.all().delete()
+    Job.objects.all().delete()
+    environment.use_source(FakeDataSource())
+    environment.set_free_space(PLENTY_OF_SPACE)
+    environment.disk.error = None
+    clear_listing_cache()
 
 
 def _call(api, request):
@@ -169,9 +375,17 @@ def _call(api, request):
         api.configure_bytes(request.content, secrets=request.secrets)
     else:
         api.configure(request.configuration, secrets=request.secrets)
+    environment = api.setup_environment
+    _fresh_catalog(environment)
+    if request.arrange is not None:
+        request.arrange(environment)
+    path = request.prepare() if request.prepare is not None else request.path
     # configured_api fails here when a key value appears anywhere in the response.
-    response = api.request(request.method, request.path, data=request.data)
-    assert response.status_code == request.status, (request.name, response.content[:500])
+    if request.obtain is not None:
+        response = request.obtain(api, environment)
+    else:
+        response = api.request(request.method, path, data=request.data)
+    assert response.status_code == request.status, (request.name, response.status_code, response.content[:500])
     return response
 
 
@@ -289,7 +503,14 @@ def test_t126_every_sample_name_and_type_is_declared_once():
     names = [request.name for request in SAMPLE_REQUESTS]
 
     assert len(names) == len(set(names))
-    assert {request.client_type for request in SAMPLE_REQUESTS} == {STATUS_TYPE, ERROR_TYPE, INSTANCE_TYPE, HEARTBEAT_TYPE}
+    assert {request.client_type for request in SAMPLE_REQUESTS} == {
+        STATUS_TYPE,
+        ERROR_TYPE,
+        INSTANCE_TYPE,
+        HEARTBEAT_TYPE,
+        JOB_TYPE,
+        SETUP_TYPE,
+    }
     assert {request.sample for request in SAMPLE_REQUESTS} <= {"response", "request"}
 
 
@@ -321,6 +542,81 @@ def test_t8_rn41_heartbeat_sample_is_the_empty_json_body():
     )
     rendered = render_samples([ContractSample(request.name, request.client_type, request.data)])
     assert "export const heartbeatRequest = {} satisfies HeartbeatRequest;\n" in rendered
+
+
+def test_t13_rn10_job_samples_are_a_done_and_a_failed_build(configured_api):
+    """RN-10 / RN-03 / T13: the job samples have the plan shape: a done build with no error, and a
+    failed build with the `internal` envelope and none of the exception text."""
+    bodies = _by_name(_collect(configured_api))
+
+    done = bodies["jobBuildDone"]
+    assert set(done) == JOB_FIELDS
+    assert (done["kind"], done["status"], done["result"], done["error"]) == ("build", "done", None, None)
+    failed = bodies["jobBuildFailed"]
+    assert set(failed) == JOB_FIELDS
+    assert (failed["kind"], failed["status"], failed["result"]) == ("build", "failed", None)
+    assert envelope_error(failed["error"])["code"] == "internal"
+    assert "fictional build failure detail" not in json.dumps(failed)
+
+
+SETUP_FIELDS = {"database_ready", "job", "download_size", "space_needed", "free_space", "listing_error", "settings"}
+
+
+def test_t22_rn28_setup_samples_cover_the_setup_screen_cases(configured_api):
+    """RN-28 / CA-18 / CA-60 / T22: the setup samples hold the not-ready, building, failed-build and
+    unreachable-listing answers of GET /api/setup (with and without a setting to fix), the accepted build
+    job and the refusal for space."""
+    bodies = _by_name(_collect(configured_api))
+    size = len(bulk_bytes())
+
+    for name in (
+        "setupNotReady",
+        "setupSettingsToFix",
+        "setupFreeSpaceUnknown",
+        "setupBuilding",
+        "setupBuildFailed",
+        "setupListingUnreachable",
+    ):
+        assert set(bodies[name]) == SETUP_FIELDS, name
+    assert bodies["setupNotReady"]["settings"] == []
+    assert {(item["setting"], item["code"]) for item in bodies["setupSettingsToFix"]["settings"]} == {
+        ("LLM_API_KEY", "config_invalid")
+    }
+    not_ready = bodies["setupNotReady"]
+    assert (not_ready["database_ready"], not_ready["job"], not_ready["listing_error"]) == (False, None, None)
+    assert not_ready["download_size"] == size
+    assert not_ready["space_needed"] == size * EXPECTED_SPACE_FACTOR
+    assert not_ready["free_space"] == PLENTY_OF_SPACE
+    building = bodies["setupBuilding"]
+    assert building["database_ready"] is False
+    assert building["job"]["kind"] == "build" and building["job"]["status"] == "running"
+    assert 0 < building["job"]["progress"] < 1
+    failed = bodies["setupBuildFailed"]
+    assert failed["database_ready"] is False
+    assert failed["job"]["status"] == "failed"
+    assert envelope_error(failed["job"]["error"])["code"] == "source_unreachable"
+    unreachable = bodies["setupListingUnreachable"]
+    assert (unreachable["download_size"], unreachable["space_needed"]) == (None, None)
+    assert envelope_error(unreachable["listing_error"])["code"] == "source_unreachable"
+    assert bodies["setupFreeSpaceUnknown"]["free_space"] is None
+    assert bodies["setupFreeSpaceUnknown"]["download_size"] == size
+    accepted = bodies["setupBuildAccepted"]
+    assert set(accepted) == JOB_FIELDS and accepted["kind"] == "build"
+    assert bodies["setupBuildRefusedForSpace"]["error"]["code"] == "insufficient_space"
+
+
+def test_t22_ca08_status_samples_show_readiness_and_sources(configured_api):
+    """CA-08 / RN-01 / T22: the status samples show the database not ready with no source, and ready with the
+    source's origin, publication date and download date."""
+    bodies = _by_name(_collect(configured_api))
+
+    not_ready = bodies["statusNotReady"]
+    assert (not_ready["database_ready"], not_ready["sources"]) == (False, [])
+    ready = bodies["statusWithSources"]
+    assert ready["database_ready"] is True
+    assert [(entry["source"], entry["url"]) for entry in ready["sources"]] == [("scryfall_oracle", ORACLE_URI)]
+    assert ready["sources"][0]["published_at"] == DATETIME_PLACEHOLDER
+    assert ready["sources"][0]["downloaded_at"] == DATETIME_PLACEHOLDER
 
 
 def test_t8_rn47_launcher_instance_fixture_matches_the_api(configured_api):

@@ -45,21 +45,136 @@ button:hover {
   border-color: var(--color-accent-hover);
 }
 
-.app-header {
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button:disabled,
+button:disabled:hover {
+  background: var(--color-code-surface);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+/* A status icon beside its message; the text carries the meaning. */
+.tone {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: var(--space-2) var(--space-3);
+}
+
+.status-icon {
+  flex: none;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  /* Centers the icon on the first line of text. */
+  margin-top: calc((var(--line-height-body) * 1em - var(--icon-size)) / 2);
+}
+
+.tone-body {
   display: flex;
-  align-items: center;
-  gap: var(--space-6);
-  padding: var(--space-3) var(--space-6);
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.app-header {
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
 
-.app-name {
-  font-weight: 700;
+/* Header and notice bars share the content axis of the screens. */
+.app-bar-inner {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: var(--space-3) var(--space-6);
 }
 
-.app-header a[aria-current="page"] {
+.app-header-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-6);
+}
+
+.app-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.brand-mark {
+  flex: none;
+  color: var(--color-accent);
+}
+
+.app-nav {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.app-nav a {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: background-color 120ms ease-out, color 120ms ease-out;
+}
+
+.app-nav a:hover {
+  color: var(--color-text);
+  background: var(--color-accent-surface);
+}
+
+.app-nav a[aria-current="page"] {
+  color: var(--color-accent);
+  font-weight: 700;
+  background: var(--color-accent-surface);
+  box-shadow: inset 0 calc(-1 * var(--nav-indicator-width)) 0 var(--color-accent);
+}
+
+.shell-notice {
+  background: var(--color-notice-surface);
+  color: var(--color-notice-text);
+  border-bottom: 1px solid var(--color-notice-border);
+}
+
+.shell-notice .tone {
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+}
+
+.shell-notice .status-icon {
+  margin-top: 0;
+}
+
+.shell-notice p {
+  margin: 0;
+}
+
+.button-quiet {
+  padding: var(--space-1) var(--space-3);
+  background: transparent;
+  color: var(--color-accent);
+}
+
+.button-quiet:hover {
+  background: var(--color-accent-surface);
+  color: var(--color-accent-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-nav a {
+    transition: none;
+  }
+
+  button:active:not(:disabled) {
+    transform: none;
+  }
 }
 
 .screen {
@@ -70,7 +185,14 @@ button:hover {
 
 .screen h1 {
   font-size: var(--font-size-h1);
-  margin: 0 0 var(--space-6);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--space-2);
+}
+
+.screen h1 + :not(.summary):not(.summary-row) {
+  margin-top: var(--space-6);
 }
 
 .screen h1:focus {
@@ -82,8 +204,21 @@ button:hover {
 }
 
 .summary {
-  margin: calc(-1 * var(--space-4)) 0 var(--space-4);
+  margin: 0 0 var(--space-6);
   color: var(--color-text-muted);
+}
+
+.summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-4);
+  margin: 0 0 var(--space-6);
+}
+
+.summary-row .summary {
+  margin: 0;
 }
 
 .hint {
@@ -136,9 +271,6 @@ button:hover {
 }
 
 .settings li {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
   padding: var(--space-3) var(--space-4);
   margin-bottom: var(--space-2);
   background: var(--color-surface);
@@ -147,8 +279,24 @@ button:hover {
   overflow-wrap: anywhere;
 }
 
+.settings li:not(.tone) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.settings code {
+  align-self: flex-start;
+}
+
 .settings-to-fix li {
-  border-left: var(--border-accent-width) solid var(--color-danger-border);
+  background: var(--color-danger-surface);
+  border-color: var(--color-danger-border);
+}
+
+.settings-to-fix .status-icon,
+.file-unreadable .status-icon {
+  color: var(--color-danger-text);
 }
 
 .settings-ignored li {
@@ -157,19 +305,21 @@ button:hover {
 }
 
 .stopped-notice {
-  padding: var(--space-3) var(--space-6);
-  background: var(--color-accent-surface);
+  background: var(--color-danger-surface);
   color: var(--color-text);
-  border-bottom: 1px solid var(--color-accent);
+  border-bottom: 1px solid var(--color-danger-border);
 }
 
 .stopped-notice p {
   margin: 0;
-  max-width: var(--content-width);
+}
+
+.stopped-notice .status-icon,
+.stopped-notice-title {
+  color: var(--color-danger-text);
 }
 
 .stopped-notice-title {
-  color: var(--color-accent);
   font-weight: 700;
 }
 
@@ -177,6 +327,7 @@ button:hover {
   padding: var(--space-3) var(--space-4);
   background: var(--color-notice-surface);
   color: var(--color-notice-text);
+  border: 1px solid var(--color-notice-border);
   border-radius: var(--radius);
 }
 
@@ -185,6 +336,7 @@ button:hover {
   margin-bottom: var(--space-4);
   background: var(--color-danger-surface);
   color: var(--color-danger-text);
+  border: 1px solid var(--color-danger-border);
   border-radius: var(--radius);
 }
 
@@ -196,5 +348,242 @@ button:hover {
   .field {
     grid-template-columns: 1fr;
     gap: 0;
+  }
+}
+
+.file-unreadable {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-danger-surface);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius);
+}
+
+.file-unreadable code {
+  align-self: flex-start;
+}
+
+.readiness {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid;
+  border-radius: var(--radius);
+}
+
+.readiness-ready {
+  background: var(--color-success-surface);
+  color: var(--color-success-text);
+  border-color: var(--color-success-border);
+}
+
+.readiness-missing {
+  background: var(--color-notice-surface);
+  color: var(--color-notice-text);
+  border-color: var(--color-notice-border);
+}
+
+.readiness-missing a {
+  color: inherit;
+  font-weight: 700;
+}
+
+.sources {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.source {
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.source-name {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-body);
+}
+
+.source-details {
+  margin: 0;
+  font-size: var(--font-size-small);
+}
+
+.source-detail {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: var(--space-4);
+  padding: var(--space-1) 0;
+}
+
+.source-detail dt {
+  color: var(--color-text-muted);
+}
+
+.source-detail dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.source-url {
+  font-family: var(--font-mono);
+}
+
+@media (max-width: 32rem) {
+  .source-detail {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+/* Setup screen */
+.setup-panel {
+  margin-top: var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.setup-ledger {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.setup-ledger-item {
+  padding: var(--space-4) var(--space-6);
+}
+
+.setup-ledger-item + .setup-ledger-item {
+  border-left: 1px solid var(--color-border);
+}
+
+.setup-ledger dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.setup-ledger dd {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-h1);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.setup-ledger-short dd {
+  color: var(--color-danger-text);
+}
+
+.setup-ledger-note {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-small);
+  font-weight: 700;
+  white-space: normal;
+}
+
+.setup-action {
+  padding: var(--space-6);
+}
+
+.setup-start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+}
+
+.setup-status {
+  margin: var(--space-3) 0 0;
+}
+
+.setup-status:empty {
+  margin: 0;
+}
+
+.setup-problem {
+  flex-basis: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-danger-surface);
+  color: var(--color-danger-text);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius);
+}
+
+.setup-problem p,
+.setup-settings p {
+  margin: 0;
+}
+
+.setup-progress-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-4);
+  margin-bottom: var(--space-2);
+  font-weight: 600;
+}
+
+.setup-progress-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-accent);
+}
+
+.setup-progress-track {
+  position: relative;
+  height: var(--space-2);
+  overflow: hidden;
+  background-color: var(--color-accent-surface);
+  border-radius: var(--radius);
+}
+
+.setup-progress-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--color-accent);
+  transform-origin: left center;
+  transition: transform 240ms ease-out;
+}
+
+/* Quarter marks drawn over the fill, so the progress reads at a glance. */
+.setup-progress-track::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    to right,
+    transparent calc(25% - 1px),
+    var(--color-surface) calc(25% - 1px) 25%,
+    transparent 25% calc(50% - 1px),
+    var(--color-surface) calc(50% - 1px) 50%,
+    transparent 50% calc(75% - 1px),
+    var(--color-surface) calc(75% - 1px) 75%,
+    transparent 75%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .setup-progress-fill {
+    transition: none;
+  }
+}
+
+@media (max-width: 32rem) {
+  .setup-ledger {
+    grid-template-columns: 1fr;
+  }
+
+  .setup-ledger-item + .setup-ledger-item {
+    border-left: 0;
+    border-top: 1px solid var(--color-border);
   }
 }

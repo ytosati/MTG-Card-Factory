@@ -334,3 +334,76 @@ def test_refusal_writes_nothing_to_stdout_or_stderr_rn42(upgrade_home, capfd):
     captured = capfd.readouterr()
     assert captured.out == ""
     assert captured.err == ""
+
+
+# Orphan jobs (task T13, spec RN-03, RN-10; plan section 7): the startup step
+# also fails every job stored as queued or running, after migrating.
+
+
+def _store_jobs():
+    """One job in each state, stored through the ORM on the upgrade database."""
+    from core.models import Job
+
+    jobs = {status: Job.objects.create(kind="build", status=status).pk for status in ("queued", "running", "done")}
+    connections.close_all()
+    return jobs
+
+
+def _job_states(ids):
+    from core.models import Job
+
+    rows = {row.pk: row for row in Job.objects.filter(pk__in=ids.values())}
+    connections.close_all()
+    return {status: (rows[pk].status, rows[pk].error) for status, pk in ids.items()}
+
+
+def _assert_orphans_failed(states):
+    for status in ("queued", "running"):
+        state, error = states[status]
+        assert state == "failed", status
+        assert isinstance(error, dict) and set(error) == {"error"}, error
+        assert set(error["error"]) == {"code", "message", "setting", "fields"}
+        assert error["error"]["message"].strip()
+    assert states["done"] == ("done", None)
+
+
+def test_t13_rn03_startup_fails_orphan_jobs_when_nothing_is_pending(upgrade_home):
+    """RN-03 / RN-10 / T13: on a current database, the startup step fails queued and running jobs
+    left by an earlier process and leaves ended ones alone."""
+    _build_current_database(upgrade_home)
+    ids = _store_jobs()
+
+    _upgrade_database()()
+
+    _assert_orphans_failed(_job_states(ids))
+
+
+def test_t13_rn03_startup_fails_orphan_jobs_after_migrating(upgrade_home):
+    """RN-03 / RN-10 / T13: on an older database, the orphans are failed once the migrations ran."""
+    _build_old_database(upgrade_home)
+    ids = _store_jobs()
+
+    _upgrade_database()()
+
+    assert _applied(upgrade_home.database, "auth", PENDING_AUTH_MIGRATION)
+    _assert_orphans_failed(_job_states(ids))
+
+
+def test_t13_rn42_refused_newer_database_keeps_its_jobs_unchanged(upgrade_home):
+    """RN-42 / T13: a newer database is refused with its data unchanged, jobs included."""
+    _build_current_database(upgrade_home)
+    ids = _store_jobs()
+    _execute(
+        upgrade_home.database,
+        "INSERT INTO django_migrations (app, name, applied) VALUES (?, ?, ?)",
+        ("auth", FUTURE_MIGRATION, "2031-01-01 00:00:00"),
+    )
+    before = _database_bytes(upgrade_home)
+
+    with pytest.raises(_startup_error()):
+        _upgrade_database()()
+
+    assert _database_bytes(upgrade_home) == before
+    states = _job_states(ids)
+    assert states["running"][0] == "running"
+    assert states["queued"][0] == "queued"

@@ -149,6 +149,8 @@ and key for art. The person pays the providers directly for usage.
   and, optionally, a card language, a base card, and either a request for art
   with an optional art description or an uploaded image. The generated card may
   be of any card type and supertype (see Generated card), and has one face.
+  The idea is at most 1,000 characters and the art description at most 500,
+  counted as Unicode characters.
 - RN-12: Before writing the card, the system defines the design intent. The text
   model then searches the local database for cards related to the request (and
   to the base card, when chosen) and picks the comparables among them. The search
@@ -162,7 +164,14 @@ and key for art. The person pays the providers directly for usage.
 - RN-15: A rejected card may go through at most one automatic revision. If it is
   still rejected, it is saved and shown as rejected, with the causes. If the
   revision call fails (RN-10), the first draft is saved as rejected with its
-  causes, and the provider failure is shown.
+  causes, and the provider failure is shown. The revision returns every card
+  field, the rationale, the comparables and the power indicator, which replace
+  those of the draft; the design intent stays. Its comparables are checked as
+  in RN-12. An invalid revision response counts as a failed revision call.
+
+- RN-50: A card generation, an art generation or a quick adjustment runs one
+  at a time. While one runs, starting another is refused with a message that
+  says one is already running. A running generation cannot be cancelled.
 
 ### Validations
 - RN-16: The card's color identity, considering cost and text, is within the
@@ -170,9 +179,16 @@ and key for art. The person pays the providers directly for usage.
   reminder text rejects the card.
 - RN-17: The mana cost is well formed and the stated mana value matches it.
   The mana value is computed as defined by the Comprehensive Rules. Symbols are
-  the official mana symbols, written in the order used on printed cards ({X},
-  then generic, then colored). A card with no mana cost (such as a land) is
+  the official mana symbols, written in the order used on printed cards: {X}
+  (which may repeat), then at most one generic number, then {C}, then {S},
+  then one group of colored, hybrid and Phyrexian symbols in any order among
+  themselves. A card with no mana cost (such as a land) is
   accepted, has mana value 0 and is different from a cost of {0}.
+- RN-51: The card's name is not the name of an existing card in the reference
+  database, or of one of its faces. Names are compared ignoring case,
+  surrounding and repeated spaces, and the apostrophe style. Every card the
+  database holds counts; names are compared with the English names. The
+  rule applies to manual edits too (RN-23).
 - RN-18: The type line uses only card types, supertypes and subtypes that exist
   in the game. Card types are limited to those a Commander deck can contain.
   Each subtype must belong to one of the card's types, as the Comprehensive
@@ -352,7 +368,12 @@ and key for art. The person pays the providers directly for usage.
   keeps every saved card, version and image, and upgrades the stored data
   automatically. An older version started with the data folder of a newer one
   does not start and says so. A failed upgrade leaves the stored data as it was.
-- RN-28: On first start, if the reference database is not ready, the Setup
+  When a new version needs reference data the database does not have (such as
+  a new data source), the reference database is not ready (RN-28) on every
+  start until the rebuild succeeds; saved cards are kept and become available
+  again after it. Until then, the earlier reference data is not used.
+- RN-28: Whenever the reference database is not ready (on first start, or after
+  a new version that needs new reference data, RN-42), the Setup
   screen opens first and tells the person; when settings need fixing, it also
   says so and links to Status. The other screens, except Status, are available
   only after the database is ready. The Setup screen states the expected
@@ -360,7 +381,9 @@ and key for art. The person pays the providers directly for usage.
   on the drive that holds the data folder. The build starts only when the
   person starts it, and shows progress. It refuses to start when there is not
   enough free space. When the data source cannot be reached, the screen shows
-  the cause and a retry. If the disk
+  the cause and a retry. A failed download is tried again automatically up
+  to three attempts in all, with a short pause between them, before the build
+  fails with its cause. If the disk
   fills up during the build, the build fails as in RN-03 and the person sees
   the cause.
 - RN-29: The application runs entirely on the person's computer and is reachable
@@ -414,8 +437,9 @@ never use the network or a real provider.
 - CA-10 (RN-14): An invalid draft never appears as approved.
 - CA-11 (RN-15): A card rejected twice is saved and shown as rejected, with the
   causes, with no third attempt. When the first draft is rejected and the
-  revision call fails, the first draft is saved as rejected and the provider
-  failure is shown.
+  revision call fails or its response is invalid, the first draft is saved as
+  rejected and the failure is shown. When the revision is used, its
+  comparables and power indicator are the ones shown.
 - CA-12 (RN-23): When the cost of an approved card is edited to a malformed
   value, revalidation rejects it right away, without using the provider. After
   a valid cost edit, the mana value is recomputed and one new version exists.
@@ -425,8 +449,8 @@ never use the network or a real provider.
 - CA-14 (RN-07): The same scripted card, shaped as each provider's recorded
   response (OpenAI, Anthropic and Google), yields the same saved card and the
   same validation result.
-- CA-15 (RN-10): When the provider returns an invalid response, the person sees a
-  clear message and no card is saved.
+- CA-15 (RN-10): When the provider returns an invalid response to the intent or
+  draft call, the person sees a clear message and no card is saved.
 - CA-16 (RN-09): Each text generation records and shows the tokens used. A
   generation that fails after the provider answered still records its usage,
   with no card, and a draft with its revision produces two records.
@@ -584,7 +608,8 @@ never use the network or a real provider.
   that exists only on un-set or digital-only cards are rejected.
 - CA-66 (RN-17): The cost {X}{2/W}{G/P} has mana value 3; a land with no mana
   cost is accepted with mana value 0; the cost {G}{2} is rejected for symbol
-  order.
+  order; the costs {2}{C}{S}{G}, {G}{U}, {U}{G} and {1}{G}{G/W}{W} are
+  accepted; the cost {1}{1}{G} is rejected.
 - CA-67 (RN-05): With the image provider equal to the text provider and an empty
   image key, art uses the text key.
 - CA-68 (RN-07): With an image provider set and no image model, art is
@@ -626,6 +651,17 @@ never use the network or a real provider.
   key or starting the way a provider key starts, the Status screen names the
   model setting to fix, no response contains the value, and a generation calls
   no provider and creates no card.
+- CA-79 (RN-51): Given an existing card "Lantern Warden" and a two-faced card
+  "Ember // Ash", a card named "lantern  warden", "Ash" or with a typographic
+  apostrophe in place of a straight one is rejected with the cause; a new name
+  is accepted.
+- CA-80 (RN-11): An idea of 1,000 characters is accepted and one of 1,001 is
+  refused naming the field, with no provider call; the same holds for an art
+  description at 500 and 501. The Request screen also stops the request
+  before it is sent.
+- CA-81 (RN-42, RN-28): Given a data folder whose reference database lacks
+  data the new version needs, the Setup screen opens and says a rebuild is
+  needed; after the rebuild every saved card, version and image is listed.
 
 ## Screens
 - First-run setup: the expected download size and free disk space needed, the
@@ -665,19 +701,16 @@ moved to Future work.
 
 ## Open questions
 - What are the limits on abilities and text length? (RN-20)
-- If the source download fails, how many times does it retry?
-- Can the person refresh the database later, and how (for example a button on
-  the Status screen)? Does a new application version require a rebuild (RN-42)?
 - Which license does the project use?
 - Do the data source's terms allow its card images to be sent to an image model
   as a template (RN-38)?
-- Should casual, medium and strong align with the official Commander brackets?
-- What happens when a generated card has the same name as an existing card?
-- Are simultaneous generations allowed, and can a running generation be
-  cancelled?
-- What are the maximum lengths of the idea and of the art description?
 
 ## Future work
+- Refreshing the reference database with newer data from the source, for
+  example from the Status screen (RN-42).
+- Aligning casual, medium and strong with the official Commander brackets.
+- Cancelling a running card generation, art generation or quick adjustment
+  (RN-50).
 - Generated cards with more than one face (split, adventure, transform and modal
   double-faced). Each face has its own name, mana cost, type line, rules text,
   power and toughness, and art. This changes the card and its versions, the

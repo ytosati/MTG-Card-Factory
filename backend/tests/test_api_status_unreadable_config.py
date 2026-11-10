@@ -19,6 +19,9 @@ import pytest
 from tests.config_files import DEFAULT_PORT, FAKE_IMAGE_KEY, FAKE_TEXT_KEY, deny_opening, env_text, full_text_settings
 from tests.configured_api import configured_api  # noqa: F401 (fixture)
 
+# The status reads the database readiness and the source records (T22).
+pytestmark = pytest.mark.django_db
+
 STATUS_URL = "/api/status"
 SETTING_TO_FIX = "config_invalid"
 ENV_SETTING = ".env"

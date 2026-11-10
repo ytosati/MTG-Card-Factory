@@ -2,6 +2,9 @@
 
 from rest_framework import serializers
 
+from catalog.models import SourceRecord
+from core.models import Job
+
 
 class SettingIssueSerializer(serializers.Serializer):
     """A setting to fix or a notice."""
@@ -11,8 +14,16 @@ class SettingIssueSerializer(serializers.Serializer):
     message = serializers.CharField()
 
 
+class SourceSerializer(serializers.ModelSerializer):
+    """Origin, publication date and download date of a source (see spec RN-01)."""
+
+    class Meta:
+        model = SourceRecord
+        fields = ["source", "url", "published_at", "downloaded_at"]
+
+
 class StatusSerializer(serializers.Serializer):
-    """Configuration part of the status; keys appear only as booleans (see spec RN-06)."""
+    """Configuration and database status; keys appear only as booleans (see spec RN-06)."""
 
     text_provider = serializers.CharField(allow_null=True)
     text_model = serializers.CharField(allow_null=True)
@@ -21,6 +32,8 @@ class StatusSerializer(serializers.Serializer):
     image_model = serializers.CharField(allow_null=True)
     settings = SettingIssueSerializer(many=True)
     next_start_port = serializers.IntegerField(allow_null=True)
+    database_ready = serializers.BooleanField()
+    sources = SourceSerializer(many=True)
 
 
 class InstanceSerializer(serializers.Serializer):
@@ -29,3 +42,23 @@ class InstanceSerializer(serializers.Serializer):
     app = serializers.CharField()
     version = serializers.CharField()
     home = serializers.CharField()
+
+
+class JobSerializer(serializers.ModelSerializer):
+    """A job's progress and outcome; `error` is the error envelope or None."""
+
+    class Meta:
+        model = Job
+        fields = ["id", "kind", "status", "progress", "result", "error"]
+
+
+class SetupSerializer(serializers.Serializer):
+    """The Setup screen: readiness, build job, sizes in bytes, the listing's failure and settings to fix."""
+
+    database_ready = serializers.BooleanField()
+    job = JobSerializer(allow_null=True)
+    download_size = serializers.IntegerField(allow_null=True)
+    space_needed = serializers.IntegerField(allow_null=True)
+    free_space = serializers.IntegerField(allow_null=True)
+    listing_error = serializers.JSONField(allow_null=True)
+    settings = SettingIssueSerializer(many=True)

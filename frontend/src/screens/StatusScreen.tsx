@@ -1,9 +1,10 @@
-// Status screen, configuration part: providers, models, key presence and settings to fix.
-// Details: specs/spec.md, RN-08 and "Screens" (Status).
+// Status screen: providers, models, key presence, settings to fix, database readiness and data sources.
+// Details: specs/spec.md, RN-01, RN-08, CA-08, CA-77 and "Screens" (Status).
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { getStatus } from "../api/client";
-import type { SettingIssue, StatusResponse } from "../api/types";
+import { StatusIcon } from "../components/StatusIcon";
+import type { SettingIssue, SourceInfo, StatusResponse } from "../api/types";
 
 type LoadState =
   | { kind: "loading" }
@@ -12,6 +13,30 @@ type LoadState =
 
 const NOT_SET = "Not set";
 const INVALID = "Invalid — see Settings to fix";
+
+/** The settings item that names the configuration file itself when it cannot be read (spec CA-77). */
+const CONFIGURATION_FILE = ".env";
+
+const UNKNOWN_DATE = "Unknown";
+
+/** The setting that holds the text key; only its name is ever shown, never a value. */
+const TEXT_KEY_SETTING = "LLM_API_KEY";
+
+const SOURCE_NAMES: Record<string, string> = {
+  scryfall_oracle: "Scryfall Oracle cards",
+};
+
+// dateStyle and timeStyle cannot be combined with timeZoneName, so the parts are listed one by one.
+const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  timeZoneName: "short",
+});
+
+const ISO_DATE_TIME = /^\d{4}-\d{2}-\d{2}T/;
 
 const PROVIDER_NAMES: Record<string, string> = {
   openai: "OpenAI",
@@ -73,7 +98,7 @@ export function StatusScreen() {
       <h1 ref={headingRef} tabIndex={-1}>
         Status
       </h1>
-      {state.kind === "loading" && <p role="status">Loading the configuration…</p>}
+      {state.kind === "loading" && <p role="status">Loading the status…</p>}
       {state.kind === "error" && (
         <div className="error-panel">
           <div role="alert">
@@ -103,50 +128,57 @@ function Configuration({ status, onCheckAgain }: { status: StatusResponse; onChe
   const toFix = status.settings.filter((item) => item.code === "config_invalid");
   const ignored = status.settings.filter((item) => item.code === "ignored");
   const invalid = new Set(toFix.map((item) => item.setting));
+  // An unreadable file leaves every value empty; showing them as unset would point at the wrong fix.
+  const fileUnreadable = invalid.has(CONFIGURATION_FILE);
 
   return (
     <>
-      <p className="summary">{summaryText(toFix.length)}</p>
-
-      {toFix.length > 0 && (
-        <section aria-labelledby="status-settings-to-fix">
-          <h2 id="status-settings-to-fix">Settings to fix</h2>
-          <SettingList items={toFix} variant="to-fix" />
-          <p className="hint">
-            Edit the configuration file (.env) in the Card Factory folder, then check again. Changes take
-            effect without a restart, except the port.
-          </p>
-        </section>
+      {toFix.length > 0 ? (
+        <>
+          <p className="summary">{summaryText(toFix.length)}</p>
+          <section aria-labelledby="status-settings-to-fix">
+            <h2 id="status-settings-to-fix">Settings to fix</h2>
+            <SettingList items={toFix} variant="to-fix" />
+            <p className="hint">
+              Edit the configuration file (.env) in the Card Factory folder, then check again. Changes take
+              effect without a restart, except the port.
+            </p>
+            <p className="actions">
+              <button type="button" onClick={onCheckAgain}>
+                Check again
+              </button>
+            </p>
+          </section>
+        </>
+      ) : (
+        <div className="summary-row">
+          <p className="summary">{summaryText(toFix.length)}</p>
+          <button type="button" onClick={onCheckAgain}>
+            Check again
+          </button>
+        </div>
       )}
-
-      <p className="actions">
-        <button type="button" onClick={onCheckAgain}>
-          Check again
-        </button>
-      </p>
 
       <section aria-labelledby="status-configuration">
         <h2 id="status-configuration">Configuration</h2>
-        <dl className="fields">
-          <Field
-            label="Text provider"
-            value={providerName(status.text_provider)}
-            invalid={invalid.has("LLM_PROVIDER")}
-          />
-          <Field label="Text model" value={status.text_model} invalid={invalid.has("LLM_MODEL")} />
-          <div className="field">
-            <dt>Text key configured</dt>
-            <dd className={status.text_key_configured ? undefined : "value-danger"}>
-              {status.text_key_configured ? "Yes" : "No"}
-            </dd>
-          </div>
-          <Field
-            label="Image provider"
-            value={providerName(status.image_provider)}
-            invalid={invalid.has("IMAGE_PROVIDER")}
-          />
-          <Field label="Image model" value={status.image_model} invalid={invalid.has("IMAGE_MODEL")} />
-        </dl>
+        {fileUnreadable ? (
+          <p className="file-unreadable tone">
+            <StatusIcon tone="danger" />
+            <span className="tone-body">
+              <code>{CONFIGURATION_FILE}</code>
+              <span>The configuration file cannot be read, so its settings are not shown.</span>
+            </span>
+          </p>
+        ) : (
+          <>
+            <ConfigurationFields status={status} invalid={invalid} />
+            {!status.text_key_configured && !invalid.has(TEXT_KEY_SETTING) && (
+              <p className="hint">
+                No text key is set. Set <code>{TEXT_KEY_SETTING}</code> in the configuration file to generate cards.
+              </p>
+            )}
+          </>
+        )}
         {status.next_start_port !== null && (
           <p className="notice">
             The port changes to {status.next_start_port} at the next start. After restarting, open
@@ -154,6 +186,8 @@ function Configuration({ status, onCheckAgain }: { status: StatusResponse; onChe
           </p>
         )}
       </section>
+
+      <Database ready={status.database_ready} sources={status.sources} />
 
       {ignored.length > 0 && (
         <section aria-labelledby="status-ignored-settings">
@@ -163,6 +197,88 @@ function Configuration({ status, onCheckAgain }: { status: StatusResponse; onChe
       )}
     </>
   );
+}
+
+function ConfigurationFields({ status, invalid }: { status: StatusResponse; invalid: Set<string> }) {
+  return (
+    <dl className="fields">
+      <Field
+        label="Text provider"
+        value={providerName(status.text_provider)}
+        invalid={invalid.has("LLM_PROVIDER")}
+      />
+      <Field label="Text model" value={status.text_model} invalid={invalid.has("LLM_MODEL")} />
+      <div className="field">
+        <dt>Text key configured</dt>
+        <dd>{status.text_key_configured ? "Yes" : "No"}</dd>
+      </div>
+      <Field
+        label="Image provider"
+        value={providerName(status.image_provider)}
+        invalid={invalid.has("IMAGE_PROVIDER")}
+      />
+      <Field label="Image model" value={status.image_model} invalid={invalid.has("IMAGE_MODEL")} />
+    </dl>
+  );
+}
+
+/** Database readiness and, for each source, its origin, publication date and download date (spec RN-01, CA-08). */
+function Database({ ready, sources }: { ready: boolean; sources: SourceInfo[] }) {
+  return (
+    <section aria-labelledby="status-database">
+      <h2 id="status-database">Reference database</h2>
+      {ready ? (
+        <p className="readiness readiness-ready tone">
+          <StatusIcon tone="success" />
+          <span>The reference database is ready.</span>
+        </p>
+      ) : (
+        <p className="readiness readiness-missing tone">
+          <StatusIcon tone="notice" />
+          <span>
+            The reference database is not ready. Build it or follow its progress on the <a href="#/setup">Setup</a>{" "}
+            screen.
+          </span>
+        </p>
+      )}
+      {sources.length > 0 ? (
+        <ul className="sources" aria-label="Data sources">
+          {sources.map((source, index) => (
+            <li key={`${source.source}-${index}`} className="source">
+              <h3 className="source-name">{SOURCE_NAMES[source.source] ?? source.source}</h3>
+              <dl className="source-details">
+                <div className="source-detail">
+                  <dt>Origin</dt>
+                  <dd className="source-url">{source.url}</dd>
+                </div>
+                <div className="source-detail">
+                  <dt>Published</dt>
+                  <dd>
+                    <DateValue iso={source.published_at} />
+                  </dd>
+                </div>
+                <div className="source-detail">
+                  <dt>Downloaded</dt>
+                  <dd>
+                    <DateValue iso={source.downloaded_at} />
+                  </dd>
+                </div>
+              </dl>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        ready && <p className="hint">No data sources are recorded.</p>
+      )}
+    </section>
+  );
+}
+
+/** A date from the response, formatted for people; a value that is not a date reads "Unknown". */
+function DateValue({ iso }: { iso: string }) {
+  const time = ISO_DATE_TIME.test(iso) ? Date.parse(iso) : Number.NaN;
+  if (Number.isNaN(time)) return <span>{UNKNOWN_DATE}</span>;
+  return <time dateTime={iso}>{DATE_FORMAT.format(time)}</time>;
 }
 
 /** A configuration value; a value whose setting must be fixed says so instead of looking merely unset. */
@@ -190,9 +306,12 @@ function SettingList({ items, variant }: { items: SettingIssue[]; variant: "to-f
   return (
     <ul className={`settings settings-${variant}`}>
       {items.map((item, index) => (
-        <li key={`${item.setting}-${index}`}>
-          <code>{item.setting}</code>{" "}
-          <span>{item.message}</span>
+        <li key={`${item.setting}-${index}`} className={variant === "to-fix" ? "tone" : undefined}>
+          {variant === "to-fix" && <StatusIcon tone="danger" />}
+          <span className="tone-body">
+            <code>{item.setting}</code>{" "}
+            <span>{item.message}</span>
+          </span>
         </li>
       ))}
     </ul>

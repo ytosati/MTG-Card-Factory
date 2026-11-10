@@ -197,7 +197,11 @@ describe("StatusScreen: settings to fix and ignored settings", () => {
   });
 
   it("CA-77, RN-40: an unreadable configuration file names .env with its fix as the only setting to fix", async () => {
-    await renderWithStatus(statusUnreadableConfiguration);
+    // The configuration fields are not rendered while the file cannot be read, so this waits for the
+    // settings list.
+    stubFetch(async () => jsonResponse(statusUnreadableConfiguration));
+    render(<StatusScreen />);
+    await screen.findByRole("region", { name: SETTINGS_TO_FIX });
 
     const items = itemsIn(settingsToFixRegion());
     expect(items).toHaveLength(1);

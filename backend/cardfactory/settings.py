@@ -93,6 +93,8 @@ REST_FRAMEWORK = {
     # No accounts in the product: an Authorization header is never read.
     "DEFAULT_AUTHENTICATION_CLASSES": [],
     "EXCEPTION_HANDLER": "api.exceptions.exception_handler",
+    # Readiness gate: views that work without the reference database opt out (see plan section 6).
+    "DEFAULT_PERMISSION_CLASSES": ["api.permissions.DatabaseReady"],
     # JSON only: an API answer is never an HTML page.
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     # JSON only in requests too; the upload endpoint adds multipart when it exists (see plan section 6).

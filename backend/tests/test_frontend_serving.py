@@ -286,6 +286,7 @@ def test_t10_unknown_api_path_still_answers_the_envelope(built_frontend, configu
     assert INDEX_MARKER not in response.content
 
 
+@pytest.mark.django_db
 def test_t10_status_endpoint_still_answers_json_with_a_build(built_frontend, configured_api):
     """T6 regression / T10: GET /api/status keeps answering JSON when the frontend is served."""
     configured_api.configure(full_text_settings())
@@ -389,6 +390,7 @@ def test_t10_no_build_missing_asset_is_not_a_server_error(client, settings, tmp_
     assert response.status_code in (404, NO_BUILD_STATUS)
 
 
+@pytest.mark.django_db
 def test_t10_no_build_keeps_the_api_working(configured_api, settings, tmp_path):
     """RN-27 / T10: with no build present, GET /api/status still answers JSON and an unknown
     /api/ path still answers the 404 envelope."""

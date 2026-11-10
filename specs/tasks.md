@@ -129,18 +129,18 @@ merged into `main`.
 
 ### Milestone 2 — Reference database
 
-- [ ] T13: Job model and in-process runner
-- [ ] T14: Catalog models and card full-text table
-- [ ] T15: Source downloader
-- [ ] T16: Oracle cards import with Commander legality
-- [ ] T20: Role tagging
-- [ ] T21: All-or-nothing build and management command
-- [ ] T22: Setup endpoints and readiness gate
-- [ ] T62: App shell, job polling and readiness gate
-- [ ] T63: Setup screen
-- [ ] T64: Status screen: data sources and readiness
-- [ ] T116: Milestone 2 end-to-end flow test
-- [ ] T89: Milestone 2 review
+- [x] T13: Job model and in-process runner
+- [x] T14: Catalog models and card full-text table
+- [x] T15: Source downloader
+- [x] T16: Oracle cards import with Commander legality
+- [x] T20: Role tagging
+- [x] T21: All-or-nothing build and management command
+- [x] T22: Setup endpoints and readiness gate
+- [x] T62: App shell, job polling and readiness gate
+- [x] T63: Setup screen
+- [x] T64: Status screen: data sources and readiness
+- [x] T116: Milestone 2 end-to-end flow test
+- [x] T89: Milestone 2 review
 
 ### Milestone 3 — First card
 
@@ -152,6 +152,7 @@ merged into `main`.
 - [ ] T38: Usage recording and usage endpoint (text)
 - [ ] T28: Validation result and mana cost validator
 - [ ] T29: Color identity validator
+- [ ] T138: Name validator against existing cards
 - [ ] T23: Comparables search
 - [ ] T26: Search quality evaluation script
 - [ ] T46: Generation prompts and output schemas
@@ -160,6 +161,8 @@ merged into `main`.
 - [ ] T61: Key-leak and outgoing connection sweep
 - [ ] T65: Request screen (idea, color identity, power level)
 - [ ] T67: Result screen: card text
+- [ ] T133: Database busy errors in the API
+- [ ] T137: Error codes in one place and module table
 - [ ] T117: Milestone 3 end-to-end flow test
 - [ ] T94: Milestone 3 review
 
@@ -181,6 +184,9 @@ merged into `main`.
 - [ ] T31: Keyword validator
 - [ ] T32: Text limits validator
 - [ ] T95: Rules sections and every validator in generation
+- [ ] T134: Download files cleaned after a build
+- [ ] T135: Progress during downloads
+- [ ] T136: Source listing cache that expires
 - [ ] T120: Milestone 5 end-to-end flow test
 - [ ] T96: Milestone 5 review
 
@@ -669,8 +675,10 @@ of the last heartbeat and the release. Every running job holds the watchdog
 and releases it when it ends, whatever the outcome. Add `GET /api/jobs/{id}` with the shape of plan
 section 6. The test database is a file in the temporary home, and job tests
 that use threads run with `transaction=True`.
-TODO: answer the open question on simultaneous generations and cancellation before this task; it sets the size of the pool (T88).
-Covers: RN-03, RN-10, RN-41, CA-70
+The pool runs one generation job at a time (RN-50): a card generation, an
+art generation or a quick adjustment submitted while one runs is refused with
+the error code `generation_running`. The build is not a generation job.
+Covers: RN-03, RN-10, RN-41, RN-50, CA-70
 Agent: backend-dev
 Depends on: T88
 Done when: tests pass for a successful job, a failing job (error envelope, no partial result, no exception text stored), an orphan reported as failed by `get_job` and cleaned at startup, the watchdog held while a job runs and released after it succeeds or fails (CA-70), and watchdog tests with a fake clock for no stop while held, no stop while one of two holds remains, and a stop 180 seconds after the last hold is released with no heartbeat.
@@ -693,8 +701,8 @@ listing or the `Content-Length`; a SHA-256 is computed and recorded in the
 source record. A download resumes with `If-Range` (ETag or Last-Modified) only
 when the server accepts it; otherwise, or when the source changed since the
 partial download, it starts over. Errors map to clear causes (no network, source failure,
-disk full). The retry count is a named parameter until the spec decides it.
-TODO: answer the open question on download retries (T88).
+disk full). The retry count is the named constant `DOWNLOAD_ATTEMPTS` (3 attempts in all,
+RN-28) with a short growing pause between attempts.
 Covers: RN-01, RN-03, RN-28, RN-29
 Agent: backend-dev
 Depends on: T14
@@ -820,7 +828,7 @@ the Milestone 3 tasks against the spec.
 Covers: none (review)
 Agent: maintainer
 Depends on: T13–T16, T20, T21, T22, T62, T63, T64, T116
-Done when: every suite passes, the demo works, the measurements and findings are recorded, the rebuild question is answered in the spec, and the blocking items of Milestone 3 are listed.
+Done when: every suite passes, the demo works, the measurements and findings are recorded (including how long the import transaction held the write lock, the peak disk use against `compressed_size`, and that `compressed_size` equals the downloaded bytes), the rebuild question is answered in the spec, and the blocking items of Milestone 3 are listed.
 
 ## Milestone 3 — First card
 
@@ -917,11 +925,10 @@ request gives the requested identity and the idea text). Add the mana cost
 validator: official symbols in printed order, a mana value computed as the
 Comprehensive Rules define, a stated value that matches it, and a missing cost
 accepted with mana value 0, distinct from {0}.
-TODO: decide whether RN-17 checks only the order of groups ({X}, generic, colored) or also the order of colors, and where {C} and {S} go; update RN-17 and CA-66.
 Covers: RN-17, CA-02, CA-66
 Agent: backend-dev
 Depends on: T89
-Done when: tests pass, including CA-02 (the cost {2}{G} with a stated value of 4 is rejected and the cause is named) and CA-66 ({X}{2/W}{G/P} has mana value 3; a land with no cost is accepted with 0; {G}{2} is rejected for symbol order).
+Done when: tests pass, including CA-02 (the cost {2}{G} with a stated value of 4 is rejected and the cause is named) and every case of CA-66.
 
 ### T29: Color identity validator
 Compute the color identity from the cost and the rules text (hybrid, Phyrexian
@@ -991,23 +998,26 @@ Validate the draft with the validators delivered so far. Allow at most one
 revision. Save the result as approved or rejected with its causes, and save the
 first draft as rejected when the revision call fails. Record usage for every
 call the provider answered, including invalid responses; calls with no answer
-(network, rejected key) record nothing. Invalid responses save no card.
-TODO: decide in RN-15 whether the revision returns the comparables and the power indicator again, and whether an invalid revision response counts as a failed revision call (T89).
+(network, rejected key) record nothing. An invalid draft response saves no
+card; an invalid revision response saves the first draft as rejected (RN-15).
 Covers: RN-09, RN-10, RN-14, RN-15, CA-10, CA-11, CA-15, CA-16
 Agent: llm-engineer
-Depends on: T29, T38, T40, T47b
+Depends on: T29, T138, T38, T40, T47b
 Done when: tests pass for CA-10, CA-11 (both cases), CA-15 and CA-16 (two records for a draft and its revision, a record for a failure with no card).
 
 ### T49: Generation endpoint and request serializer
 `POST /api/generations` validates the request (idea, color identity and power
 level required) and checks the configuration before any provider call. It then
 starts the generation as a job, through `core.jobs.submit`.
+A generation started while another one runs answers `generation_running`
+(RN-50).
 `GET /api/cards/{id}` returns the card with its current version: the text
 fields, validation result, design intent, rationale, comparables, power
 indicator and text usage; T54 adds the list, favorite and delete. The base card
 (T60), art (T115) and language (T33) fields are added by later milestones.
-TODO: answer the open questions on the maximum length of the idea, on a generated card named like an existing card, and on the power levels and the Commander brackets (T89).
-Covers: RN-08, RN-11, CA-05, CA-25, CA-26
+The idea is limited to 1,000 characters (CA-80; the art description limit
+comes with T115).
+Covers: RN-08, RN-11, RN-50, CA-05, CA-25, CA-26, CA-80
 Agent: backend-dev
 Depends on: T13, T22, T48
 Done when: tests pass for each missing field being named in the `fields` of the envelope (CA-26), invalid configuration with no provider call and no card (CA-05), a rejected key with no card (CA-25), the job run through the runner (CA-70), and the saved card read back by `GET /api/cards/{id}`.
@@ -1031,7 +1041,7 @@ level. Missing required fields are named and the request is not sent. Sending
 starts the generation job and follows it until the Result screen opens or the
 cause of a failure is shown. The base card picker (T66), the art option (T98)
 and the card language (T109) are added later.
-Covers: RN-11, RN-49, CA-26
+Covers: RN-11, RN-49, CA-26, CA-80
 Agent: frontend-dev
 Depends on: T49, T62
 Done when: Vitest tests pass for CA-26 (including colorless only when chosen), a provider failure shown with its cause, and the move to the Result screen when the job is done.
@@ -1047,12 +1057,44 @@ Agent: frontend-dev
 Depends on: T62, T49
 Done when: Vitest tests pass for an approved card, a rejected card with its causes, a "too strong" indicator on an approved card, the artist credit shown (CA-58) and the text usage shown.
 
+### T138: Name validator against existing cards
+Reject a card whose name is the name of an existing card or face in the
+reference database (RN-51), with the cause. The pipeline passes the set of
+normalized existing names, read by a catalog selector, to `validate`; the
+validator itself imports no Django code. Found in the Milestone 2 review.
+Covers: RN-51, CA-79
+Agent: backend-dev
+Depends on: T28
+Done when: tests with fictional names and no database pass for CA-79, and a selector test returns the normalized names of cards and faces.
+
+### T133: Database busy errors in the API
+An `OperationalError` for a locked database raised in a request answers
+`database_busy` with HTTP 503 in the error envelope, through one mapping in
+`core` shared with the build. Record the status in plan section 6. Found in the
+Milestone 2 review.
+Covers: RN-10, RN-28
+Agent: backend-dev
+Depends on: T22
+Done when: tests pass for a simulated lock on `POST /api/setup/build` and on a read endpoint, with no exception text in the response.
+
+### T137: Error codes in one place and module table
+Keep the error codes of plan section 6 and the job status sets in one place in
+`core`, remove the duplicates, and update the module table of plan section 5
+(catalog.setup, catalog.download, catalog.sources, catalog.build,
+core.selectors, and that `core.status` reads catalog readiness). Found in the
+Milestone 2 review.
+Covers: none (maintenance)
+Agent: backend-dev
+Depends on: T22
+Done when: every suite passes and no error code string is defined twice.
+
 ### T117: Milestone 3 end-to-end flow test
 Extend the end-to-end suite with the demo path of this milestone: a request
 sent through `POST /api/generations`, the job followed to its end, and the card,
 its usage and its validation read back through the API, with the fake adapter
 scripted as an approved draft, a rejected draft fixed by the revision, a draft
-rejected twice and an invalid response.
+rejected twice, an invalid draft response, and an invalid revision response
+after a rejected draft.
 Covers: RN-10, RN-11, RN-14, RN-15, CA-10, CA-11, CA-15, CA-27
 Agent: qa
 Depends on: T49, T61
@@ -1069,7 +1111,7 @@ embeddings). Commit only the counts. Confirm that only the factory reveals keys.
 findings, and check the Milestone 4 tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T23, T26, T28, T29, T35–T40, T46–T49, T61, T65, T67, T117
+Depends on: T23, T26, T28, T29, T35–T40, T46–T49, T61, T65, T67, T117, T133, T137, T138
 Done when: every suite passes, a card was generated with OpenAI, the T26 counts are recorded with the pass rule applied, the findings are recorded, and the blocking items of Milestone 4 are listed.
 
 ## Milestone 4 — Text providers
@@ -1224,6 +1266,34 @@ Agent: llm-engineer
 Depends on: T24, T30, T31, T32
 Done when: tests with the fake adapter pass for the rules sections sent with the draft, a draft rejected by the keyword validator and fixed by the revision, and a draft rejected by the type line validator twice and saved as rejected.
 
+### T134: Download files cleaned after a build
+After a successful build, delete every downloaded file of each source in the
+downloads folder, whatever its format, including partial files and files of an
+older listing layout. After a disk-full failure, discard the partial download
+too, so the space is freed. Found in the Milestone 2 review.
+Covers: RN-03, RN-28
+Agent: backend-dev
+Depends on: T21
+Done when: tests pass for leftover files of the older layout removed after a build, and no partial file kept after a disk-full failure.
+
+### T135: Progress during downloads
+Report download progress by bytes received against the expected size, so the
+Setup progress moves during each download. Found in the Milestone 2 review;
+needed before the larger sources of Milestones 8 and 9.
+Covers: RN-28, CA-18
+Agent: backend-dev
+Depends on: T21
+Done when: tests pass for progress values that grow during a download with a fake transport, staying between 0 and 1 and never decreasing.
+
+### T136: Source listing cache that expires
+The cached source listing of the Setup screen expires after a named number of
+minutes (10) and is cleared after a failed build, so sizes and the free space
+check follow the current listing. Found in the Milestone 2 review.
+Covers: RN-28, CA-60
+Agent: backend-dev
+Depends on: T22
+Done when: tests with a fake clock pass for a cached listing reused within the period, read again after it, and read again after a failed build.
+
 ### T120: Milestone 5 end-to-end flow test
 Extend the end-to-end suite with the demo path of this milestone: a build
 that includes the fictional rules text, then a generation whose draft uses an
@@ -1324,8 +1394,10 @@ Done when: Vitest tests pass for the list, the favorites filter and the removal 
 Extend the end-to-end suite with the demo path of this milestone: a generated
 card listed in the library, favorited with no new version, edited to a
 malformed cost and rejected with no provider call, fixed, adjusted, an earlier
-version restored, and another card deleted.
-Covers: RN-23, RN-24, RN-25, RN-26, CA-12, CA-13, CA-30, CA-31
+version restored, and another card deleted. Then a raised catalog version
+makes the reference database not ready, Setup asks for the rebuild, and after
+it every saved card, version and image is listed (CA-81).
+Covers: RN-23, RN-24, RN-25, RN-26, RN-42, CA-12, CA-13, CA-30, CA-31, CA-81
 Agent: qa
 Depends on: T55, T56, T57, T117
 Done when: the end-to-end suite passes with the flows of earlier milestones unchanged.
@@ -1411,8 +1483,8 @@ Done when: tests in a temporary data folder pass for the stored file, art attach
 Extend the request serializer of `POST /api/generations` with the art option
 (art requested with an optional description, or an uploaded image), checked
 against art availability before any provider call, following the decision of
-the T50 TODO.
-Covers: RN-07, RN-11, RN-43
+the T50 TODO. The art description is limited to 500 characters (CA-80).
+Covers: RN-07, RN-11, RN-43, CA-80
 Agent: backend-dev
 Depends on: T50, T90
 Done when: tests pass for art requested while unavailable (refused with the reason and the setting, no image request, CA-32), art requested while available, and the uploaded-image case decided in T50.
@@ -1870,14 +1942,14 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 |---|---|
 | RN-01 | T14, T15, T16, T21, T22, T64, T116, T18 |
 | RN-02 | T2, T75 |
-| RN-03 | T13, T14, T15, T21, T116 |
+| RN-03 | T13, T14, T15, T21, T116, T134 |
 | RN-04 | T14, T16, T23, T26 |
 | RN-05 | T4, T36, T90 |
 | RN-06 | T4, T5, T6, T126, T87, T128, T39, T36, T61 |
 | RN-07 | T4, T35, T40, T36, T41, T42, T118, T93, T90, T115, T58, T101, T98 |
 | RN-08 | T4, T6, T9, T127, T128, T129, T40, T36, T49, T41, T42, T45, T92, T90, T91, T101 |
 | RN-09 | T38, T48, T67, T52, T50, T51, T68 |
-| RN-10 | T13, T35, T39, T40, T48, T117, T41, T42 |
+| RN-10 | T13, T35, T39, T40, T48, T117, T133, T41, T42 |
 | RN-11 | T49, T65, T117, T115, T33 |
 | RN-12 | T20, T23, T26, T46, T47a, T47b, T67, T24, T95, T103 |
 | RN-13 | T46, T47b, T67 |
@@ -1894,7 +1966,7 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | RN-25 | T37, T54, T55, T56, T69, T121, T50 |
 | RN-26 | T37, T54, T70, T121, T100 |
 | RN-27 | T4, T10, T75, T111, T78, T79, T83 |
-| RN-28 | T15, T21, T22, T62, T63, T116 |
+| RN-28 | T15, T21, T22, T62, T63, T116, T133, T134, T135, T136 |
 | RN-29 | T1, T3, T7, T85, T74, T15, T39, T61, T60, T76, T83 |
 | RN-30 | T9, T19, T107, T33, T108, T109, T124 |
 | RN-31 | T43, T44, T51, T58, T113, T122 |
@@ -1908,7 +1980,7 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | RN-39 | T60, T104, T66, T123 |
 | RN-40 | T6, T9, T129, T7, T73, T74, T62, T132, T83 |
 | RN-41 | T8, T11, T74, T131, T13, T21, T93, T132, T83 |
-| RN-42 | T72, T74, T131, T125, T79, T132 |
+| RN-42 | T72, T74, T131, T21, T22, T63, T125, T79, T132, T121 |
 | RN-43 | T50, T115, T59, T98, T68, T100, T122 |
 | RN-44 | T43, T44, T51, T58, T59, T99, T68 |
 | RN-45 | T111, T76, T77, T78, T79, T112, T83 |
@@ -1916,6 +1988,8 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | RN-47 | T4, T7, T8, T74, T131, T83 |
 | RN-48 | T67, T51 |
 | RN-49 | T9, T62, T63, T64, T65, T67, T92, T69, T70, T101, T98, T99, T68, T100, T66, T105, T109, T112 |
+| RN-50 | T13, T49 |
+| RN-51 | T138 |
 | CA-01 | T29 |
 | CA-02 | T28 |
 | CA-03 | T30, T120 |
@@ -1932,7 +2006,7 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | CA-15 | T48, T117 |
 | CA-16 | T38, T48, T67 |
 | CA-17 | T73, T82, T83 |
-| CA-18 | T22, T62, T63, T116 |
+| CA-18 | T22, T62, T63, T116, T135 |
 | CA-19 | T3, T61, T60 |
 | CA-20 | T7, T74, T82, T83 |
 | CA-21 | T46, T108, T109 |
@@ -1974,7 +2048,7 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | CA-57 | T29 |
 | CA-58 | T67, T51 |
 | CA-59 | T62, T112 |
-| CA-60 | T22, T63 |
+| CA-60 | T22, T63, T136 |
 | CA-61 | T98 |
 | CA-62 | T29 |
 | CA-63 | T31 |
@@ -1993,3 +2067,6 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | CA-76 | T40, T41, T42 |
 | CA-77 | T129, T64 |
 | CA-78 | T128, T36 |
+| CA-79 | T138 |
+| CA-80 | T49, T65, T115 |
+| CA-81 | T121 |

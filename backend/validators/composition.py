@@ -4,7 +4,7 @@ Details: specs/plan.md, sections 5 and 7.
 
 from dataclasses import dataclass
 
-from validators import mana_cost
+from validators import color_identity, mana_cost
 from validators.result import ValidationResult
 
 
@@ -21,6 +21,7 @@ class CheckInputs:
 # check whose input is None is listed as skipped (plan section 7).
 CHECKS = (
     (mana_cost.CHECK, mana_cost.check, None),
+    (color_identity.CHECK, color_identity.check, None),
 )
 
 

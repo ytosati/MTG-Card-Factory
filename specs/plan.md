@@ -170,7 +170,7 @@ branches on `code`, never on `message`: `config_invalid`, `origin_refused`,
 `bad_request` answers a malformed JSON body (400), an unsupported media type
 (415) and an unacceptable `Accept` header (406), with a fixed message and the
 original status. `origin_refused` answers 403. `database_not_ready` answers 503,
-`insufficient_space` 507, `source_unreachable` 502 and `generation_running` 409. A settings
+`insufficient_space` 507, `source_unreachable` 502, `generation_running` 409 and `validation` 400. The messages in `fields` are fixed texts chosen by the error kind; they never quote the submitted value. A settings
 list (status, generation, setup) uses the same objects, `{setting, code,
 message}`, with codes as stable as the error codes: `config_invalid` for a
 setting to fix and `ignored` for a setting ignored with a notice (RN-08). A
@@ -213,7 +213,7 @@ serializers and the client types with no new dependency.
 | POST `cards/{id}/art` | generate art → job | 31–32, 38 |
 | POST `cards/{id}/art/upload` | multipart upload; an image chosen in the request is uploaded here after the generation job saves the card | 43 |
 | GET `images/{id}` | serves the stored file unchanged | 33, 44 |
-| GET `usage?card=` | usage records | 09 |
+| GET `usage?card=` | `{card, text: [{provider, model, input_tokens, output_tokens, outcome, created_at}]}`, oldest first, only records linked to the card; a missing or malformed `card` answers `validation`, an unknown card `not_found` | 09 |
 | POST `heartbeat` / GET `instance` | tab liveness / identifies Card Factory on the port | 41, 47 |
 
 **Instance contract.** `GET /api/instance` returns `{app: "card-factory",

@@ -2,6 +2,7 @@
 
 from rest_framework import serializers
 
+from cards.models import UsageRecord
 from catalog.models import SourceRecord
 from core.models import Job
 
@@ -62,3 +63,24 @@ class SetupSerializer(serializers.Serializer):
     free_space = serializers.IntegerField(allow_null=True)
     listing_error = serializers.JSONField(allow_null=True)
     settings = SettingIssueSerializer(many=True)
+
+
+class UsageQuerySerializer(serializers.Serializer):
+    """The query of `GET /api/usage`: the card whose usage is shown."""
+
+    card = serializers.UUIDField()
+
+
+class TextUsageSerializer(serializers.ModelSerializer):
+    """One text provider call of a card (see spec RN-09)."""
+
+    class Meta:
+        model = UsageRecord
+        fields = ["provider", "model", "input_tokens", "output_tokens", "outcome", "created_at"]
+
+
+class UsageSerializer(serializers.Serializer):
+    """The usage of a card: its text calls, oldest first."""
+
+    card = serializers.UUIDField()
+    text = TextUsageSerializer(many=True)

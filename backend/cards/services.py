@@ -5,7 +5,8 @@ Details: specs/plan.md, sections 5 and 7.
 from django.db import transaction
 from django.db.models import Max
 
-from cards.models import Card, CardVersion
+from cards.models import Card, CardVersion, UsageRecord
+from core import jobs
 
 
 def save_version(card: Card, **fields) -> CardVersion:
@@ -35,3 +36,26 @@ def _check_version_fields(fields):
     if fields.get("power_indicator") not in CardVersion.PowerIndicator.values:
         raise ValueError(f"Unknown power indicator: {fields.get('power_indicator')!r}.")
 
+
+def record_usage(*, provider, model, input_tokens, output_tokens, outcome, card=None):
+    """Record one text provider call, with its card or none (see spec RN-09)."""
+    if outcome not in UsageRecord.Outcome.values:
+        raise ValueError(f"Unknown usage outcome: {outcome!r}.")
+    for name, value in (("input_tokens", input_tokens), ("output_tokens", output_tokens)):
+        # bool is an int in Python, but True is never a token count.
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise ValueError(f"{name} must be a non-negative integer.")
+
+    def write():
+        UsageRecord.objects.create(
+            card=card,
+            kind=UsageRecord.Kind.TEXT,
+            provider=provider,
+            model=model,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            outcome=outcome,
+        )
+
+    # Through the jobs queue: a write during a build waits for it to end (plan section 7).
+    jobs.enqueue_usage(write)

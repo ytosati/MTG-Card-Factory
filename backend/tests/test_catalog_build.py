@@ -65,6 +65,7 @@ from tests.catalog_build_helpers import (
     NEWER_RECORDS,
     ODD_TEXT,
     ORACLE_SOURCE,
+    LEGACY_ORACLE_URI,
     ORACLE_URI,
     PUBLISHED_AT,
     SENTRY,
@@ -79,6 +80,8 @@ from tests.catalog_build_helpers import (
     files_with_bytes,
     fts_match,
     fts_rows,
+    gzip_bytes,
+    jsonl_bytes,
     sha256,
     writes_recorded,
 )
@@ -282,6 +285,61 @@ def test_t21_rn01_ca08_source_record_states_origin_publication_and_download_date
     assert before <= record.downloaded_at <= after
     assert record.sha256 == sha256(source.bulk)
     assert record.size == len(source.bulk)
+
+
+@pytest.mark.django_db
+def test_rn01_build_from_gzip_json_lines_records_the_compressed_file(home, build):
+    """RN-01 / RN-28: the current layout is downloaded as raw gzip JSON Lines; the source record keeps the
+    listed address and the size and checksum of the compressed bytes, and every card is stored."""
+    from catalog.models import SourceRecord
+
+    source = FakeDataSource()
+    assert source.bulk[:2] == b"\x1f\x8b"
+
+    build.run_build(transport=source, sleep=FakeSleep())
+
+    _assert_built_once(CARD_IDS)
+    record = SourceRecord.objects.get(source=ORACLE_SOURCE)
+    assert record.url == ORACLE_URI
+    assert record.size == len(source.bulk)
+    assert record.sha256 == sha256(source.bulk)
+
+
+@pytest.mark.django_db
+def test_rn01_build_from_the_older_json_array_layout_still_works(home, build):
+    """RN-01 / RN-28: a listing in the older layout (`download_uri`, `size`, one JSON array) still builds the
+    same catalog."""
+    from catalog.models import SourceRecord
+
+    source = FakeDataSource(legacy=True)
+
+    build.run_build(transport=source, sleep=FakeSleep())
+
+    _assert_built_once(CARD_IDS)
+    assert source.unexpected == []
+    record = SourceRecord.objects.get(source=ORACLE_SOURCE)
+    assert record.url == LEGACY_ORACLE_URI
+    assert record.size == len(source.bulk)
+    assert record.sha256 == sha256(source.bulk)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_rn03_a_kept_file_of_the_older_layout_is_not_reused_for_the_current_one(home, build):
+    """RN-03 / RN-28: after the layout changes, the next build downloads the current file instead of reusing
+    a kept file of the older layout, and builds the newer catalog."""
+    from catalog.models import SourceRecord
+
+    with failing_write("catalog_buildrun"):
+        with pytest.raises(Exception):
+            build.run_build(transport=FakeDataSource(legacy=True), sleep=FakeSleep())
+    _assert_nothing_stored()
+
+    current = FakeDataSource(bulk=bulk_bytes(NEWER_RECORDS), published_at=NEWER_PUBLISHED_AT)
+    build.run_build(transport=current, sleep=FakeSleep())
+
+    assert ORACLE_URI in current.urls()
+    _assert_built_once(NEWER_CARD_IDS)
+    assert SourceRecord.objects.get(source=ORACLE_SOURCE).sha256 == sha256(current.bulk)
 
 
 @pytest.mark.django_db
@@ -633,6 +691,12 @@ MALFORMED_BULK_FILES = {
     "invalid_oracle_id": bulk_bytes([SENTRY, dict(SENTRY, oracle_id="not-a-uuid", name="Brokenid Wisp")]),
     "empty_file": b"",
     "not_json": "Ünïcödé noise ✦ <html>".encode("utf-8"),
+    "gzip_without_trailer": bulk_bytes()[:-8],
+    "gzip_of_noise": gzip_bytes("Ünïcödé noise ✦ <html>".encode("utf-8")),
+    "gzip_magic_then_noise": b"\x1f\x8b" + b"not a gzip stream" * 4,
+    "gzip_malformed_line": gzip_bytes(jsonl_bytes([SENTRY]) + b'{"oracle_id": "broken", "name": }\n'),
+    "gzip_empty": gzip_bytes(b""),
+    "legacy_truncated_array": bulk_bytes(legacy=True)[: len(bulk_bytes(legacy=True)) // 2],
 }
 
 

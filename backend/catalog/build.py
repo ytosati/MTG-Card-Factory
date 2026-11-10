@@ -24,6 +24,7 @@ from core.paths import data_dir
 logger = logging.getLogger(__name__)
 
 SOURCE_SUFFIX = ".json"
+COMPRESSED_SOURCE_SUFFIX = ".jsonl.gz"
 SOURCE_INFO_SUFFIX = ".info.json"
 EXTRACT_SUFFIX = ".jsonl"
 HASH_READ_SIZE = 1024 * 1024
@@ -70,17 +71,17 @@ def run_build(*, transport=None, sleep=None, report=None):
         for number, source in enumerate(sources.SOURCES, start=1):
             entry = listing[source.name]
             result, downloaded_at = _fetch(source, entry, transport, sleep)
-            kept.extend(_source_files(source))
+            kept.extend(_source_files(source, entry))
             downloaded.append((source, entry, result, downloaded_at))
             report(LISTING_READ + (DOWNLOADS_DONE - LISTING_READ) * number / len(sources.SOURCES))
-        for source, _, result, _ in downloaded:
+        for source, entry, result, _ in downloaded:
             extract = result.path.with_name(source.name + EXTRACT_SUFFIX)
             extracts[source.name] = extract
             try:
                 _EXTRACTORS[source.name](result.path, extract)
             except BaseException:
                 # A file that cannot be extracted is never reused: the retry downloads it again.
-                _remove(_source_files(source))
+                _remove(_source_files(source, entry))
                 raise
         report(EXTRACTED)
         _import(downloaded, extracts, started_at)
@@ -104,14 +105,16 @@ def _no_report(progress):
     pass
 
 
-def _source_files(source):
+def _source_files(source, entry):
+    """The downloaded file of `source`, named by the format of its listing entry, and its record."""
     folder = data_dir() / "downloads"
-    return [folder / (source.name + SOURCE_SUFFIX), folder / (source.name + SOURCE_INFO_SUFFIX)]
+    suffix = COMPRESSED_SOURCE_SUFFIX if entry.compressed else SOURCE_SUFFIX
+    return [folder / (source.name + suffix), folder / (source.name + SOURCE_INFO_SUFFIX)]
 
 
 def _fetch(source, entry, transport, sleep):
     """The downloaded file of `source` and its download date, reusing a complete file of the same listing entry."""
-    path, info = _source_files(source)
+    path, info = _source_files(source, entry)
     reused = _reusable(path, info, entry)
     if reused is not None:
         return reused

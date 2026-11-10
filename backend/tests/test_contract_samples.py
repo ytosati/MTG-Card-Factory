@@ -53,6 +53,7 @@ from tests.job_helpers import JOB_FIELDS, envelope_error, inline_runner
 from tests.settings_probe import REPOSITORY_ROOT
 from tests.setup_api_helpers import (
     BUILD_URL,
+    EXPECTED_SPACE_FACTOR,
     PLENTY_OF_SPACE,
     SETUP_URL,
     DuringDownload,
@@ -584,7 +585,7 @@ def test_t22_rn28_setup_samples_cover_the_setup_screen_cases(configured_api):
     not_ready = bodies["setupNotReady"]
     assert (not_ready["database_ready"], not_ready["job"], not_ready["listing_error"]) == (False, None, None)
     assert not_ready["download_size"] == size
-    assert not_ready["space_needed"] == size * 3
+    assert not_ready["space_needed"] == size * EXPECTED_SPACE_FACTOR
     assert not_ready["free_space"] == PLENTY_OF_SPACE
     building = bodies["setupBuilding"]
     assert building["database_ready"] is False

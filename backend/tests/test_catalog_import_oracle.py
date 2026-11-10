@@ -7,9 +7,11 @@ API under test:
 
     catalog.ingest.iter_bulk_records(fileobj)
         `fileobj` is a binary file object holding a bulk file as the data
-        source publishes it: one JSON array of card objects. Yields one dict
+        source publishes it: gzip-compressed JSON Lines (one card object per
+        line, the current layout), or one JSON array of card objects (the
+        older layout); uncompressed JSON Lines are read too. Yields one dict
         per card, in file order, reading the file in bounded pieces and never
-        loading it whole.
+        loading it whole. A damaged file raises `BulkFileError`.
 
     catalog.ingest.import_oracle(records)
         `records` is an iterable of Oracle Cards records (dicts shaped as in
@@ -25,8 +27,10 @@ the FTS rebuild and the JSON-lines extraction (T21), role tagging (T20).
 Every card below is fictional and written by hand.
 """
 
+import gzip
 import io
 import json
+import random
 import uuid
 
 import pytest
@@ -909,3 +913,303 @@ def test_oracle_row_is_json_serializable(record):
 def test_oracle_row_of_a_skipped_layout_is_none():
     """RN-01, RN-04: oracle_row returns None for a layout that is not stored."""
     assert _ingest().oracle_row(_record("b2000000-0000-4000-8000-000000000013", layout="token")) is None
+
+
+# --- Gzip-compressed JSON Lines (the current bulk file layout) -------------------------
+#
+# The data source now publishes each bulk file as raw gzip (magic bytes 1f 8b)
+# holding JSON Lines: one record per line. iter_bulk_records detects gzip and
+# JSON Lines as well as the older JSON array, still reading bounded pieces.
+
+
+def _jsonl_bytes(records, newline="\n", final_newline=True):
+    """JSON Lines, UTF-8: one record per line."""
+    text = newline.join(json.dumps(record, ensure_ascii=False) for record in records)
+    return (text + (newline if final_newline and records else "")).encode("utf-8")
+
+
+def _gzip(data):
+    return gzip.compress(data, mtime=0)
+
+
+def _incompressible_filler(count, seed=7):
+    """Fictional records whose text barely compresses, so a gzip file stays large."""
+    rng = random.Random(seed)
+    return [
+        dict(NORMAL_CREATURE, oracle_id=str(uuid.UUID(int=index + 1)), oracle_text=rng.randbytes(600).hex())
+        for index in range(count)
+    ]
+
+
+def _records(data, reader=io.BytesIO):
+    return list(_ingest().iter_bulk_records(reader(data)))
+
+
+def test_rn01_gzip_json_lines_yield_the_same_records_as_the_array():
+    """RN-01: gzip-compressed JSON Lines yield the same records, in the same order, as the same cards
+    published as one JSON array."""
+    from_array = _records(_bulk_bytes(ALL_RECORDS))
+
+    from_gzip = _records(_gzip(_jsonl_bytes(ALL_RECORDS)))
+
+    assert from_gzip == from_array == ALL_RECORDS
+
+
+def test_rn01_plain_json_lines_yield_the_same_records_as_the_array():
+    """RN-01: uncompressed JSON Lines yield the same records as the array."""
+    assert _records(_jsonl_bytes(ALL_RECORDS)) == ALL_RECORDS
+
+
+@pytest.mark.parametrize("compress", [False, True], ids=["plain", "gzip"])
+def test_rn01_json_lines_without_a_final_newline_keep_the_last_record(compress):
+    """RN-01: the last line needs no newline after it; the last record is still read."""
+    data = _jsonl_bytes(ALL_RECORDS, final_newline=False)
+
+    assert _records(_gzip(data) if compress else data) == ALL_RECORDS
+
+
+@pytest.mark.parametrize("compress", [False, True], ids=["plain", "gzip"])
+def test_rn01_json_lines_with_crlf_line_ends_are_read(compress):
+    """RN-01: lines ended by CR LF are read like lines ended by LF."""
+    data = _jsonl_bytes(ALL_RECORDS, newline="\r\n")
+
+    assert _records(_gzip(data) if compress else data) == ALL_RECORDS
+
+
+def test_rn01_json_lines_keep_brackets_quotes_escapes_and_hybrid_symbols_inside_strings():
+    """RN-01: brackets, braces, quotes, backslashes, escaped newlines, hybrid symbols and non-ASCII text
+    inside a string belong to the record, not to the line layout."""
+    record = dict(NORMAL_CREATURE, oracle_text='a ] b }, { c [ "d" \\ e\nf — ñ ✦ “g” {W/U}{2/B}{G/P}')
+
+    assert _records(_gzip(_jsonl_bytes([record, BANNED]))) == [record, BANNED]
+
+
+def test_rn01_json_lines_decode_multibyte_characters_split_across_reads():
+    """RN-01: a multi-byte UTF-8 character split between two reads of a JSON Lines file is decoded
+    correctly (reads of one byte each)."""
+    data = _jsonl_bytes([MULTIBYTE, NORMAL_CREATURE])
+
+    assert _records(data, OneByteReader) == [MULTIBYTE, NORMAL_CREATURE]
+
+
+@pytest.mark.parametrize("read_size", [1, 3, 7, 4096])
+@pytest.mark.parametrize("compress", [False, True], ids=["plain", "gzip"])
+def test_rn01_json_lines_are_independent_of_the_read_size(monkeypatch, read_size, compress):
+    """RN-01: the records of a JSON Lines file are the same whatever the size of each read."""
+    ingest = _ingest()
+    monkeypatch.setattr(ingest, "READ_SIZE", read_size)
+    data = _jsonl_bytes([MULTIBYTE, *ALL_RECORDS])
+
+    records = list(ingest.iter_bulk_records(io.BytesIO(_gzip(data) if compress else data)))
+
+    assert records == [MULTIBYTE, *ALL_RECORDS]
+
+
+@pytest.mark.parametrize("compress", [False, True], ids=["plain", "gzip"])
+def test_rn01_utf8_byte_order_mark_before_json_lines_is_accepted(compress):
+    """RN-01: a UTF-8 byte order mark before the first line is accepted."""
+    data = b"\xef\xbb\xbf" + _jsonl_bytes([NORMAL_CREATURE, TWO_FACED])
+
+    assert _records(_gzip(data) if compress else data) == [NORMAL_CREATURE, TWO_FACED]
+
+
+@pytest.mark.django_db
+def test_rn01_rn04_import_from_gzip_json_lines_stores_one_card_per_record():
+    """RN-01, RN-04: importing gzip-compressed JSON Lines stores one card per record, with its Commander
+    legality."""
+    from catalog.models import OracleCard
+
+    ingest = _ingest()
+    ingest.import_oracle(ingest.iter_bulk_records(io.BytesIO(_gzip(_jsonl_bytes(ALL_RECORDS)))))
+
+    assert OracleCard.objects.count() == len(ALL_RECORDS)
+    assert _card(BANNED).commander_legality == "banned"
+    assert _card(ODD_TEXT).name == ODD_TEXT["name"]
+
+
+# --- Damaged files: always BulkFileError, never a shorter catalog ------------------------
+
+
+def _assert_bulk_file_error(data, reader=io.BytesIO):
+    ingest = _ingest()
+    with pytest.raises(ingest.BulkFileError):
+        list(ingest.iter_bulk_records(reader(data)))
+
+
+@pytest.mark.parametrize("keep", [0.5, 0.9], ids=["half", "most"])
+def test_rn01_rn03_truncated_gzip_raises_bulk_file_error(keep):
+    """RN-01, RN-03: a gzip file cut in the middle of its compressed data raises BulkFileError."""
+    data = _gzip(_jsonl_bytes(ALL_RECORDS))
+
+    _assert_bulk_file_error(data[: int(len(data) * keep)])
+
+
+def test_rn01_rn03_gzip_without_its_trailer_raises_bulk_file_error():
+    """RN-01, RN-03: a gzip file whose last bytes (the checksum and length trailer) are missing raises
+    BulkFileError, even when every line before the cut is complete."""
+    data = _gzip(_jsonl_bytes(ALL_RECORDS))
+
+    _assert_bulk_file_error(data[:-8])
+
+
+def test_rn01_rn03_gzip_with_damaged_compressed_data_raises_bulk_file_error():
+    """RN-01, RN-03: a gzip file with damaged bytes in its compressed data raises BulkFileError."""
+    data = bytearray(_gzip(_jsonl_bytes(ALL_RECORDS)))
+    middle = len(data) // 2
+    for offset in range(middle, middle + 16):
+        data[offset] ^= 0xFF
+
+    _assert_bulk_file_error(bytes(data))
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        pytest.param(b"\x1f\x8b", id="magic-only"),
+        pytest.param(b"\x1f\x8b" + b"not a gzip stream \xff\x00" * 4, id="magic-then-noise"),
+    ],
+)
+def test_rn01_rn03_gzip_magic_without_a_gzip_stream_raises_bulk_file_error(data):
+    """RN-01, RN-03: bytes that start like gzip but are not a gzip stream raise BulkFileError."""
+    _assert_bulk_file_error(data)
+
+
+MALFORMED_LINE = b'{"oracle_id": "a1000000-0000-4000-8000-0000000000ff", "name": }'
+
+
+@pytest.mark.parametrize("compress", [False, True], ids=["plain", "gzip"])
+@pytest.mark.parametrize(
+    "bad_line",
+    [
+        pytest.param(MALFORMED_LINE, id="broken-json"),
+        pytest.param(b'{"name": "Unclosed \\"quote}', id="unclosed-string"),
+        pytest.param(b"[1, 2, 3]", id="array-line"),
+        pytest.param(b'"Thornwick Sentry"', id="string-line"),
+        pytest.param(b"42", id="number-line"),
+        pytest.param(b"null", id="null-line"),
+        pytest.param("<html>✦ maintenance</html>".encode("utf-8"), id="html-line"),
+    ],
+)
+def test_rn01_rn03_a_malformed_or_non_record_line_raises_bulk_file_error(bad_line, compress):
+    """RN-01, RN-03: a line that is not one well-formed JSON object raises BulkFileError."""
+    good = _jsonl_bytes([NORMAL_CREATURE]), _jsonl_bytes([BANNED])
+    data = good[0] + bad_line + b"\n" + good[1]
+
+    _assert_bulk_file_error(_gzip(data) if compress else data)
+
+
+@pytest.mark.parametrize("compress", [False, True], ids=["plain", "gzip"])
+def test_rn01_rn03_a_last_line_cut_in_the_middle_raises_bulk_file_error(compress):
+    """RN-01, RN-03: JSON Lines whose last record is cut (no closing brace) raise BulkFileError."""
+    data = _jsonl_bytes([NORMAL_CREATURE, BANNED])
+    cut = data[: len(data) - 40]
+
+    _assert_bulk_file_error(_gzip(cut) if compress else cut)
+
+
+@pytest.mark.parametrize("compress", [False, True], ids=["plain", "gzip"])
+def test_rn01_rn03_invalid_utf8_in_json_lines_raises_bulk_file_error(compress):
+    """RN-01, RN-03: bytes that are not valid UTF-8 inside a line raise BulkFileError."""
+    data = _jsonl_bytes([NORMAL_CREATURE, BANNED]).replace(b"Thornwick", b"Thorn\xff\xfewick", 1)
+
+    _assert_bulk_file_error(_gzip(data) if compress else data)
+
+
+@pytest.mark.parametrize("compress", [False, True], ids=["plain", "gzip"])
+def test_rn01_rn03_a_line_longer_than_the_record_limit_raises_bulk_file_error(monkeypatch, compress):
+    """RN-01, RN-03: a line longer than MAX_RECORD_CHARS raises BulkFileError instead of growing the
+    buffer without end."""
+    ingest = _ingest()
+    monkeypatch.setattr(ingest, "MAX_RECORD_CHARS", 2048)
+    long_record = dict(NORMAL_CREATURE, oracle_id="a1000000-0000-4000-8000-0000000000fe", oracle_text="✦" * 20_000)
+    data = _jsonl_bytes([BANNED, long_record, NOT_LEGAL])
+
+    with pytest.raises(ingest.BulkFileError):
+        list(ingest.iter_bulk_records(io.BytesIO(_gzip(data) if compress else data)))
+
+
+def test_rn01_rn03_a_never_ending_line_fails_before_reading_the_whole_file(monkeypatch):
+    """RN-01, RN-03: one huge line with no newline (a malformed file) raises BulkFileError once it passes
+    MAX_RECORD_CHARS, without reading the rest of the file."""
+    ingest = _ingest()
+    monkeypatch.setattr(ingest, "MAX_RECORD_CHARS", 4096)
+    data = _jsonl_bytes([NORMAL_CREATURE]) + b'{"name": "' + b"x" * (9 * 1024 * 1024)
+    reader = BoundedReader(data)
+
+    with pytest.raises(ingest.BulkFileError):
+        list(ingest.iter_bulk_records(reader))
+
+    assert reader.consumed < reader.size // 2, (reader.consumed, reader.size)
+
+
+def test_rn01_the_record_limit_applies_to_one_line_not_to_the_bytes_held(monkeypatch):
+    """RN-01: many short lines read together are not mistaken for one long line: with a small
+    MAX_RECORD_CHARS, a file of short lines is still read whole."""
+    ingest = _ingest()
+    monkeypatch.setattr(ingest, "MAX_RECORD_CHARS", 2048)
+    short = [_record(str(uuid.UUID(int=index + 1)), name=f"Mossback Courier {index}") for index in range(800)]
+    data = _jsonl_bytes(short)
+    assert len(data) > 50 * 2048
+
+    assert list(ingest.iter_bulk_records(io.BytesIO(_gzip(data)))) == short
+
+
+# --- Streaming JSON Lines ----------------------------------------------------------------
+
+
+@pytest.mark.parametrize("compress", [False, True], ids=["plain", "gzip"])
+def test_rn01_json_lines_are_never_read_whole(compress):
+    """RN-01 (plan section 10): JSON Lines, compressed or not, are consumed in bounded pieces; a read
+    without a size, or of more than 1 MiB at once, fails the test."""
+    data = _jsonl_bytes(ALL_RECORDS)
+    reader = BoundedReader(_gzip(data) if compress else data)
+
+    records = list(_ingest().iter_bulk_records(reader))
+
+    assert records == ALL_RECORDS
+
+
+@pytest.mark.parametrize("compress", [False, True], ids=["plain", "gzip"])
+def test_rn01_json_lines_yield_the_first_record_before_reading_most_of_the_file(compress):
+    """RN-01 (plan section 10): the first record of a large JSON Lines file, compressed or not, comes out
+    while most of the file is still unread."""
+    data = _jsonl_bytes([NORMAL_CREATURE, *_incompressible_filler(9000)])
+    reader = BoundedReader(_gzip(data) if compress else data)
+    assert reader.size > 4 * 1024 * 1024
+
+    first = next(iter(_ingest().iter_bulk_records(reader)))
+
+    assert first == NORMAL_CREATURE
+    assert reader.consumed < reader.size // 2, (reader.consumed, reader.size)
+
+
+def test_rn01_rn03_malformed_line_early_in_a_large_gzip_file_fails_before_reading_it_all(monkeypatch):
+    """RN-01, RN-03: a malformed line near the start of a large gzip file raises BulkFileError without
+    reading the rest of the file."""
+    ingest = _ingest()
+    monkeypatch.setattr(ingest, "MAX_RECORD_CHARS", 4096)
+    data = _jsonl_bytes([NORMAL_CREATURE]) + MALFORMED_LINE + b"\n" + _jsonl_bytes(_incompressible_filler(9000))
+    reader = BoundedReader(_gzip(data))
+    assert reader.size > 4 * 1024 * 1024
+
+    with pytest.raises(ingest.BulkFileError):
+        list(ingest.iter_bulk_records(reader))
+
+    assert reader.consumed < reader.size // 2, (reader.consumed, reader.size)
+
+
+@pytest.mark.django_db
+def test_rn01_import_from_gzip_json_lines_never_calls_json_load_on_the_file(monkeypatch):
+    """RN-01 (plan section 10): the import of gzip JSON Lines never parses the whole file in one call and
+    never decompresses it whole."""
+    from catalog.models import OracleCard
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("the whole bulk file was parsed or decompressed in one call")
+
+    monkeypatch.setattr(json, "load", refuse)
+    monkeypatch.setattr(gzip, "decompress", refuse)
+    ingest = _ingest()
+    ingest.import_oracle(ingest.iter_bulk_records(BoundedReader(_gzip(_jsonl_bytes(ALL_RECORDS)))))
+
+    assert OracleCard.objects.count() == len(ALL_RECORDS)

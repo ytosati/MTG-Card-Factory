@@ -29,6 +29,8 @@ from tests.e2e.helpers import (
     ImportPause,
     QueuedUsageWrite,
     fail_after_last_import,
+    listed_size,
+    listed_url,
     listing_entries,
     parse_time,
 )
@@ -54,7 +56,7 @@ def _registry():
 def _expected_download_size(app):
     """The sum over the source registry of the sizes the data source lists (see spec RN-28)."""
     entries = listing_entries(app.source)
-    return sum(entries[source.listing_type]["size"] for source in _registry())
+    return sum(listed_size(entries[source.listing_type]) for source in _registry())
 
 
 def _assert_gate_closed(app):
@@ -100,7 +102,7 @@ def _assert_sources_listed(app, status, downloaded_after, downloaded_before):
     for source in _registry():
         item = listed[source.name]
         entry = entries[source.listing_type]
-        assert item["url"] == entry["download_uri"]
+        assert item["url"] == listed_url(entry)
         assert parse_time(item["published_at"]) == parse_time(entry["updated_at"])
         downloaded_at = parse_time(item["downloaded_at"])
         assert downloaded_after <= downloaded_at <= downloaded_before, (downloaded_at, downloaded_after)

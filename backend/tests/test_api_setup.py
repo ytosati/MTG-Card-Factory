@@ -13,7 +13,7 @@ Expected API (field names proposed by this suite where the plan names none):
         download_size   int | null    sum over the source registry of the sizes in the
                                       data source listing, in bytes; null when the listing
                                       cannot be read
-        space_needed    int | null    download_size * BUILD_SPACE_FACTOR (3), in bytes
+        space_needed    int | null    download_size * BUILD_SPACE_FACTOR (10), in bytes
         free_space      int | null    free bytes on the drive that holds the data folder;
                                       null when the drive cannot be read (POST then
                                       starts the build instead of refusing)
@@ -159,7 +159,7 @@ def _assert_no_build_started(env):
 
 def test_t22_rn28_ca18_setup_states_size_and_space_before_any_build(env):
     """RN-28 / CA-18 / T22: before any build the setup answers not ready, no job, the download size from the
-    listing, the space needed (size x 3) and the free space on the data folder's drive, with no listing error."""
+    listing, the space needed (size x 10, the listed size being compressed) and the free space on the data folder's drive, with no listing error."""
     body = _setup(env)
 
     assert body["database_ready"] is False
@@ -170,8 +170,9 @@ def test_t22_rn28_ca18_setup_states_size_and_space_before_any_build(env):
     assert body["listing_error"] is None
 
 
-def test_t22_rn28_space_factor_is_the_named_constant_three():
-    """RN-28 / T22: the factor of the space needed is the named constant BUILD_SPACE_FACTOR, equal to 3."""
+def test_t22_rn28_space_factor_is_the_named_constant_ten():
+    """RN-28 / T22: the factor of the space needed is the named constant BUILD_SPACE_FACTOR, equal to 10
+    (the listed size is compressed: download, extract, database and write-ahead log, plan section 10)."""
     values = constant_values("BUILD_SPACE_FACTOR")
 
     assert values, "BUILD_SPACE_FACTOR is not defined in a catalog, core or api module."
@@ -223,8 +224,21 @@ def test_t22_rn28_sizes_are_exact_integers_in_bytes(env, size):
     assert isinstance(body["download_size"], int) and isinstance(body["space_needed"], int)
 
 
+@pytest.mark.parametrize("size", [pytest.param(0, id="zero"), pytest.param(2**31 + 7, id="over-32-bits")])
+def test_t22_rn28_older_listing_layout_is_still_sized(env, size):
+    """RN-28 / T22: a listing in the older layout (`download_uri`, `size`) still gives the download size and
+    the space needed."""
+    env.use_source(FakeDataSource(listing_body=listing_body(size=size, legacy=True)))
+
+    body = _setup(env)
+
+    assert body["listing_error"] is None
+    assert body["download_size"] == size
+    assert body["space_needed"] == size * EXPECTED_SPACE_FACTOR
+
+
 def test_t22_rn28_space_needed_follows_the_named_constant(env, monkeypatch):
-    """RN-28 / T22: the space needed is computed from BUILD_SPACE_FACTOR, not from a literal 3."""
+    """RN-28 / T22: the space needed is computed from BUILD_SPACE_FACTOR, not from a literal 10."""
     for module_name in constant_values("BUILD_SPACE_FACTOR"):
         monkeypatch.setattr(f"{module_name}.BUILD_SPACE_FACTOR", 5)
 
@@ -363,6 +377,12 @@ MARKER = "MARKER-ECHO-7781"
         pytest.param(
             listing_body(size=12, download_uri="https://data.scryfall.io/ünï 🜲 {W/U}{2/B}  .json", updated_at="—"),
             id="odd-characters",
+        ),
+        pytest.param(listing_body(size=-1, legacy=True), id="legacy-negative-size"),
+        pytest.param(listing_body(size=True, legacy=True), id="legacy-size-as-bool"),
+        pytest.param(
+            listing_body(size=12, download_uri=f"https://evil.example/{MARKER}.json", legacy=True),
+            id="legacy-foreign-host",
         ),
     ],
 )

@@ -44,6 +44,7 @@ No test touches the network: every response is written by hand below.
 
 import datetime
 import errno
+import gzip
 import hashlib
 import http.client
 import io
@@ -828,6 +829,192 @@ def test_t15_rn29_listing_refuses_a_download_address_outside_scryfall(home, down
         download.read_listing(transport=transport, sleep=FakeSleep())
 
     assert caught.value.code == "source_unreachable"
+
+
+# ---------------------------------------------------------------- the current listing layout
+#
+# The bulk-data listing now gives each file as gzip-compressed JSON Lines:
+# `jsonl_download_uri` (https://data.scryfall.io/.../<name>-<stamp>.jsonl.gz)
+# and `compressed_size` (the size of the gzip file, the bytes downloaded),
+# without `download_uri` and `size`. The older layout above is still accepted.
+
+JSONL_URI = "https://data.scryfall.io/oracle-cards/oracle-cards-20261108090000.jsonl.gz"
+COMPRESSED_SIZE = 41234567
+
+
+def _jsonl_entry(**overrides):
+    entry = {
+        "object": "bulk_data",
+        "id": "00000000-0000-4000-8000-000000000011",
+        "type": "oracle_cards",
+        "name": "Fictional Oracle Cards",
+        "jsonl_download_uri": JSONL_URI,
+        "updated_at": "2026-11-08T22:04:23.142+00:00",
+        "compressed_size": COMPRESSED_SIZE,
+        "content_type": "application/jsonl",
+        "content_encoding": "gzip",
+    }
+    entry.update(overrides)
+    return entry
+
+
+def _jsonl_without(key):
+    return {name: value for name, value in _jsonl_entry().items() if name != key}
+
+
+def _jsonl_listing_body(*entries):
+    if not entries:
+        entries = (
+            _jsonl_entry(
+                id="00000000-0000-4000-8000-000000000012",
+                type="default_cards",
+                jsonl_download_uri="https://data.scryfall.io/default-cards/default-cards-20261108090000.jsonl.gz",
+                compressed_size=999,
+            ),
+            _jsonl_entry(),
+        )
+    return json.dumps({"object": "list", "has_more": False, "data": list(entries)}).encode("utf-8")
+
+
+def test_rn01_rn28_listing_in_the_current_layout_gives_the_jsonl_address_and_compressed_size(home, download):
+    """RN-01, RN-28: an entry with `jsonl_download_uri` and `compressed_size` gives the gzip JSON Lines
+    address and the compressed size, the bytes that are downloaded."""
+    transport = ListingTransport((_jsonl_listing_body(),))
+
+    entry = download.read_listing(transport=transport, sleep=FakeSleep())["scryfall_oracle"]
+
+    assert entry.url == JSONL_URI
+    assert entry.size == COMPRESSED_SIZE
+    assert isinstance(entry.size, int) and not isinstance(entry.size, bool)
+    assert entry.published_at == datetime.datetime(2026, 11, 8, 22, 4, 23, 142000, tzinfo=datetime.timezone.utc)
+
+
+def test_rn01_rn28_listing_entry_states_whether_the_file_is_compressed(home, download):
+    """RN-01, RN-28: the listing entry tells the build which layout it downloads: compressed JSON Lines for
+    the current layout, the uncompressed JSON array for the older one."""
+    current = download.read_listing(transport=ListingTransport((_jsonl_listing_body(),)), sleep=FakeSleep())
+    older = download.read_listing(transport=ListingTransport((_listing_body(),)), sleep=FakeSleep())
+
+    assert current["scryfall_oracle"].compressed is True
+    assert older["scryfall_oracle"].compressed is False
+
+
+def test_rn01_rn28_listing_in_the_older_layout_is_still_accepted(home, download):
+    """RN-01, RN-28: an entry with only `download_uri` and `size` is still read, with its own address and
+    size."""
+    entry = download.read_listing(transport=ListingTransport((_listing_body(),)), sleep=FakeSleep())["scryfall_oracle"]
+
+    assert entry.url == ORACLE_URI
+    assert entry.size == 171234567
+
+
+def test_rn28_current_layout_keeps_a_compressed_size_beyond_32_bits_exact(home, download):
+    """RN-28: a compressed size beyond 32 bits is kept exactly; zero is a valid size."""
+    for size in (0, 9_876_543_210_123):
+        body = _jsonl_listing_body(_jsonl_entry(compressed_size=size))
+        entry = download.read_listing(transport=ListingTransport((body,)), sleep=FakeSleep())["scryfall_oracle"]
+        assert entry.size == size
+
+
+def test_rn28_current_layout_ignores_unknown_entries_and_fields(home, download):
+    """RN-28: extra files, extra fields and odd characters next to the current layout do not break it."""
+    body = _jsonl_listing_body(
+        _jsonl_entry(
+            type="rulings",
+            jsonl_download_uri="https://data.scryfall.io/rulings/rulings-20261108090000.jsonl.gz",
+            extra={"a": 1},
+        ),
+        _jsonl_entry(name="Fictional Oracle Cards éçã — 🂡 {W/U}", unknown_field=[1, 2]),
+    )
+
+    entry = download.read_listing(transport=ListingTransport((body,)), sleep=FakeSleep())["scryfall_oracle"]
+
+    assert entry.url == JSONL_URI
+
+
+MALFORMED_JSONL_LISTINGS = {
+    "uri-null": _jsonl_listing_body(_jsonl_entry(jsonl_download_uri=None)),
+    "uri-empty": _jsonl_listing_body(_jsonl_entry(jsonl_download_uri="")),
+    "uri-number": _jsonl_listing_body(_jsonl_entry(jsonl_download_uri=12345)),
+    "uri-plain-http": _jsonl_listing_body(
+        _jsonl_entry(jsonl_download_uri="http://data.scryfall.io/oracle-cards/oracle-cards-20261108090000.jsonl.gz")
+    ),
+    "uri-other-host": _jsonl_listing_body(_jsonl_entry(jsonl_download_uri="https://evil.example/x.jsonl.gz")),
+    "uri-lookalike-host": _jsonl_listing_body(
+        _jsonl_entry(jsonl_download_uri="https://data.scryfall.io.evil.example/x.jsonl.gz")
+    ),
+    "uri-userinfo": _jsonl_listing_body(
+        _jsonl_entry(jsonl_download_uri="https://api.scryfall.com@evil.example/x.jsonl.gz")
+    ),
+    "uri-file": _jsonl_listing_body(_jsonl_entry(jsonl_download_uri="file:///C:/Windows/win.ini")),
+    "size-negative": _jsonl_listing_body(_jsonl_entry(compressed_size=-1)),
+    "size-bool": _jsonl_listing_body(_jsonl_entry(compressed_size=True)),
+    "size-false": _jsonl_listing_body(_jsonl_entry(compressed_size=False)),
+    "size-text": _jsonl_listing_body(_jsonl_entry(compressed_size="41234567")),
+    "size-fraction": _jsonl_listing_body(_jsonl_entry(compressed_size=12.5)),
+    "size-null": _jsonl_listing_body(_jsonl_entry(compressed_size=None)),
+    "date-missing": _jsonl_listing_body(_jsonl_without("updated_at")),
+    "date-null": _jsonl_listing_body(_jsonl_entry(updated_at=None)),
+    "date-text": _jsonl_listing_body(_jsonl_entry(updated_at="yesterday ✦")),
+    "date-without-zone": _jsonl_listing_body(_jsonl_entry(updated_at="2026-11-08T22:04:23")),
+}
+
+
+@pytest.mark.parametrize("body", list(MALFORMED_JSONL_LISTINGS.values()), ids=list(MALFORMED_JSONL_LISTINGS))
+def test_rn28_malformed_entry_in_the_current_layout_fails_with_source_unreachable(home, download, body):
+    """RN-28, RN-29: a current-layout entry with an address off the data source hosts, a negative or
+    boolean (or otherwise non-integer) compressed size, or no usable publication date is a source
+    failure, never a crash."""
+    transport = ListingTransport((body,))
+
+    with pytest.raises(download.DownloadError) as caught:
+        download.read_listing(transport=transport, sleep=FakeSleep())
+
+    assert caught.value.code == "source_unreachable"
+    assert str(caught.value).strip()
+    assert "evil.example" not in str(caught.value)
+
+
+GZIP_JSONL_BODY = gzip.compress(
+    b'{"name": "Gloomfen Archivist", "oracle_text": "\\u2726 {W/U}"}\n{"name": "Brasslung Herald"}\n' * 40,
+    mtime=0,
+)
+GZIP_FILENAME = "fictional-oracle-cards.jsonl.gz"
+
+
+def test_rn01_rn03_raw_gzip_file_is_saved_byte_for_byte_with_the_compressed_size(home, download):
+    """RN-01, RN-03: a raw gzip file (Content-Type application/gzip, no Content-Encoding) is saved as sent,
+    never decompressed on the way; its size and checksum are those of the compressed bytes."""
+    response = FakeResponse(
+        200,
+        {"Content-Type": "application/gzip", "Content-Length": str(len(GZIP_JSONL_BODY)), "ETag": ETAG},
+        GZIP_JSONL_BODY,
+    )
+    server = FakeServer(body=GZIP_JSONL_BODY, script={0: response})
+
+    result = download.download_file(
+        JSONL_URI, GZIP_FILENAME, expected_size=len(GZIP_JSONL_BODY), transport=server, sleep=FakeSleep()
+    )
+
+    assert result.path.read_bytes() == GZIP_JSONL_BODY
+    assert result.path.read_bytes()[:2] == b"\x1f\x8b"
+    assert result.size == len(GZIP_JSONL_BODY)
+    assert result.sha256 == _sha(GZIP_JSONL_BODY)
+
+
+def test_rn03_ca07_raw_gzip_download_resumes_after_a_dropped_connection(home, download):
+    """RN-03, CA-07: a gzip download cut halfway resumes with If-Range and ends with the exact compressed
+    bytes."""
+    server = FakeServer(body=GZIP_JSONL_BODY, cuts=[len(GZIP_JSONL_BODY) // 2])
+
+    result = download.download_file(
+        JSONL_URI, GZIP_FILENAME, expected_size=len(GZIP_JSONL_BODY), transport=server, sleep=FakeSleep()
+    )
+
+    assert result.path.read_bytes() == GZIP_JSONL_BODY
+    assert result.sha256 == _sha(GZIP_JSONL_BODY)
+    assert len(_range_requests(server)) == 1
+    _assert_every_range_has_if_range(server)
 
 
 # ---------------------------------------------------------------- redirects

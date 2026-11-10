@@ -7,6 +7,7 @@ touches the network: the transport answers from memory.
 """
 
 import errno
+import gzip
 import hashlib
 import http.client
 import json
@@ -14,8 +15,12 @@ import re
 from contextlib import contextmanager
 
 LISTING_URL = "https://api.scryfall.com/bulk-data"
-ORACLE_URI = "https://data.scryfall.io/oracle-cards/fictional-oracle-cards-20261108220423.json"
-DEFAULT_CARDS_URI = "https://data.scryfall.io/default-cards/fictional-default-cards-20261108220423.json"
+# The current listing: gzip-compressed JSON Lines, listed with `jsonl_download_uri` and `compressed_size`.
+ORACLE_URI = "https://data.scryfall.io/oracle-cards/oracle-cards-20261108220423.jsonl.gz"
+DEFAULT_CARDS_URI = "https://data.scryfall.io/default-cards/default-cards-20261108220423.jsonl.gz"
+# The older listing: one uncompressed JSON array, listed with `download_uri` and `size`.
+LEGACY_ORACLE_URI = "https://data.scryfall.io/oracle-cards/fictional-oracle-cards-20261108220423.json"
+LEGACY_DEFAULT_CARDS_URI = "https://data.scryfall.io/default-cards/fictional-default-cards-20261108220423.json"
 PUBLISHED_AT = "2026-11-08T22:04:23.142+00:00"
 NEWER_PUBLISHED_AT = "2026-11-09T10:15:00+00:00"
 ORACLE_SOURCE = "scryfall_oracle"
@@ -204,12 +209,29 @@ NEWER_RECORDS = [SENTRY, REMOVAL_REWORDED, TWO_FACED, ODD_TEXT, HUGE_TEXT, NEWCO
 NEWER_CARD_IDS = {_oracle_id(n) for n in (1, 2, 3, 5, 6, 8)}
 
 
-def bulk_bytes(records=None):
-    """A bulk file as the data source publishes it: one JSON array, UTF-8, records on their own lines."""
+def array_bytes(records=None):
+    """A bulk file in the older layout: one JSON array, UTF-8, records on their own lines."""
     records = RECORDS if records is None else records
     return ("[\n" + ",\n".join(json.dumps(record, ensure_ascii=False) for record in records) + "\n]\n").encode(
         "utf-8"
     )
+
+
+def jsonl_bytes(records=None):
+    """JSON Lines, UTF-8: one record per line, each line ended by a newline."""
+    records = RECORDS if records is None else records
+    return "".join(json.dumps(record, ensure_ascii=False) + "\n" for record in records).encode("utf-8")
+
+
+def gzip_bytes(data):
+    """`data` gzip-compressed with a fixed header time, so its size never changes between runs."""
+    return gzip.compress(data, mtime=0)
+
+
+def bulk_bytes(records=None, *, legacy=False):
+    """A bulk file as the data source publishes it: gzip-compressed JSON Lines (the current layout),
+    or with `legacy` the older uncompressed JSON array."""
+    return array_bytes(records) if legacy else gzip_bytes(jsonl_bytes(records))
 
 
 def sha256(data):
@@ -251,8 +273,12 @@ class FakeResponse:
 class FakeDataSource:
     """A fictional data source: the download listing and the Oracle Cards bulk file.
 
-    `bulk` is the served bulk file. `listing_status` answers the listing with that
-    status. `cut_bulk` drops every bulk download halfway. `listing_body` overrides
+    By default the listing is the current one (`jsonl_download_uri` and
+    `compressed_size`) and the bulk file is gzip-compressed JSON Lines, served as
+    raw gzip (Content-Type application/gzip, no Content-Encoding). With `legacy`
+    the listing names `download_uri` and `size` and the bulk file is one JSON array.
+    `bulk` is the served bulk file (raw bytes, sent as given). `listing_status`
+    answers the listing with that status.`cut_bulk` drops every bulk download halfway. `listing_body` overrides
     the listing bytes (for a malformed listing). `on_request(url)` is called before
     each answer, from inside the build. Every request is kept in `requests`.
     """
@@ -265,8 +291,11 @@ class FakeDataSource:
         cut_bulk=False,
         listing_body=None,
         on_request=None,
+        legacy=False,
     ):
-        self.bulk = bulk_bytes() if bulk is None else bulk
+        self.legacy = legacy
+        self.oracle_uri = LEGACY_ORACLE_URI if legacy else ORACLE_URI
+        self.bulk = bulk_bytes(legacy=legacy) if bulk is None else bulk
         self.published_at = published_at
         self.listing_status = listing_status
         self.cut_bulk = cut_bulk
@@ -278,29 +307,34 @@ class FakeDataSource:
     def listing(self):
         if self.listing_body is not None:
             return self.listing_body
+        if self.legacy:
+            files = [
+                {"type": "default_cards", "download_uri": LEGACY_DEFAULT_CARDS_URI, "size": 987654},
+                {"type": "oracle_cards", "download_uri": LEGACY_ORACLE_URI, "size": len(self.bulk)},
+            ]
+            encoding = {"content_type": "application/json", "content_encoding": "gzip"}
+        else:
+            files = [
+                {"type": "default_cards", "jsonl_download_uri": DEFAULT_CARDS_URI, "compressed_size": 987654},
+                {"type": "oracle_cards", "jsonl_download_uri": ORACLE_URI, "compressed_size": len(self.bulk)},
+            ]
+            encoding = {"content_type": "application/jsonl", "content_encoding": "gzip"}
+        names = {"default_cards": "Fictional Default Cards", "oracle_cards": "Fictional Oracle Cards"}
+        ids = {
+            "default_cards": "00000000-0000-4000-8000-0000000000d1",
+            "oracle_cards": "00000000-0000-4000-8000-0000000000a1",
+        }
         entries = [
             {
                 "object": "bulk_data",
-                "id": "00000000-0000-4000-8000-0000000000d1",
-                "type": "default_cards",
-                "name": "Fictional Default Cards",
-                "download_uri": DEFAULT_CARDS_URI,
+                "id": ids[item["type"]],
+                "type": item["type"],
+                "name": names[item["type"]],
+                **{key: value for key, value in item.items() if key != "type"},
                 "updated_at": self.published_at,
-                "size": 987654,
-                "content_type": "application/json",
-                "content_encoding": "gzip",
-            },
-            {
-                "object": "bulk_data",
-                "id": "00000000-0000-4000-8000-0000000000a1",
-                "type": "oracle_cards",
-                "name": "Fictional Oracle Cards",
-                "download_uri": ORACLE_URI,
-                "updated_at": self.published_at,
-                "size": len(self.bulk),
-                "content_type": "application/json",
-                "content_encoding": "gzip",
-            },
+                **encoding,
+            }
+            for item in files
         ]
         return json.dumps({"object": "list", "has_more": False, "data": entries}).encode("utf-8")
 
@@ -318,10 +352,16 @@ class FakeDataSource:
                 {"Content-Type": "application/json; charset=utf-8", "Content-Length": str(len(body))},
                 body,
             )
-        if url == ORACLE_URI:
+        if url == self.oracle_uri:
+            content_type = "application/json" if self.legacy else "application/gzip"
             return FakeResponse(
                 200,
-                {"Content-Length": str(len(self.bulk)), "ETag": ETAG, "Accept-Ranges": "bytes"},
+                {
+                    "Content-Type": content_type,
+                    "Content-Length": str(len(self.bulk)),
+                    "ETag": ETAG,
+                    "Accept-Ranges": "bytes",
+                },
                 self.bulk,
                 cut_after=len(self.bulk) // 2 if self.cut_bulk else None,
             )

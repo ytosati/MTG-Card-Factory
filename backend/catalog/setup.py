@@ -21,9 +21,10 @@ from core.status import settings_list
 
 logger = logging.getLogger(__name__)
 
-# Free space needed per downloaded byte: the downloads, the database and the
-# write-ahead log of the import (see spec RN-28, CA-60).
-BUILD_SPACE_FACTOR = 3
+# Free space needed per downloaded byte: the listed size is compressed, so this covers
+# the gzip download, the extract, the database and the write-ahead log of the import
+# (see spec RN-28, CA-60, and specs/plan.md, section 10).
+BUILD_SPACE_FACTOR = 10
 # The screen polls: one quick attempt per poll, the next poll is the retry.
 POLL_LISTING_ATTEMPTS = 1
 

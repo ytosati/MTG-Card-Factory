@@ -87,6 +87,16 @@ def listing_entries(source):
     return {entry["type"]: entry for entry in json.loads(source.listing().decode("utf-8"))["data"]}
 
 
+def listed_url(entry):
+    """The download address of a listing entry: the current gzip JSON Lines file, or the older JSON array."""
+    return entry["jsonl_download_uri"] if "jsonl_download_uri" in entry else entry["download_uri"]
+
+
+def listed_size(entry):
+    """The listed size of a listing entry in bytes: compressed for the current layout (spec RN-28)."""
+    return entry["compressed_size"] if "jsonl_download_uri" in entry else entry["size"]
+
+
 def parse_time(text):
     return datetime.fromisoformat(text.replace("Z", "+00:00"))
 

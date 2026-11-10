@@ -187,7 +187,7 @@ export const statusWithSources = {
   sources: [
     {
       source: "scryfall_oracle",
-      url: "https://data.scryfall.io/oracle-cards/fictional-oracle-cards-20261108220423.json",
+      url: "https://data.scryfall.io/oracle-cards/oracle-cards-20261108220423.jsonl.gz",
       published_at: "2000-01-01T00:00:00Z",
       downloaded_at: "2000-01-01T00:00:00Z",
     },
@@ -197,8 +197,8 @@ export const statusWithSources = {
 export const setupNotReady = {
   database_ready: false,
   job: null,
-  download_size: 26451,
-  space_needed: 79353,
+  download_size: 1149,
+  space_needed: 11490,
   free_space: 1000000000000000,
   listing_error: null,
   settings: [],
@@ -207,8 +207,8 @@ export const setupNotReady = {
 export const setupSettingsToFix = {
   database_ready: false,
   job: null,
-  download_size: 26451,
-  space_needed: 79353,
+  download_size: 1149,
+  space_needed: 11490,
   free_space: 1000000000000000,
   listing_error: null,
   settings: [
@@ -223,8 +223,8 @@ export const setupSettingsToFix = {
 export const setupFreeSpaceUnknown = {
   database_ready: false,
   job: null,
-  download_size: 26451,
-  space_needed: 79353,
+  download_size: 1149,
+  space_needed: 11490,
   free_space: null,
   listing_error: null,
   settings: [],
@@ -240,8 +240,8 @@ export const setupBuilding = {
     result: null,
     error: null,
   },
-  download_size: 26451,
-  space_needed: 79353,
+  download_size: 1149,
+  space_needed: 11490,
   free_space: 1000000000000000,
   listing_error: null,
   settings: [],
@@ -264,8 +264,8 @@ export const setupBuildFailed = {
       },
     },
   },
-  download_size: 26451,
-  space_needed: 79353,
+  download_size: 1149,
+  space_needed: 11490,
   free_space: 1000000000000000,
   listing_error: null,
   settings: [],

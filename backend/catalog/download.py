@@ -86,6 +86,8 @@ class ListingEntry:
     url: str
     size: int
     published_at: datetime
+    # True for gzip-compressed JSON Lines, False for the older uncompressed JSON array.
+    compressed: bool = False
 
 
 def request_headers():
@@ -261,7 +263,12 @@ def _read_listing_once(transport):
 
 
 def _listing_entry(item, hosts):
-    url, size = item["download_uri"], item["size"]
+    # The current listing gives gzip-compressed JSON Lines; the older JSON array is still accepted.
+    compressed = "jsonl_download_uri" in item
+    if compressed:
+        url, size = item["jsonl_download_uri"], item["compressed_size"]
+    else:
+        url, size = item["download_uri"], item["size"]
     published_at = datetime.fromisoformat(item["updated_at"])
     if not isinstance(url, str) or not is_allowed_url(url, hosts):
         raise ValueError("download_uri")
@@ -269,7 +276,7 @@ def _listing_entry(item, hosts):
         raise ValueError("size")
     if published_at.tzinfo is None:
         raise ValueError("updated_at")
-    return ListingEntry(url=url, size=size, published_at=published_at)
+    return ListingEntry(url=url, size=size, published_at=published_at, compressed=compressed)
 
 
 class _Target:

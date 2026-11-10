@@ -28,7 +28,14 @@ from collections import namedtuple
 from datetime import timedelta
 from types import SimpleNamespace
 
-from tests.catalog_build_helpers import LISTING_URL, ORACLE_URI, PUBLISHED_AT, FakeDataSource, FakeSleep
+from tests.catalog_build_helpers import (
+    LEGACY_ORACLE_URI,
+    LISTING_URL,
+    ORACLE_URI,
+    PUBLISHED_AT,
+    FakeDataSource,
+    FakeSleep,
+)
 
 SETUP_URL = "/api/setup"
 BUILD_URL = "/api/setup/build"
@@ -39,9 +46,10 @@ CODE_DATABASE_NOT_READY = "database_not_ready"
 CODE_INSUFFICIENT_SPACE = "insufficient_space"
 CODE_SOURCE_UNREACHABLE = "source_unreachable"
 
-# The free disk space needed is the download size times this factor (downloads,
-# database and the write-ahead log of the import).
-EXPECTED_SPACE_FACTOR = 3
+# The free disk space needed is the download size times this factor: the listed size is
+# compressed, so it covers the gzip download, the extract, the database and the write-ahead
+# log of the import (spec RN-28, specs/plan.md section 10).
+EXPECTED_SPACE_FACTOR = 10
 
 # More free space than any fictional build needs: 1 PB.
 PLENTY_OF_SPACE = 10**15
@@ -112,19 +120,27 @@ def clear_listing_cache():
     hooks[0]()
 
 
-def listing_body(*, size, download_uri=ORACLE_URI, updated_at=PUBLISHED_AT, extra_entries=()):
-    """A data source listing whose Oracle Cards entry has the given size (fictional values)."""
+def listing_body(*, size, download_uri=None, updated_at=PUBLISHED_AT, extra_entries=(), legacy=False):
+    """A data source listing whose Oracle Cards entry has the given size (fictional values).
+
+    The entry is in the current layout (`jsonl_download_uri`, `compressed_size`), or with
+    `legacy` in the older one (`download_uri`, `size`).
+    """
+    if legacy:
+        address = {"download_uri": LEGACY_ORACLE_URI if download_uri is None else download_uri, "size": size}
+        encoding = {"content_type": "application/json", "content_encoding": "gzip"}
+    else:
+        address = {"jsonl_download_uri": ORACLE_URI if download_uri is None else download_uri, "compressed_size": size}
+        encoding = {"content_type": "application/jsonl", "content_encoding": "gzip"}
     entries = [
         {
             "object": "bulk_data",
             "id": "00000000-0000-4000-8000-0000000000a1",
             "type": "oracle_cards",
             "name": "Fictional Oracle Cards",
-            "download_uri": download_uri,
+            **address,
             "updated_at": updated_at,
-            "size": size,
-            "content_type": "application/json",
-            "content_encoding": "gzip",
+            **encoding,
         },
         *extra_entries,
     ]
@@ -169,7 +185,7 @@ class SetupEnvironment:
 
     def bulk_requests(self):
         """How many times the bulk file was asked for."""
-        return self.source.urls().count(ORACLE_URI)
+        return self.source.urls().count(self.source.oracle_uri)
 
     def listing_requests(self):
         """How many times the listing was asked for."""
@@ -185,7 +201,7 @@ class DuringDownload:
         self.results = []
 
     def __call__(self, url):
-        if url == ORACLE_URI and not self.results:
+        if url in (ORACLE_URI, LEGACY_ORACLE_URI) and not self.results:
             self.results.append(self.action())
 
 

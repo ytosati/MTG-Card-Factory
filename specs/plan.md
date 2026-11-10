@@ -658,10 +658,15 @@ The T26 evaluation measures whether the patterns plus keywords are good enough.
 
 - Scryfall bulk files: Oracle Cards (one record per card), Default Cards
   (printings in English, for base card printings and images), All Cards
-  (streamed, keeping only Portuguese printings for terms). Bulk files are large JSON arrays, so they are read as a stream, one
-  record at a time, with the standard library, never loaded whole (the exact
-  layout is verified against a real file in the Milestone 2 review, T89; the
-  tests use hand-written fictional files).
+  (streamed, keeping only Portuguese printings for terms). The bulk-data
+  listing gives each file as gzip-compressed JSON Lines
+  (`jsonl_download_uri`, `compressed_size`, one record per line); the older
+  uncompressed JSON array (`download_uri`, `size`) is still accepted. Files are
+  read as a stream, one record at a time, with the standard library, never
+  loaded whole. Because the listed size is compressed, the free space needed
+  is the download size times `BUILD_SPACE_FACTOR` = 10 (download, extract,
+  database and the write-ahead log of the import); the Milestone 2 review
+  checks it against a real build. Tests use hand-written fictional files.
   Requests send a descriptive User-Agent and Accept header, as Scryfall asks.
 - Comprehensive Rules: the text file linked from the Wizards rules page; the
   importer finds the link and stores the sections. Keyword abilities (702),

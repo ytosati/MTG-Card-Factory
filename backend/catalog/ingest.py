@@ -3,15 +3,18 @@ Details: specs/plan.md, sections 4, 5, 7, 9.6 and 10.
 """
 
 import codecs
+import gzip
 import json
 import re
 import uuid
+import zlib
 from collections.abc import Iterable, Iterator
 
 from catalog.models import OracleCard
 
 READ_SIZE = 256 * 1024
-# Upper bound on one undecoded record, so a malformed file cannot grow the buffer without end.
+GZIP_MAGIC = b"\x1f\x8b"
+# Upper bound on one undecoded record or line, so a malformed file cannot grow the buffer without end.
 MAX_RECORD_CHARS = 16 * 1024 * 1024
 BATCH_SIZE = 500
 
@@ -24,7 +27,39 @@ FACE_TEXT_SEPARATOR = "\n//\n"
 
 
 class BulkFileError(ValueError):
-    """The bulk file is not a complete JSON array of well-formed records."""
+    """The bulk file is not a complete JSON array or JSON Lines file of well-formed records."""
+
+
+class _Prefixed:
+    """A binary file whose first bytes were already read, so they can be read again."""
+
+    def __init__(self, prefix, fileobj):
+        self._prefix = prefix
+        self._file = fileobj
+
+    def read(self, size=-1):
+        if not self._prefix:
+            return self._file.read(size)
+        if size is None or size < 0:
+            data, self._prefix = self._prefix + self._file.read(), b""
+            return data
+        data, self._prefix = self._prefix[:size], self._prefix[size:]
+        if len(data) < size:
+            data += self._file.read(size - len(data))
+        return data
+
+
+class _Gunzipped:
+    """The decompressed bytes of a gzip file; a damaged or truncated file raises BulkFileError."""
+
+    def __init__(self, fileobj):
+        self._gzip = gzip.GzipFile(fileobj=fileobj, mode="rb")
+
+    def read(self, size=-1):
+        try:
+            return self._gzip.read(size)
+        except (EOFError, zlib.error, gzip.BadGzipFile) as error:
+            raise BulkFileError("the compressed bulk file is truncated or damaged") from error
 
 
 class _TextStream:
@@ -74,12 +109,51 @@ class _TextStream:
 
 
 def iter_bulk_records(fileobj) -> Iterator[dict]:
-    """Yield each object of the JSON array in the binary `fileobj`, in order, reading bounded chunks."""
-    decoder = json.JSONDecoder()
+    """Yield each record of the binary `fileobj`, in order, reading bounded chunks.
+
+    The file is a JSON array or JSON Lines (one record per line), either one gzip-compressed or not.
+    """
+    head = fileobj.read(len(GZIP_MAGIC))
+    fileobj = _Prefixed(head, fileobj)
+    if head == GZIP_MAGIC:
+        fileobj = _Gunzipped(fileobj)
     stream = _TextStream(fileobj)
 
-    if stream.peek() != "[":
-        raise BulkFileError("the bulk file does not start with a JSON array")
+    first = stream.peek()
+    if first == "[":
+        yield from _iter_json_array(stream)
+    elif first == "{":
+        yield from _iter_json_lines(stream)
+    else:
+        raise BulkFileError("the bulk file is neither a JSON array nor JSON Lines")
+
+
+def _iter_json_lines(stream) -> Iterator[dict]:
+    while stream.peek() != "":
+        end = stream.buffer.find("\n", stream.pos)
+        while end < 0:
+            held = len(stream.buffer) - stream.pos
+            if held > MAX_RECORD_CHARS:
+                raise BulkFileError("the bulk file has a line that is too long")
+            if not stream.grow(max(2 * held, READ_SIZE)):
+                end = len(stream.buffer)
+                break
+            end = stream.buffer.find("\n", stream.pos)
+        if end - stream.pos > MAX_RECORD_CHARS:
+            raise BulkFileError("the bulk file has a line that is too long")
+        line = stream.buffer[stream.pos : end]
+        stream.pos = end + 1
+        try:
+            record = json.loads(line)
+        except ValueError as error:  # JSONDecodeError, or a number too long to convert
+            raise BulkFileError("the bulk file has a malformed line") from error
+        if not isinstance(record, dict):
+            raise BulkFileError("the bulk file holds a value that is not a record")
+        yield record
+
+
+def _iter_json_array(stream) -> Iterator[dict]:
+    decoder = json.JSONDecoder()
     stream.pos += 1
     first = True
 

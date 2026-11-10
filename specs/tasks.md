@@ -148,7 +148,7 @@ merged into `main`.
 - [x] T39: Shared HTTP transport for adapters
 - [x] T40: OpenAI text adapter
 - [x] T36: Provider factory for text
-- [ ] T37: Card models and version service
+- [x] T37: Card models and version service
 - [ ] T38: Usage recording and usage endpoint (text)
 - [ ] T28: Validation result and mana cost validator
 - [ ] T29: Color identity validator

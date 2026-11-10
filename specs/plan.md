@@ -140,9 +140,9 @@ Fields listed are the ones the spec needs; types are left to the tasks.
 | core.jobs | `submit(kind, fn)`, `get_job(id)`, `fail_orphan_jobs()` |
 | core.status | `status_snapshot()` (no key values) |
 | catalog.build, catalog.ingest | `run_build()` and `start_build()` (catalog.build); `download_sources()`, `import_oracle()`, `import_printings()`, `import_rules()`, `import_pt_terms()`, `tag_roles()` |
-| catalog.selectors | `is_ready()`, `search_cards(query, filters)`, `search_rules(keywords)`, `get_lexicon(lang)`, `find_base_cards(name)`, `list_printings(oracle_id)` |
+| catalog.selectors | `is_ready()`, `search_cards(query, filters)`, `existing_card_names()` (normalized names of cards and faces, RN-51), `search_rules(keywords)`, `get_lexicon(lang)`, `find_base_cards(name)`, `list_printings(oracle_id)` |
 | providers.factory | `text_adapter()`, `image_adapter()`, `art_availability()` |
-| validators | `validate(card, lexicon, request) -> ValidationResult` composed of color identity, mana cost, type line, keywords, limits; `request` gives the requested identity (possibly colorless) and the idea text |
+| validators | `validate(card, lexicon, request, existing_names=None) -> ValidationResult` composed of color identity, mana cost, name, type line, keywords, limits; `request` gives the requested identity (possibly colorless) and the idea text; `existing_names` is the set from `existing_card_names()`, and without it the name check is listed as skipped |
 | generation.text | `generate_card(request)`, `revise(draft, causes)`, `quick_adjust(card, kind)` |
 | generation.art | `generate_art(card, description)`, `fetch_base_image(printing, face)` |
 | cards.services | `save_version()`, `edit_fields()`, `restore_version()`, `set_favorite()`, `delete_card()`, `attach_image()`, `upload_image()`, `record_usage()` |
@@ -735,6 +735,7 @@ The T26 evaluation measures whether the patterns plus keywords are good enough.
 | 46 | README user guide | review |
 | 48 | art prompt artist credit; Result screen | fake adapter receives the credit; component test |
 | 49 | frontend components and screens; Interface rules of `specs/code-standards.md` | component tests, manual check |
+| 51 | validators name check with `catalog.selectors.existing_card_names()` | CA-79 names and faces |
 | 52 | screen switch sets the tab title; icon in `src/assets/` linked from `index.html` | title tests; built-file check; manual check of the icon |
 
 Cross-site requests are refused by an origin check (section 8), tested on

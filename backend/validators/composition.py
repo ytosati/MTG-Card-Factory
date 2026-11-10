@@ -4,7 +4,7 @@ Details: specs/plan.md, sections 5 and 7.
 
 from dataclasses import dataclass
 
-from validators import color_identity, mana_cost
+from validators import color_identity, mana_cost, name
 from validators.result import ValidationResult
 
 
@@ -22,6 +22,7 @@ class CheckInputs:
 CHECKS = (
     (mana_cost.CHECK, mana_cost.check, None),
     (color_identity.CHECK, color_identity.check, None),
+    (name.CHECK, name.check, "existing_names"),
 )
 
 

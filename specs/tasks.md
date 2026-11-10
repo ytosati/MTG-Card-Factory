@@ -152,7 +152,7 @@ merged into `main`.
 - [x] T38: Usage recording and usage endpoint (text)
 - [x] T28: Validation result and mana cost validator
 - [x] T29: Color identity validator
-- [ ] T138: Name validator against existing cards
+- [x] T138: Name validator against existing cards
 - [ ] T23: Comparables search
 - [ ] T26: Search quality evaluation script
 - [ ] T46: Generation prompts and output schemas

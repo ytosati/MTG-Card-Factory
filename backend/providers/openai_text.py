@@ -7,6 +7,7 @@ import copy
 import json
 from typing import Any
 
+from core.errors import CODE_MODEL_NOT_FOUND
 from providers import transport
 from providers.base import Usage
 from providers.errors import (
@@ -156,7 +157,7 @@ def _classify_error(response: transport.HttpResponse) -> ProviderError | None:
         return None
     code, _ = _error_fields(response)
     # A 403 with this code means the project has no access to the model, not a rejected key.
-    if code == "model_not_found":
+    if code == CODE_MODEL_NOT_FOUND:
         return ModelNotFound(
             f"The provider does not know the model set in {MODEL_SETTING}.", setting=MODEL_SETTING
         )

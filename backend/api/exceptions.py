@@ -10,16 +10,26 @@ from rest_framework import exceptions, status
 from rest_framework.response import Response
 from rest_framework.views import set_rollback
 
-from api.permissions import CODE_DATABASE_NOT_READY
-from catalog.download import CODE_INSUFFICIENT_SPACE, CODE_SOURCE_UNREACHABLE
-from core.errors import CODE_INTERNAL, INTERNAL_MESSAGE, MappedError, error_body
+from core.errors import (
+    CODE_BAD_REQUEST,
+    CODE_CONFIG_INVALID,
+    CODE_DATABASE_BUSY,
+    CODE_DATABASE_NOT_READY,
+    CODE_GENERATION_RUNNING,
+    CODE_INSUFFICIENT_SPACE,
+    CODE_INTERNAL,
+    CODE_METHOD_NOT_ALLOWED,
+    CODE_NOT_FOUND,
+    CODE_PROVIDER_NOT_AVAILABLE_YET,
+    CODE_SOURCE_UNREACHABLE,
+    CODE_VALIDATION,
+    INTERNAL_MESSAGE,
+    MappedError,
+    database_busy_error,
+    error_body,
+)
 
 logger = logging.getLogger(__name__)
-
-CODE_NOT_FOUND = "not_found"
-CODE_METHOD_NOT_ALLOWED = "method_not_allowed"
-CODE_BAD_REQUEST = "bad_request"
-CODE_VALIDATION = "validation"
 
 NOT_FOUND_MESSAGE = "This API path does not exist."
 VALIDATION_MESSAGE = "Some request fields are invalid. Correct them and try again."
@@ -48,9 +58,13 @@ BAD_REQUEST_MESSAGE = "Card Factory could not read this request: it must be JSON
 # HTTP status of each mapped error code raised by a view; any other code answers 500.
 MAPPED_STATUS = {
     CODE_NOT_FOUND: status.HTTP_404_NOT_FOUND,
+    CODE_DATABASE_BUSY: status.HTTP_503_SERVICE_UNAVAILABLE,
     CODE_DATABASE_NOT_READY: status.HTTP_503_SERVICE_UNAVAILABLE,
     CODE_INSUFFICIENT_SPACE: status.HTTP_507_INSUFFICIENT_STORAGE,
     CODE_SOURCE_UNREACHABLE: status.HTTP_502_BAD_GATEWAY,
+    CODE_CONFIG_INVALID: status.HTTP_400_BAD_REQUEST,
+    CODE_PROVIDER_NOT_AVAILABLE_YET: status.HTTP_400_BAD_REQUEST,
+    CODE_GENERATION_RUNNING: status.HTTP_409_CONFLICT,
 }
 
 
@@ -62,6 +76,9 @@ def exception_handler(exc, context):
         exc = exceptions.PermissionDenied()
 
     set_rollback()
+    busy = database_busy_error(exc)
+    if busy is not None:
+        exc = busy
     if isinstance(exc, MappedError):
         http_status = MAPPED_STATUS.get(exc.code)
         if http_status is None:

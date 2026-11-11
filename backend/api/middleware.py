@@ -8,8 +8,8 @@ from django.conf import settings
 from django.http import JsonResponse
 
 from api.exceptions import error_body
+from core.errors import CODE_ORIGIN_REFUSED
 
-CODE_ORIGIN_REFUSED = "origin_refused"
 ORIGIN_REFUSED_MESSAGE = "This request did not come from the Card Factory page and was refused."
 ORIGIN_REFUSED_STATUS = 403
 

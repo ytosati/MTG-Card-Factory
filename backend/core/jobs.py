@@ -10,17 +10,16 @@ from concurrent.futures import ThreadPoolExecutor
 from django.db import OperationalError, connection, connections
 
 from core import watchdog
-from core.errors import CODE_INTERNAL, INTERNAL_MESSAGE, MappedError, error_body
+from core.errors import CODE_GENERATION_RUNNING, CODE_INTERNAL, INTERNAL_MESSAGE, MappedError, error_body
 from core.models import Job
+from core.selectors import ACTIVE_STATUSES
 
 logger = logging.getLogger(__name__)
 
 MAX_WORKERS = 4
 # Card generation, art generation and quick adjustment share one slot (see spec RN-50).
 GENERATION_KINDS = frozenset({Job.Kind.GENERATE, Job.Kind.ADJUST, Job.Kind.ART})
-ACTIVE_STATUSES = (Job.Status.QUEUED, Job.Status.RUNNING)
 
-CODE_GENERATION_RUNNING = "generation_running"
 ORPHAN_MESSAGE = "This task stopped when Card Factory closed. Start it again."
 GENERATION_RUNNING_MESSAGE = "A card or art generation is already running. Wait for it to finish, then try again."
 

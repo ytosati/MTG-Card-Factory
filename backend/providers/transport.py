@@ -10,6 +10,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from urllib.parse import urlsplit
 
+from core.errors import CODE_RATE_LIMITED
 from providers.errors import (
     AuthError,
     ModelNotFound,
@@ -120,7 +121,7 @@ def _status_error(
         if is_quota_error(response):
             return QuotaError("The provider account has no quota or credit left.")
         return ProviderUnavailable(
-            "The provider is limiting requests. Wait a moment and try again.", code="rate_limited"
+            "The provider is limiting requests. Wait a moment and try again.", code=CODE_RATE_LIMITED
         )
     if status >= 500:
         return ProviderUnavailable("The provider is not answering. Try again later.")

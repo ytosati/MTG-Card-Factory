@@ -4,6 +4,15 @@ Details: specs/plan.md, section 9.2. Messages never include the key or the
 provider's response body.
 """
 
+from core.errors import (
+    CODE_AUTH,
+    CODE_CONTENT_REFUSED,
+    CODE_INVALID_RESPONSE,
+    CODE_MODEL_NOT_FOUND,
+    CODE_PROVIDER_UNAVAILABLE,
+    CODE_QUOTA,
+    CODE_RATE_LIMITED,
+)
 from providers.base import Usage
 
 
@@ -13,25 +22,25 @@ class ProviderError(Exception):
     `code` is the API error code of the failure (specs/plan.md, section 6).
     """
 
-    code = "provider_unavailable"
+    code = CODE_PROVIDER_UNAVAILABLE
 
 
 class AuthError(ProviderError):
     """The provider rejected the key."""
 
-    code = "auth"
+    code = CODE_AUTH
 
 
 class QuotaError(ProviderError):
     """The account has no quota or credit left."""
 
-    code = "quota"
+    code = CODE_QUOTA
 
 
 class ProviderUnavailable(ProviderError):
     """The provider did not answer, failed, or limited the request rate; `code` tells which."""
 
-    def __init__(self, message: str, code: str = "provider_unavailable"):
+    def __init__(self, message: str, code: str = CODE_PROVIDER_UNAVAILABLE):
         super().__init__(message)
         self.code = code
 
@@ -47,13 +56,13 @@ class _AnsweredError(ProviderError):
 class InvalidResponse(_AnsweredError):
     """The response was not JSON matching the requested schema."""
 
-    code = "invalid_response"
+    code = CODE_INVALID_RESPONSE
 
 
 class ContentRefused(_AnsweredError):
     """The provider refused to produce the content."""
 
-    code = "content_refused"
+    code = CODE_CONTENT_REFUSED
 
 
 class TemplateUnsupported(ProviderError):
@@ -63,7 +72,7 @@ class TemplateUnsupported(ProviderError):
 class ModelNotFound(ProviderError):
     """The provider does not know the configured model; `setting` is LLM_MODEL or IMAGE_MODEL."""
 
-    code = "model_not_found"
+    code = CODE_MODEL_NOT_FOUND
 
     def __init__(self, message: str, setting: str):
         super().__init__(message)
@@ -72,16 +81,16 @@ class ModelNotFound(ProviderError):
 
 # The message shown for each error code: fixed texts, never a provider's own words (see spec RN-10).
 MESSAGES = {
-    "auth": "The provider rejected the API key.",
-    "quota": "The provider account has no quota or credit left.",
-    "rate_limited": "The provider is limiting requests. Wait a moment and try again.",
-    "model_not_found": "The provider does not know the configured model.",
-    "provider_unavailable": "The provider is not answering. Try again later.",
-    "invalid_response": "The provider answered in a form that could not be used.",
-    "content_refused": "The provider refused to write this content.",
+    CODE_AUTH: "The provider rejected the API key.",
+    CODE_QUOTA: "The provider account has no quota or credit left.",
+    CODE_RATE_LIMITED: "The provider is limiting requests. Wait a moment and try again.",
+    CODE_MODEL_NOT_FOUND: "The provider does not know the configured model.",
+    CODE_PROVIDER_UNAVAILABLE: "The provider is not answering. Try again later.",
+    CODE_INVALID_RESPONSE: "The provider answered in a form that could not be used.",
+    CODE_CONTENT_REFUSED: "The provider refused to write this content.",
 }
 
 
 def message_for(error: ProviderError) -> str:
     """The fixed message of the error's code."""
-    return MESSAGES.get(error.code, MESSAGES["provider_unavailable"])
+    return MESSAGES.get(error.code, MESSAGES[CODE_PROVIDER_UNAVAILABLE])

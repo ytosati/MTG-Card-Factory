@@ -18,7 +18,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from catalog import sources
-from core.errors import CODE_INTERNAL, MappedError
+from core.errors import CODE_INSUFFICIENT_SPACE, CODE_INTERNAL, CODE_SOURCE_UNREACHABLE, MappedError
 from core.instance import instance_snapshot
 from core.paths import data_dir
 
@@ -33,9 +33,6 @@ READ_SIZE = 64 * 1024
 TIMEOUT_SECONDS = 60
 PARTIAL_SUFFIX = ".part"
 VALIDATOR_SUFFIX = ".part.json"
-
-CODE_SOURCE_UNREACHABLE = "source_unreachable"
-CODE_INSUFFICIENT_SPACE = "insufficient_space"
 
 NO_NETWORK_MESSAGE = (
     "Could not reach the data source: there is no network connection or the connection dropped. "

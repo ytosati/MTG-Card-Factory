@@ -5,10 +5,9 @@ Details: specs/plan.md, section 6.
 from rest_framework.permissions import BasePermission
 
 from catalog.selectors import is_ready
-from core.errors import MappedError
+from core.errors import CODE_DATABASE_NOT_READY, MappedError
 
 # Imports nothing from rest_framework.views: DRF loads this class while that module initializes.
-CODE_DATABASE_NOT_READY = "database_not_ready"
 DATABASE_NOT_READY_MESSAGE = "The reference database is not ready yet. Build it on the Setup screen."
 
 

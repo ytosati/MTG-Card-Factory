@@ -129,24 +129,31 @@ Fields listed are the ones the spec needs; types are left to the tasks.
 
 **core**
 - `Job`: `id` (UUID4), kind (build, generate, adjust, art), status (queued,
-  running, done, failed), progress, result (card id), error message,
+  running, done, failed), progress, result (JSON: a generation's `{card,
+  revision_failure}`, null for a build), error (the envelope of section 6),
   created_at. Jobs left running at startup are marked failed (RN-03, RN-10).
 
 ## 5. Services and selectors
 
 | Module | Functions (names indicative) |
 |---|---|
+| core.errors | every error code of section 6 as a `CODE_*` constant, the fixed messages shared by modules, `error_body()`, `MappedError`, `database_busy_error()`; no other module spells a code |
 | core.config | `load_config()`, `get_config()`; `Secret.reveal()` used only by providers.factory and core.log_redaction |
 | core.jobs | `submit(kind, fn)`, `get_job(id)`, `fail_orphan_jobs()` |
-| core.status | `status_snapshot()` (no key values) |
+| core.selectors | `ACTIVE_STATUSES` (queued and running, the one definition), `latest_build_job_id()`, `active_build_job_ids()` |
+| core.status | `status_snapshot()` (no key values); reads catalog readiness through `catalog.selectors` (`is_ready()`, `list_sources()`) |
+| catalog.sources | `SOURCES` (the registry: name, listing type, allowed hosts) and `CATALOG_VERSION` |
+| catalog.download | `read_listing()`, `download_file()`: resumable downloads from the allowed hosts only, with `DownloadError` mapped to section 6 codes |
+| catalog.setup | `setup_snapshot()` (download size, free space, the build job to show), `request_build()` |
 | catalog.build, catalog.ingest | `run_build()` and `start_build()` (catalog.build); `download_sources()`, `import_oracle()`, `import_printings()`, `import_rules()`, `import_pt_terms()`, `tag_roles()` |
-| catalog.selectors | `is_ready()`, `search_cards(query, filters)`, `existing_card_names()` (normalized names of cards and faces, RN-51), `search_rules(keywords)`, `get_lexicon(lang)`, `find_base_cards(name)`, `list_printings(oracle_id)` |
+| catalog.selectors | `is_ready()`, `list_sources()`, `search_cards(query, filters)`, `existing_card_names()` (normalized names of cards and faces, RN-51), `search_rules(keywords)`, `get_lexicon(lang)`, `find_base_cards(name)`, `list_printings(oracle_id)` |
 | providers.factory | `text_adapter()`, `image_adapter()`, `art_availability()` |
 | validators | `validate(card, lexicon, request, existing_names=None) -> ValidationResult` composed of color identity, mana cost, name, type line, keywords, limits; `request` gives the requested identity (possibly colorless) and the idea text; `existing_names` is the set from `existing_card_names()`, and without it the name check is listed as skipped |
 | generation.text | `generate_card(request)`, `revise(draft, causes)`, `quick_adjust(card, kind)` |
 | generation.art | `generate_art(card, description)`, `fetch_base_image(printing, face)` |
 | cards.services | `save_version()`, `edit_fields()`, `restore_version()`, `set_favorite()`, `delete_card()`, `attach_image()`, `upload_image()`, `record_usage()` |
-| cards.selectors | `list_cards(favorite)`, `get_card()`, `list_versions()`, `usage_for(card)` |
+| cards.selectors | `list_cards(favorite)`, `get_card()`, `card_detail()`, `list_versions()`, `usage_for(card)` |
+| api.services | `start_generation(request)`: checks the text configuration, then submits the generation job; a rejected key names `LLM_API_KEY` |
 
 ## 6. Endpoints
 
@@ -169,8 +176,8 @@ branches on `code`, never on `message`: `config_invalid`, `origin_refused`,
 `bad_request`, `internal`.
 `bad_request` answers a malformed JSON body (400), an unsupported media type
 (415) and an unacceptable `Accept` header (406), with a fixed message and the
-original status. `origin_refused` answers 403. `database_not_ready` answers 503,
-`insufficient_space` 507, `source_unreachable` 502, `generation_running` 409 and `validation` 400. The messages in `fields` are fixed texts chosen by the error kind; they never quote the submitted value. A settings
+original status. `origin_refused` answers 403. `database_not_ready` and `database_busy` answer 503,
+`insufficient_space` 507, `source_unreachable` 502, `generation_running` 409, and `validation`, `config_invalid` and `provider_not_available_yet` 400. The messages in `fields` are fixed texts chosen by the error kind; they never quote the submitted value. A settings
 list (status, generation, setup) uses the same objects, `{setting, code,
 message}`, with codes as stable as the error codes: `config_invalid` for a
 setting to fix and `ignored` for a setting ignored with a notice (RN-08). A
@@ -181,6 +188,27 @@ with `setting` equal to `.env` and a message for its cause (RN-40, CA-77).
 error}`, where `error` is the envelope above. A job never stores the text of an
 exception: an exception outside the mapped set becomes `internal` with a fixed
 message, and its detail goes only to the redacted log.
+A generation job's `result` is `{card: id, revision_failure: {code, message} |
+null}`, where `revision_failure` reports a failed automatic revision (RN-15); a
+build's is null. A provider error raised in a job becomes its envelope with the
+error's `code` and fixed message, never the provider's text; `model_not_found`
+carries `setting` `LLM_MODEL` (RN-08, RN-10).
+
+**Generations.** `POST /api/generations` takes `{idea, color_identity,
+power_level}`: the idea is required, not blank and at most 1,000 Unicode
+characters (CA-80); `color_identity` is a list of `W`, `U`, `B`, `R`, `G`,
+where `[]` is colorless chosen explicitly and null or missing is no choice
+(CA-26); `power_level` is `casual`, `medium` or `strong`. Each invalid field is
+named in `fields` of `validation`. The text configuration is then checked with
+no provider call: a text setting to fix answers `config_invalid` with that
+`setting`, and a provider with no adapter yet `provider_not_available_yet`, both
+400 with no job (RN-08, CA-05). Otherwise the generation is submitted through
+`core.jobs.submit` as a `generate` job (`api.services.start_generation`) and the
+answer is 202 with the job; while a generation-type job is queued or running
+the answer is 409 `generation_running` (RN-50). `GET /api/cards/{id}` returns
+`{id, current_version: {text fields, design_intent, rationale, comparables,
+power_indicator, power_justification, origin, status, validation}, usage: {text:
+[records]}}`; an unknown or malformed id answers 404 `not_found`.
 
 **Readiness gate.** A default DRF permission requires a ready catalog; the
 views that work without it (status, connection test, setup, jobs, instance,

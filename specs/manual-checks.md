@@ -381,3 +381,34 @@ marking: candidates without the requested creature type (01, 07, 08, 11, 13),
 candidates that match only common words (10, 19, 20), and candidates outside
 the requested power level (04, 13, 20). Decision: better role patterns and
 keywords, no embeddings (T160), then a second run.
+
+### Search quality evaluation (T26), second run (after T160)
+
+Same requests and search plans as the first run; the search ranks a creature
+type named in the keywords first, then cards with a less common keyword, by
+BM25 within each tier (strong adds popularity within the tier), and accepts
+one mana value beyond each edge of the plan's range. Marked by hand with
+stricter criteria: a card is relevant when a designer would use it to
+calibrate the requested card; a card that covers only part of a compound
+request is a borderline case and does not count.
+
+| Request | Relevant | Request | Relevant |
+|---|---|---|---|
+| 01-elf-mana | 1 | 11-goblin-warcry | 5 |
+| 02-spell-draw | 6 | 12-any-color-artifact | 6 |
+| 03-exile-enchantment | 10 | 13-demon-sacrifice | 0 |
+| 04-wrath | 10 | 14-mill-enters | 10 |
+| 05-cheap-counter | 9 | 15-small-flier | 5 |
+| 06-life-tutor | 6 | 16-burn-instant | 8 |
+| 07-zombie-return | 8 | 17-colorless-rock | 6 |
+| 08-soldier-army | 3 | 18-five-color-land | 5 |
+| 09-cleric-lifegain | 10 | 19-pay-life-draw | 5 |
+| 10-team-indestructible | 9 | 20-bant-guardian | 0 |
+
+Result: 16 of 20 requests with five or more relevant cards. **Pass.**
+Embeddings stay out.
+
+Failed requests: 01, 08, 13 and 20. Observed while marking: generic mana
+creatures outrank the cards that scale with Forests or Elves (01); most
+candidates cover only one part of a compound request (08, 20); the search
+plan of 13 names no creature type, so no Demon is ranked first.

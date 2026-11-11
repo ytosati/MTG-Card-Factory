@@ -362,10 +362,11 @@ def test_t23_rn12_card_types_filter_accepts_any_of_several_types():
 @pytest.mark.django_db
 def test_t23_rn12_mana_value_range_is_inclusive():
     """RN-12: mana_value_min=2 and mana_value_max=4 keep mana values 2, 3 and 4
-    (ten cards, so no widening) and drop 1 and 5."""
+    (ten cards, so no widening) and drop 0 and 6, two beyond the range (the first
+    stage widens the range by one on each side)."""
     kept = [_card(f"Lantern Elk {n}", "A lantern glows.", cmc=float(2 + n % 3)) for n in range(10)]
-    cheap = _card("Lantern Spark", "A lantern glows.", cmc=1.0)
-    costly = _card("Lantern Titan", "A lantern glows.", cmc=5.0)
+    cheap = _card("Lantern Spark", "A lantern glows.", cmc=0.0)
+    costly = _card("Lantern Titan", "A lantern glows.", cmc=6.0)
     _index()
 
     results = _search("lantern", mana_value_min=2, mana_value_max=4)
@@ -376,9 +377,10 @@ def test_t23_rn12_mana_value_range_is_inclusive():
 
 @pytest.mark.django_db
 def test_t23_rn12_mana_value_minimum_alone_is_a_lower_bound():
-    """RN-12: only mana_value_min=4 keeps mana values of 4 and more."""
+    """RN-12: only mana_value_min=4 keeps mana values of 4 and more (3 is within the
+    one-value tolerance of the first stage, 2 is beyond it)."""
     kept = [_card(f"Lantern Titan {n}", "A lantern glows.", cmc=float(4 + n)) for n in range(10)]
-    cheap = _card("Lantern Spark", "A lantern glows.", cmc=3.0)
+    cheap = _card("Lantern Spark", "A lantern glows.", cmc=2.0)
     _index()
 
     results = _search("lantern", mana_value_min=4)
@@ -394,13 +396,13 @@ def test_t23_rn12_mana_value_maximum_zero_keeps_only_zero_cost_cards():
         _card(f"Lantern Hollow {n}", "A lantern glows.", cmc=0.0, type_line="Land")
         for n in range(10)
     ]
-    one = _card("Lantern Spark", "A lantern glows.", cmc=1.0)
+    two = _card("Lantern Spark", "A lantern glows.", cmc=2.0)
     _index()
 
     results = _search("lantern", mana_value_min=0, mana_value_max=0)
 
     assert _id_set(results) == _cards_ids(*kept)
-    assert _oid(one.oracle_id) not in _ids(results)
+    assert _oid(two.oracle_id) not in _ids(results)
 
 
 @pytest.mark.django_db
@@ -485,26 +487,34 @@ def test_t23_rn12_strong_includes_game_changer_cards():
 
 @pytest.mark.django_db
 def test_t23_rn12_strong_ranks_by_edhrec_rank():
-    """RN-12 (plan 9.1): strong ranks by EDHREC rank (lower rank first), whatever the BM25 order."""
-    strong_match, middle_match, weak_match = _ranked_trio()
+    """RN-12 (plan 9.1), T160 contract 3: among cards of equal relevance (the same text,
+    so the same BM25 score and rank), strong puts the more popular first (lower EDHREC
+    rank first)."""
+    less = _card("Ashen Wisp", "Ember.", edhrec_rank=5000)
+    ranked = _card("Cinder Moth", "Ember.", edhrec_rank=50)
+    middle = _card("Dusk Heron", "Ember.", edhrec_rank=500)
+    _non_matching_fillers()
     _index()
 
     results = _search("ember", power_level="strong")
 
-    assert _position(results, weak_match) < _position(results, middle_match) < _position(results, strong_match)
+    assert _position(results, ranked) < _position(results, middle) < _position(results, less)
 
 
 @pytest.mark.django_db
 def test_t23_rn12_strong_puts_cards_without_edhrec_rank_last():
-    """RN-12 (plan 9.1): under strong, a card with no EDHREC rank comes after every ranked card."""
-    strong_match, middle_match, weak_match = _ranked_trio()
-    unranked = _card("Pale Ember Ember Ember", "Ember ember ember ember.", edhrec_rank=None)
+    """RN-12 (plan 9.1), T160 contract 3: among cards of equal relevance, under strong a
+    card with no EDHREC rank comes after every ranked card."""
+    ranked_first = _card("Ashen Wisp", "Ember.", edhrec_rank=50)
+    ranked_second = _card("Cinder Moth", "Ember.", edhrec_rank=5000)
+    unranked = _card("Dusk Heron", "Ember.", edhrec_rank=None)
+    _non_matching_fillers()
     _index()
 
     results = _search("ember", power_level="strong")
 
     assert _position(results, unranked) > max(
-        _position(results, card) for card in (strong_match, middle_match, weak_match)
+        _position(results, card) for card in (ranked_first, ranked_second)
     )
 
 

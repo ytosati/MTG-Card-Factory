@@ -169,7 +169,7 @@ merged into `main`.
 - [x] T117: Milestone 3 end-to-end flow test
 - [x] T153: Card and its usage saved together
 - [x] T154: Provider error codes owned by the adapter
-- [ ] T160: Comparables search quality after the first evaluation
+- [x] T160: Comparables search quality after the first evaluation
 - [ ] T94: Milestone 3 review
 
 ### Milestone 3b — Generation controls

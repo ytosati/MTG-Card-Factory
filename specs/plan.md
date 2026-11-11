@@ -457,16 +457,24 @@ application (unknown migrations), it stops with a message instead of migrating.
    request), commander legality (legal; banned returned only as
    counterexamples), roles, types and mana value, then ranks with FTS5 BM25 over
    name, type line and rules text. Power level shapes the candidate set: strong
-   includes Game Changer cards and ranks by EDHREC rank; casual excludes Game
-   Changer cards; medium allows Game Changer cards without prioritizing them
-   and ranks by BM25 alone. User text passed to `MATCH` is quoted per token,
-   and the tokens are joined with OR so BM25 ranks cards that match more of
-   them first. The selector keeps the best `MAX_RESULTS` (40) by BM25; strong
-   then orders those by EDHREC rank, unranked last. A search plan with no
+   includes Game Changer cards; casual excludes Game Changer cards; medium
+   allows Game Changer cards without prioritizing them. User text passed to
+   `MATCH` is quoted per token, and the tokens are joined with OR. Relevance is
+   a tiered order: cards whose creature type (a word after the dash of a
+   creature face of the type line, case-insensitive, either face of a `//`
+   line) is a keyword come first; then cards matching at least one keyword
+   outside `COMMON_WORDS` (a fixed set of common rules-text words) before cards
+   matching only common words. Inside a tier, medium and casual order by
+   BM25 alone, then name, then id. Strong orders a tier by the sum of the BM25
+   rank and the EDHREC rank, both taken among the cards of that tier (equal
+   values share a rank, unranked cards rank last), with ties broken by BM25,
+   then name, then id; popularity never crosses a tier. The selector keeps the
+   best `MAX_RESULTS` (40) by relevance (tier, then BM25) before strong reorders
+   them. A search plan with no
    usable keyword runs the filters alone, ordered by EDHREC rank.
 3. If fewer than a minimum number of legal results come back (a named
-   constant, 10), the selector widens the filters deterministically (drop
-   mana value, then types). Identity, legality, roles and the casual
+   constant, 10), the selector widens the filters deterministically (accept mana values one beyond the range,
+   `MANA_VALUE_TOLERANCE`, in the first stage; then drop mana value, then types). Identity, legality, roles and the casual
    exclusion of Game Changer cards are never dropped. No second model call.
 4. The draft call receives the first 8, 20 or 40 candidates for low, medium
    and high effort (RN-53). The model writes the card and cites comparables from the candidates; cited

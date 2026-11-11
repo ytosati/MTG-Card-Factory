@@ -107,11 +107,15 @@ Fields listed are the ones the spec needs; types are left to the tasks.
 **cards**
 - `Card`: `id` (UUID4), created_at, favorite, language, current_version, and
   the request it came from: idea, requested color identity (possibly
-  colorless), power level. Revalidation after an edit, an adjustment or a
-  restore uses it (RN-16, RN-19).
+  colorless), power level, generation effort (low, medium, high) and advanced
+  options (JSON, M5). Revalidation after an edit, an adjustment or a restore
+  uses it (RN-16, RN-19, RN-51); the advanced options are checked only for the
+  draft and its revision (RN-57).
 - `CardVersion`: card, number (1, 2, …), origin (generated, revised, edited,
   adjusted, restored, art_generated, art_uploaded), name, mana_cost, mana_value,
-  type_line, rules_text, power, toughness, rarity, design_intent, rationale,
+  type_line, rules_text, power, toughness, starting_loyalty (planeswalkers
+  only), rarity, design_intent, rationale, design_notes (high effort) with
+  design_notes_outdated,
   comparables (JSON: oracle_id, name, role), base_card (JSON snapshot: oracle_id,
   printing id, face, name, rules text), power_indicator, power_justification,
   power_outdated, status (approved, rejected), validation (JSON causes),
@@ -184,8 +188,9 @@ setting to fix and `ignored` for a setting ignored with a notice (RN-08). A
 configuration file that cannot be read is the single item `config_invalid`
 with `setting` equal to `.env` and a message for its cause (RN-40, CA-77).
 
-**Jobs.** `GET /api/jobs/{id}` returns `{id, kind, status, progress, result,
-error}`, where `error` is the envelope above. A job never stores the text of an
+**Jobs.** `GET /api/jobs/{id}` returns `{id, kind, status, progress, step,
+result, error}`, where `step` names the running step (RN-55: design, search,
+draft, validation, revision, later art) or is null, where `error` is the envelope above. A job never stores the text of an
 exception: an exception outside the mapped set becomes `internal` with a fixed
 message, and its detail goes only to the redacted log.
 A generation job's `result` is `{card: id, revision_failure: {code, message} |
@@ -454,7 +459,8 @@ application (unknown migrations), it stops with a message instead of migrating.
    constant, 10), the selector widens the filters deterministically (drop
    mana value, then types). Identity, legality, roles and the casual
    exclusion of Game Changer cards are never dropped. No second model call.
-4. The model writes the card and cites comparables from the candidates; cited
+4. The draft call receives the first 8, 20 or 40 candidates for low, medium
+   and high effort (RN-53). The model writes the card and cites comparables from the candidates; cited
    cards not returned as legal are discarded (RN-12).
 5. `search_rules` uses FTS5 over `RuleSection` with the same keywords and adds
    the sections of every keyword the draft uses.
@@ -848,8 +854,9 @@ sources.
 | M1 Double-click start | the locally built zip starts with a double click and stops after the last tab closes | server entry point, instance and heartbeat, watchdog, upgrade service, launcher, release zip, manual checklist |
 | M2 Reference database | Setup screen builds the database from Oracle Cards; Status lists the source | jobs, catalog models, downloader, Oracle import, roles, build, setup endpoints and gate, Setup screen |
 | M3 First card | a request becomes a validated, saved card shown on the Result screen, with OpenAI | provider protocol, OpenAI text adapter, factory, card models, usage, mana cost and color identity validators, comparables search, generation pipeline, Request and Result screens, key-leak sweep |
+| M3b Generation controls | the person picks the generation effort, sees the running step, gets design notes on high effort, and generates cards about existing characters and planeswalkers | effort and loyalty fields, job step, Battle and planeswalker checks, name exception, effort in the pipeline, existing characters in the prompts, screen updates |
 | M4 Text providers | the same request works with OpenAI, Anthropic and Google; Status tests the text key | Anthropic and Google text adapters, cross-provider test, connection test |
-| M5 Rules validation | type line, keyword and limits validators with terms from the Comprehensive Rules | rules import, terms, lexicon, rules search in the draft call |
+| M5 Rules validation | type line, keyword and limits validators with terms from the Comprehensive Rules; advanced options in the request | rules import, terms, lexicon, rules search in the draft call, advanced options |
 | M6 Library and versions | library, favorites, deletion, editing, quick adjustments, restore | library, edit, versions and adjustment endpoints and screens |
 | M7 Art | generated and uploaded art, shown beside the card text | image adapters, art availability, image storage and serving, art pipeline, upload, art screens |
 | M8 Base card | a chosen printing guides the design and is the art template | printings import, base card search, base image cache, template |

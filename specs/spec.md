@@ -23,14 +23,16 @@ and key for art. The person pays the providers directly for usage.
 - Automatic updates of the card database or of the application
 - Ready-to-use packages for systems other than Windows
 - Card languages other than English and Portuguese (Brazil)
-- Generated cards with more than one face (split, adventure, double-faced); see
-  Future work
+- Generated cards with more than one face (split, adventure, double-faced, and
+  Battle cards, which are double-faced); see Future work
 
 ## Concepts
 - Data sources: Scryfall (card data and card images) and the Comprehensive
   Rules published by Wizards of the Coast.
-- Generated card: any single-faced card for a Commander deck, of any card type
-  and supertype, including a commander, a legendary or a basic card.
+- Generated card: any single-faced card for a Commander deck, of any card
+  type and supertype except Battle, including a commander, a legendary card, a
+  planeswalker or a basic card. A planeswalker is legendary and has a starting
+  loyalty; no other card has one.
 - Color identity: the colors of the mana symbols in the card's mana cost and
   rules text, excluding reminder text, as defined by the Comprehensive Rules for
   Commander. A hybrid symbol counts all its colors; a Phyrexian symbol counts
@@ -47,6 +49,17 @@ and key for art. The person pays the providers directly for usage.
   the local database and used as a reference.
 - Power level: casual, medium or strong. Chooses which comparables serve as
   the reference.
+- Generation effort: low, medium or high, chosen in the request. It sets how
+  many related cards the text model is given and whether the result has design
+  notes (RN-53).
+- Design notes: an explanation of the concepts behind the card and the reasons
+  for its design decisions, focused on flavor: how the name, the type line, the
+  abilities and the numbers express the idea or the character.
+- Advanced options: optional choices in the request that fix parts of the
+  generated card: card types, supertypes, subtypes, mana value, power and
+  toughness, starting loyalty and rarity.
+- Existing character: a person, creature, place or object from any fiction or
+  franchise, named in the idea.
 - Design intent: the role of the card (for example ramp, removal, card draw)
   and the Commander strategy it supports.
 - Power range: the expected interval of power for similar cards.
@@ -67,12 +80,13 @@ and key for art. The person pays the providers directly for usage.
   configuration file at startup. Keys are never stored by the application.
 - Source record: origin and date of each data source used in the build.
 - Request: idea or theme, color identity (one or more colors, or colorless),
-  power level and, optionally, card language (English or Portuguese), base card (with the chosen printing and face), art requested (yes
+  power level, generation effort and, optionally, advanced options, card language (English or Portuguese), base card (with the chosen printing and face), art requested (yes
   or no), art description and uploaded image.
-- Card: the request it came from (idea, requested color identity and power
-  level), name, mana cost, mana value, type line, rules text, power and toughness
-  (when applicable), rarity, language, design intent, design rationale,
-  comparables used, base card (when chosen), power indicator with its
+- Card: the request it came from (idea, requested color identity, power level,
+  generation effort and advanced options), name, mana cost, mana value, type
+  line, rules text, power and toughness (when applicable), starting loyalty
+  (planeswalkers only), rarity, language, design intent, design rationale,
+  design notes (high effort only), comparables used, base card (when chosen), power indicator with its
   justification, art (when present) with its origin (generated or uploaded),
   artist credit, validation result, skipped checks (when any) and favorite
   mark.
@@ -145,10 +159,11 @@ and key for art. The person pays the providers directly for usage.
   messages and never leave a card half-created.
 
 ### Generation
-- RN-11: A request contains an idea or theme, a color identity and a power level
-  and, optionally, a card language, a base card, and either a request for art
-  with an optional art description or an uploaded image. The generated card may
-  be of any card type and supertype (see Generated card), and has one face.
+- RN-11: A request contains an idea or theme, a color identity, a power level
+  and a generation effort and, optionally, advanced options, a card language, a
+  base card, and either a request for art with an optional art description or
+  an uploaded image. The generated card may be of any card type and supertype
+  allowed by Generated card, and has one face.
   The idea is at most 1,000 characters and the art description at most 500,
   counted as Unicode characters.
 - RN-12: Before writing the card, the system defines the design intent. The text
@@ -168,6 +183,35 @@ and key for art. The person pays the providers directly for usage.
   field, the rationale, the comparables and the power indicator, which replace
   those of the draft; the design intent stays. Its comparables are checked as
   in RN-12. An invalid revision response counts as a failed revision call.
+  With high effort, the revision also returns design notes, which replace those
+  of the draft.
+- RN-53: The generation effort sets how many related cards the text model is
+  given to pick comparables from: at most 8 with low effort, 20 with medium and
+  40 with high. Only high effort adds design notes to the result. Every effort
+  follows RN-12 to RN-15, including the one automatic revision.
+- RN-54: Each advanced option is optional. Their values:
+  - card types, supertypes and subtypes that exist in the game (RN-18); Battle
+    is not offered;
+  - mana value: a whole number from 0 to 16;
+  - power and toughness: whole numbers from 0 to 99, chosen together;
+  - starting loyalty: a whole number from 1 to 99;
+  - rarity: common, uncommon, rare or mythic.
+  Power and toughness require Creature among the chosen types or a Vehicle or
+  Spacecraft subtype; with no type chosen, the card must be a creature, a
+  Vehicle or a Spacecraft. Starting loyalty requires Planeswalker among the
+  chosen types, or no type chosen (the card must then be a planeswalker). A
+  value outside these sets, or a combination that RN-17, RN-18 or Generated
+  card would reject (such as an Instant with the subtype Elf, or a Land with a
+  mana value above 0), is refused naming the field, before any provider call.
+- RN-55: While a generation runs, the person sees which step is running:
+  design intent, search for related cards, draft, validation, revision and,
+  when art was requested, art.
+- RN-56: A card may be based on an existing character named in the idea; the
+  name exception of RN-51 applies to it. A provider refusal of the text or of
+  the art is shown as a refusal (RN-10, RN-32), with the options to edit the
+  request or the art description, or to upload an image. The application sends
+  the idea and the art description as the person wrote them and never rewrites
+  them to get around a refusal.
 
 - RN-50: A card generation, an art generation or a quick adjustment runs one
   at a time. While one runs, starting another is refused with a message that
@@ -185,10 +229,21 @@ and key for art. The person pays the providers directly for usage.
   themselves. A card with no mana cost (such as a land) is
   accepted, has mana value 0 and is different from a cost of {0}.
 - RN-51: The card's name is not the name of an existing card in the reference
-  database, or of one of its faces. Names are compared ignoring case,
-  surrounding and repeated spaces, and the apostrophe style. Every card the
-  database holds counts; names are compared with the English names. The
-  rule applies to manual edits too (RN-23).
+  database, or of one of its faces, unless the idea of the request contains
+  that whole name (RN-56). Names are compared ignoring case, surrounding and
+  repeated spaces, and the apostrophe style, and the exception looks for the
+  name as whole words with the same comparison. Every card the database holds
+  counts; names are compared with the English names. The rule applies to manual
+  edits too (RN-23), where the exception follows the idea of the card's request.
+- RN-57: A generated draft and its revision match every advanced option chosen
+  in the request: the chosen card types and supertypes are the card's only
+  ones, the chosen subtypes are among its subtypes (others may be added), and
+  the chosen mana value, power, toughness, starting loyalty and rarity are the
+  card's. Each difference is a cause. Manual edits, quick adjustments and
+  restores are not checked against the advanced options. In every check, a
+  card with the Battle type is rejected, a planeswalker that is not legendary
+  or has no starting loyalty is rejected, and a card that is not a planeswalker
+  and has a starting loyalty is rejected.
 - RN-18: The type line uses only card types, supertypes and subtypes that exist
   in the game. Card types are limited to those a Commander deck can contain.
   Each subtype must belong to one of the card's types, as the Comprehensive
@@ -208,6 +263,8 @@ and key for art. The person pays the providers directly for usage.
     word that does not exist in the game is accepted only when the person asked
     for it: it appears in the idea of the request, or the person wrote it in a
     manual edit.
+  - A loyalty ability starts a line with its cost ("+1:", "−2:", "0:"); the
+    cost is not a keyword, and the rest of the line is read as any other line.
 - RN-20: The text respects limits on the number of abilities and on length.
   [DECIDE the limits]
 - RN-21: Removed.
@@ -219,8 +276,8 @@ and key for art. The person pays the providers directly for usage.
 ### Art
 - RN-31: Art is generated only when the person asks for it, in the request or
   later for an existing card. It is generated after the card text, from the
-  card (name, mana cost, type line, rules text, power and toughness, color
-  identity, design intent and the artist credit) and the optional art description written by the person. Without
+  card (name, mana cost, type line, rules text, power and toughness or starting
+  loyalty, color identity, design intent and the artist credit) and the optional art description written by the person. Without
   a base card, the image model chooses a frame that fits the card's color
   identity and type. The card text shown beside the image is the card's authoritative text;
   the text drawn inside the image is not validated.
@@ -290,11 +347,11 @@ and key for art. The person pays the providers directly for usage.
 
 ### Use and editing
 - RN-23: The person can edit the text fields of the card: name, mana cost, type
-  line, rules text, power and toughness. The mana value is recomputed from the
-  edited cost. The card is revalidated right away, without calling the
-  provider. Each saved edit creates one version. The power indicator is kept and
-  marked as possibly outdated until the next quick adjustment, which reassesses
-  it.
+  line, rules text, power and toughness, and starting loyalty. The mana value is
+  recomputed from the edited cost. The card is revalidated right away, without
+  calling the provider. Each saved edit creates one version. The power
+  indicator and the design notes are kept and marked as possibly outdated
+  until the next quick adjustment, which reassesses the power indicator.
 - RN-24: Quick adjustments (stronger, weaker, cheaper, more expensive, simplify
   text) create a new version, also validated. A quick adjustment is a text
   generation: it records usage and reassesses the power indicator, but gets no
@@ -679,6 +736,28 @@ never use the network or a real provider.
   opening the Request address shows "Setup · Card Factory"; while readiness
   loads, the title is "Card Factory"; the built index.html links an icon
   served by the application. Manual: the tab shows the icon.
+- CA-83 (RN-53): The text model is given at most 8 related cards with low
+  effort, 20 with medium and 40 with high; only a high-effort result shows
+  design notes.
+- CA-84 (RN-54, RN-57): Given the options Creature, subtype Elf, power 2 and
+  toughness 3, a 2/2 Elf Creature is rejected with the cause and a 2/3 Elf
+  Warrior Creature is accepted. A request with power and toughness and the
+  type Instant, power without toughness, a mana value of 17, or a Land with a
+  mana value of 2 is refused naming the field, with no provider call.
+- CA-85 (RN-55): While a generation runs, the Request screen names the running
+  step, and the name changes as the steps advance.
+- CA-86 (RN-51, RN-56): Given an existing card "Lantern Warden", the idea
+  "Lantern Warden as a five-mana dragon" accepts a card named "Lantern Warden"
+  and the idea "a five-mana dragon" rejects it; given an existing face "Ash",
+  the idea "an ashen fire storm" rejects a card named "Ash", because "Ash" is
+  not a whole word of that idea. CA-79 still holds.
+- CA-87 (RN-57): A planeswalker with no starting loyalty, a non-legendary
+  planeswalker, a creature with a starting loyalty and a card with the Battle
+  type are rejected with the cause.
+- CA-88 (RN-56): Given a provider refusal of a card about an existing
+  character, the refusal is shown with the options to edit the request and,
+  for art, to edit the art description or upload an image; the provider
+  receives the idea and the art description unchanged.
 
 ## Screens
 - First-run setup: the expected download size and free disk space needed, the
@@ -689,14 +768,19 @@ never use the network or a real provider.
   it is not; the origin, publication date and download date of each data source; a connection test; the
   settings to fix
 - Request: idea or theme, color identity (colors or colorless), power level,
-  card language (English or Portuguese), optional base card (search by name,
+  generation effort (low, medium or high), advanced options hidden until
+  requested (card types, supertypes, subtypes, mana value, power and toughness,
+  starting loyalty, rarity; all optional), card language (English or Portuguese), optional base card (search by name,
   printing and face), and optional art: generated, with an art description and
-  the billing notice, or uploaded (checked when chosen)
+  the billing notice, or uploaded (checked when chosen); while a generation
+  runs, the running step
 - Result: the card image, when present, beside the card text in rules format
-  (name, mana cost, type line, rules text, power and toughness), in the manner of
+  (name, mana cost, type line, rules text, power and toughness or starting
+  loyalty), in the manner of
   a card page on Scryfall; without an image, the card text alone. Also the artist
   credit, the validation result (approved or rejected, with the causes), the
-  design intent, rationale, comparables, base card, power indicator with its
+  design intent, rationale, design notes (when present, with the
+  possibly-outdated mark after an edit), comparables, base card, power indicator with its
   justification (and the possibly-outdated mark after an edit), skipped checks,
   usage (text and art separately), the outdated-text notice, the print-quality
   notice for a small uploaded image, the notice when an uploaded image was not

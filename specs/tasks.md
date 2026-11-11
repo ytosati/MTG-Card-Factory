@@ -169,6 +169,7 @@ merged into `main`.
 - [x] T117: Milestone 3 end-to-end flow test
 - [x] T153: Card and its usage saved together
 - [x] T154: Provider error codes owned by the adapter
+- [ ] T160: Comparables search quality after the first evaluation
 - [ ] T94: Milestone 3 review
 
 ### Milestone 3b — Generation controls
@@ -1166,6 +1167,21 @@ Agent: llm-engineer
 Depends on: T40, T137
 Done when: tests pass for the wire code `model_not_found` mapped through the adapter's own constant, and for an unmapped 400 answer shown with the new code and its fixed message, never the provider's text; contract samples are regenerated.
 
+### T160: Comparables search quality after the first evaluation
+Found in T94: the first run of the T26 evaluation failed, 11 of 20 requests
+with five or more relevant cards (specs/manual-checks.md, Milestone 3).
+Candidates lacked the requested creature type (01, 07, 08, 11, 13), matched
+only common words (10, 19, 20), or fell outside the requested power level
+(04, 13, 20). Improve the search without embeddings: creature types named in
+the search plan rank the cards that have them first, common words weigh less
+in the ranking, a plan with several roles takes cards with any of them, and
+the shaping by power level is checked against the failed requests. The
+request texts and their search plans stay as committed.
+Covers: RN-04, RN-12, CA-24
+Agent: backend-dev
+Depends on: T23, T26
+Done when: tests with fictional cards pass for the creature type ranking, the lower weight of common words, a plan with two roles and the power level shaping, the tests of T23 still pass, and a second run of the T26 evaluation by the maintainer passes the rule (at least 16 of 20), recorded in specs/manual-checks.md.
+
 ### T94: Milestone 3 review
 Run every test suite and confirm that the sweep of T61 covers every endpoint.
 Check the coverage of the RN and CA parts of this milestone. Run the demo from
@@ -1177,7 +1193,7 @@ embeddings). Commit only the counts. Confirm that only the factory and the log f
 findings, and check the Milestone 3b tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T23, T26, T28, T29, T35–T40, T46–T49, T61, T65, T67, T117, T133, T137, T138, T139, T153, T154
+Depends on: T23, T26, T28, T29, T35–T40, T46–T49, T61, T65, T67, T117, T133, T137, T138, T139, T153, T154, T160
 Done when: every suite passes, a card was generated with OpenAI, the T26 counts are recorded with the pass rule applied, the findings are recorded, and the blocking items of Milestone 3b are listed.
 
 ## Milestone 3b — Generation controls

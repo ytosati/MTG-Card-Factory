@@ -1237,3 +1237,169 @@ def test_t48_rn10_create_card_is_atomic_when_the_version_write_fails(monkeypatch
         _create_card(**REQUEST, **version_fields())
 
     _nothing_saved()
+
+
+# --- T153 / RN-09, RN-10, CA-16: the card and its usage are saved together ------
+
+
+def _run_job(request=GREEN_WHITE_REQUEST):
+    """Start the generation as the API does and wait for its job to end (the inline runner runs it at once)."""
+    from api import services
+    from tests.job_helpers import wait_for_end
+
+    return wait_for_end(services.start_generation(request).id)
+
+
+def _busy_on_usage_write(monkeypatch, fail_on):
+    """Make the usage write number `fail_on` (1-based) raise a locked database; the earlier writes go through."""
+    from cards import services
+    from tests.catalog_build_helpers import database_locked_operational_error
+
+    original = services.record_usage
+    calls = []
+
+    def record_usage(**fields):
+        calls.append(fields)
+        if len(calls) == fail_on:
+            raise database_locked_operational_error()
+        return original(**fields)
+
+    monkeypatch.setattr(services, "record_usage", record_usage)
+    return calls
+
+
+def _nothing_saved_with_usage():
+    _nothing_saved()
+    assert _usage() == []
+
+
+@pytest.mark.parametrize("fail_on", [1, 2], ids=["design-record", "draft-record"])
+def test_t153_rn09_rn10_busy_usage_write_after_an_approved_draft_saves_no_card(fake, catalog, monkeypatch, fail_on):
+    """RN-09 / RN-10 / CA-16: when a usage write finds the database busy after the approved draft, no card and no
+    usage record is saved, and the generation job ends with `database_busy`."""
+    from tests.job_helpers import envelope_error
+
+    fake.add_response(_design(), DESIGN_USAGE)
+    fake.add_response(_draft(catalog), DRAFT_USAGE)
+    _busy_on_usage_write(monkeypatch, fail_on)
+
+    job = _run_job()
+
+    assert job.status == "failed"
+    assert envelope_error(job.error)["code"] == "database_busy"
+    _nothing_saved_with_usage()
+
+
+@pytest.mark.parametrize("fail_on", [2, 3], ids=["draft-record", "revision-record"])
+def test_t153_rn09_rn10_busy_usage_write_after_a_revised_draft_saves_no_card(fake, catalog, monkeypatch, fail_on):
+    """RN-09 / RN-10 / CA-16: when a usage write finds the database busy after the revision, the card and the
+    records already written are rolled back, and the job ends with `database_busy`."""
+    from tests.job_helpers import envelope_error
+
+    fake.add_response(_design(), DESIGN_USAGE)
+    fake.add_response(_draft(catalog, **MISMATCH), DRAFT_USAGE)
+    fake.add_response(_revision(catalog), REVISION_USAGE)
+    _busy_on_usage_write(monkeypatch, fail_on)
+
+    job = _run_job()
+
+    assert job.status == "failed"
+    assert envelope_error(job.error)["code"] == "database_busy"
+    _nothing_saved_with_usage()
+
+
+def test_t153_rn09_ca16_approved_card_and_its_usage_are_saved_together(fake, catalog):
+    """RN-09 / CA-16: an approved generation saves the card and its two records (design and draft) together;
+    both records are linked to the card."""
+    fake.add_response(_design(), DESIGN_USAGE)
+    fake.add_response(_draft(catalog), DRAFT_USAGE)
+
+    card = _generate()
+
+    _only_version(card)
+    records = _usage()
+    assert _tokens(records) == sorted([_pair(DESIGN_USAGE), _pair(DRAFT_USAGE)])
+    assert all(record.card_id == card.pk and record.outcome == "ok" for record in records)
+
+
+def test_t153_rn09_ca16_revised_card_and_its_usage_are_saved_together(fake, catalog):
+    """RN-09 / CA-16: a revised generation saves the card with its three records; the draft and the revision
+    are two separate records, both linked to the card."""
+    fake.add_response(_design(), DESIGN_USAGE)
+    fake.add_response(_draft(catalog, **MISMATCH), DRAFT_USAGE)
+    fake.add_response(_revision(catalog), REVISION_USAGE)
+
+    card = _generate()
+
+    _only_version(card)
+    records = _usage()
+    assert _tokens(records) == sorted([_pair(DESIGN_USAGE), _pair(DRAFT_USAGE), _pair(REVISION_USAGE)])
+    assert all(record.card_id == card.pk and record.outcome == "ok" for record in records)
+    assert len({record.pk for record in records}) == 3
+
+
+@pytest.mark.parametrize(
+    "failure,expected",
+    [
+        (ProviderUnavailable("The provider did not answer."), [(DESIGN_USAGE, "ok")]),
+        (ContentRefused("The provider refused the content.", usage=DRAFT_USAGE), [(DESIGN_USAGE, "ok"), (DRAFT_USAGE, "failed")]),
+    ],
+    ids=["no-answer", "refused"],
+)
+def test_t153_ca16_rn09_failed_generation_records_its_usage_with_no_card(fake, catalog, failure, expected):
+    """CA-16 / RN-09: a generation whose draft call fails after the design call answered records the answered
+    calls with no card, and saves no card."""
+    fake.add_response(_design(), DESIGN_USAGE)
+    fake.add_error(failure)
+
+    with pytest.raises(type(failure)):
+        _generate()
+
+    _nothing_saved()
+    records = _usage()
+    assert sorted((_pair(usage), outcome) for usage, outcome in expected) == sorted(
+        ((record.input_tokens, record.output_tokens), record.outcome) for record in records
+    )
+    assert all(record.card_id is None for record in records)
+
+
+def _fail_on_card_usage_write(monkeypatch, fail_on):
+    """Make the usage write of the card's own transaction number `fail_on` (1-based) raise ValueError.
+
+    Only the writes made inside `create_card` (`direct=True`) are counted; the fallback writes without a card
+    go through unchanged.
+    """
+    from cards import services
+
+    original = services.record_usage
+    direct_calls = []
+
+    def record_usage(**fields):
+        if fields.get("direct"):
+            direct_calls.append(fields)
+            if len(direct_calls) == fail_on:
+                raise ValueError("boom")
+        return original(**fields)
+
+    monkeypatch.setattr(services, "record_usage", record_usage)
+
+
+def test_t153_rn09_a_usage_write_error_other_than_busy_saves_every_record_with_no_card(fake, catalog, monkeypatch):
+    """RN-09 / CA-16: when a usage write inside the card's transaction fails with an error other than a busy
+    database, no card is saved, every answered call (design and draft) is still recorded with no card and its
+    tokens, and the job ends with the internal error code."""
+    from tests.job_helpers import envelope_error
+
+    fake.add_response(_design(), DESIGN_USAGE)
+    fake.add_response(_draft(catalog), DRAFT_USAGE)
+    _fail_on_card_usage_write(monkeypatch, fail_on=2)
+
+    job = _run_job()
+
+    assert job.status == "failed"
+    assert envelope_error(job.error)["code"] == "internal"
+    _nothing_saved()
+    records = _usage()
+    assert _tokens(records) == sorted([_pair(DESIGN_USAGE), _pair(DRAFT_USAGE)])
+    assert all(record.card_id is None and record.outcome == "ok" for record in records)
+    assert all(record.provider == PROVIDER and record.model == MODEL for record in records)

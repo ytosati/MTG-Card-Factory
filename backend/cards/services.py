@@ -23,8 +23,12 @@ def save_version(card: Card, **fields) -> CardVersion:
 
 
 
-def create_card(*, idea, requested_color_identity, power_level, **version_fields) -> Card:
-    """Create a card with the request it came from and its first version, in one transaction (see spec RN-26)."""
+def create_card(*, idea, requested_color_identity, power_level, usage=(), **version_fields) -> Card:
+    """Create a card with the request it came from, its first version and its usage records, in one transaction.
+
+    `usage` holds the keyword arguments of record_usage() for each provider call of the generation; they are
+    saved with the card or not at all (see spec RN-09, RN-26).
+    """
     _check_version_fields(version_fields)
     with transaction.atomic():
         card = Card.objects.create(
@@ -33,6 +37,8 @@ def create_card(*, idea, requested_color_identity, power_level, **version_fields
             power_level=power_level,
         )
         save_version(card, **version_fields)
+        for fields in usage:
+            record_usage(card=card, direct=True, **fields)
     return card
 
 def _check_version_fields(fields):
@@ -50,8 +56,11 @@ def _check_version_fields(fields):
         raise ValueError(f"Unknown power indicator: {fields.get('power_indicator')!r}.")
 
 
-def record_usage(*, provider, model, input_tokens, output_tokens, outcome, card=None):
-    """Record one text provider call, with its card or none (see spec RN-09)."""
+def record_usage(*, provider, model, input_tokens, output_tokens, outcome, card=None, direct=False):
+    """Record one text provider call, with its card or none (see spec RN-09).
+
+    `direct` writes at once, inside the caller's transaction, never through the jobs queue.
+    """
     if outcome not in UsageRecord.Outcome.values:
         raise ValueError(f"Unknown usage outcome: {outcome!r}.")
     for name, value in (("input_tokens", input_tokens), ("output_tokens", output_tokens)):
@@ -70,5 +79,8 @@ def record_usage(*, provider, model, input_tokens, output_tokens, outcome, card=
             outcome=outcome,
         )
 
+    if direct:
+        write()
+        return
     # Through the jobs queue: a write during a build waits for it to end (plan section 7).
     jobs.enqueue_usage(write)

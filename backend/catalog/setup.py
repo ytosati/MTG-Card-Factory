@@ -13,7 +13,7 @@ from catalog import build, download, sources
 from catalog.selectors import is_ready
 from core import jobs
 from core.config import get_config
-from core.errors import MappedError, error_body
+from core.errors import CODE_INSUFFICIENT_SPACE, MappedError, error_body
 from core.models import Job
 from core.paths import data_dir
 from core.selectors import ACTIVE_STATUSES, active_build_job_ids, latest_build_job_id
@@ -28,7 +28,6 @@ BUILD_SPACE_FACTOR = 10
 # The screen polls: one quick attempt per poll, the next poll is the retry.
 POLL_LISTING_ATTEMPTS = 1
 
-CODE_INSUFFICIENT_SPACE = download.CODE_INSUFFICIENT_SPACE
 INSUFFICIENT_SPACE_MESSAGE = (
     "There is not enough free space on the disk that holds the data folder to build the reference "
     "database. Free some space and try again."

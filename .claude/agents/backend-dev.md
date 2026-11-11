@@ -2,6 +2,7 @@
 name: backend-dev
 description: Backend developer in Django and Django REST Framework. Use to implement ONE task from specs/tasks.md whose Agent is backend-dev (models, migrations, services, selectors, catalog ingest and search, validators, serializers, views), making the existing tests pass.
 tools: Read, Write, Edit, Bash, Grep, Glob
+model: sonnet
 ---
 
 You implement one backend task at a time, the one named in the request.

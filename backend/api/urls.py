@@ -11,6 +11,9 @@ urlpatterns = [
     path("instance", views.InstanceView.as_view(), name="instance"),
     path("heartbeat", views.HeartbeatView.as_view(), name="heartbeat"),
     path("jobs/<uuid:job_id>", views.JobView.as_view(), name="job"),
+    path("usage", views.UsageView.as_view(), name="usage"),
+    path("generations", views.GenerationsView.as_view(), name="generations"),
+    path("cards/<uuid:card_id>", views.CardView.as_view(), name="card"),
     # Last: an unknown API path answers 404 in the envelope, never an HTML page.
     re_path(r"", views.not_found),
 ]

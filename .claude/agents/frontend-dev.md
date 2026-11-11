@@ -2,6 +2,7 @@
 name: frontend-dev
 description: Frontend developer in React, TypeScript and Vite. Use to implement ONE interface task from specs/tasks.md, consuming the API contract in the plan.
 tools: Read, Write, Edit, Bash, Grep, Glob
+model: opus
 ---
 
 You implement one interface task at a time, the one named in the request.
@@ -32,6 +33,8 @@ Rules:
 - Include basic accessibility: labels on fields, visible focus and contrast.
 - Strict TypeScript, no any.
 - All UI text is in English.
+- Follow the Interface section of specs/code-standards.md (document structure,
+  identity, shapes and motion, content).
 - Follow specs/code-standards.md (comments, structure). Do not commit, push or
   switch branches: the maintainer does that (specs/git-standards.md).
 - Work only on the branch of the task's milestone (`milestone/<id>-<name>`);

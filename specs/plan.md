@@ -35,7 +35,9 @@ frontend/
   src/screens/          Setup, Status, Request, Result, Library, Versions
   src/components/       shared components
   src/styles/           design tokens (single source)
+  src/assets/           favicon and any approved local font or icon files
   src/hooks/            heartbeat, job polling
+  index.html            document shell; links the favicon from src/assets/
 launcher/               start.pyw (zip and clone), Windows message boxes, tests
 release/                release build script, pinned versions and hashes,
                         repository content check, tests
@@ -105,11 +107,15 @@ Fields listed are the ones the spec needs; types are left to the tasks.
 **cards**
 - `Card`: `id` (UUID4), created_at, favorite, language, current_version, and
   the request it came from: idea, requested color identity (possibly
-  colorless), power level. Revalidation after an edit, an adjustment or a
-  restore uses it (RN-16, RN-19).
+  colorless), power level, generation effort (low, medium, high) and advanced
+  options (JSON, M5). Revalidation after an edit, an adjustment or a restore
+  uses it (RN-16, RN-19, RN-51); the advanced options are checked only for the
+  draft and its revision (RN-57).
 - `CardVersion`: card, number (1, 2, …), origin (generated, revised, edited,
   adjusted, restored, art_generated, art_uploaded), name, mana_cost, mana_value,
-  type_line, rules_text, power, toughness, rarity, design_intent, rationale,
+  type_line, rules_text, power, toughness, starting_loyalty (planeswalkers
+  only), rarity, design_intent, rationale, design_notes (high effort) with
+  design_notes_outdated,
   comparables (JSON: oracle_id, name, role), base_card (JSON snapshot: oracle_id,
   printing id, face, name, rules text), power_indicator, power_justification,
   power_outdated, status (approved, rejected), validation (JSON causes),
@@ -127,24 +133,31 @@ Fields listed are the ones the spec needs; types are left to the tasks.
 
 **core**
 - `Job`: `id` (UUID4), kind (build, generate, adjust, art), status (queued,
-  running, done, failed), progress, result (card id), error message,
+  running, done, failed), progress, result (JSON: a generation's `{card,
+  revision_failure}`, null for a build), error (the envelope of section 6),
   created_at. Jobs left running at startup are marked failed (RN-03, RN-10).
 
 ## 5. Services and selectors
 
 | Module | Functions (names indicative) |
 |---|---|
+| core.errors | every error code of section 6 as a `CODE_*` constant, the fixed messages shared by modules, `error_body()`, `MappedError`, `database_busy_error()`; no other module spells a code |
 | core.config | `load_config()`, `get_config()`; `Secret.reveal()` used only by providers.factory and core.log_redaction |
 | core.jobs | `submit(kind, fn)`, `get_job(id)`, `fail_orphan_jobs()` |
-| core.status | `status_snapshot()` (no key values) |
+| core.selectors | `ACTIVE_STATUSES` (queued and running, the one definition), `latest_build_job_id()`, `active_build_job_ids()` |
+| core.status | `status_snapshot()` (no key values); reads catalog readiness through `catalog.selectors` (`is_ready()`, `list_sources()`) |
+| catalog.sources | `SOURCES` (the registry: name, listing type, allowed hosts) and `CATALOG_VERSION` |
+| catalog.download | `read_listing()`, `download_file()`: resumable downloads from the allowed hosts only, with `DownloadError` mapped to section 6 codes |
+| catalog.setup | `setup_snapshot()` (download size, free space, the build job to show), `request_build()` |
 | catalog.build, catalog.ingest | `run_build()` and `start_build()` (catalog.build); `download_sources()`, `import_oracle()`, `import_printings()`, `import_rules()`, `import_pt_terms()`, `tag_roles()` |
-| catalog.selectors | `is_ready()`, `search_cards(query, filters)`, `search_rules(keywords)`, `get_lexicon(lang)`, `find_base_cards(name)`, `list_printings(oracle_id)` |
+| catalog.selectors | `is_ready()`, `list_sources()`, `search_cards(query, filters)`, `existing_card_names()` (normalized names of cards and faces, RN-51), `search_rules(keywords)`, `get_lexicon(lang)`, `find_base_cards(name)`, `list_printings(oracle_id)` |
 | providers.factory | `text_adapter()`, `image_adapter()`, `art_availability()` |
-| validators | `validate(card, lexicon, request) -> ValidationResult` composed of color identity, mana cost, type line, keywords, limits; `request` gives the requested identity (possibly colorless) and the idea text |
+| validators | `validate(card, lexicon, request, existing_names=None) -> ValidationResult` composed of color identity, mana cost, name, type line, keywords, limits; `request` gives the requested identity (possibly colorless) and the idea text; `existing_names` is the set from `existing_card_names()`, and without it the name check is listed as skipped |
 | generation.text | `generate_card(request)`, `revise(draft, causes)`, `quick_adjust(card, kind)` |
 | generation.art | `generate_art(card, description)`, `fetch_base_image(printing, face)` |
 | cards.services | `save_version()`, `edit_fields()`, `restore_version()`, `set_favorite()`, `delete_card()`, `attach_image()`, `upload_image()`, `record_usage()` |
-| cards.selectors | `list_cards(favorite)`, `get_card()`, `list_versions()`, `usage_for(card)` |
+| cards.selectors | `list_cards(favorite)`, `get_card()`, `card_detail()`, `list_versions()`, `usage_for(card)` |
+| api.services | `start_generation(request)`: checks the text configuration, then submits the generation job; a rejected key names `LLM_API_KEY` |
 
 ## 6. Endpoints
 
@@ -167,18 +180,40 @@ branches on `code`, never on `message`: `config_invalid`, `origin_refused`,
 `bad_request`, `internal`.
 `bad_request` answers a malformed JSON body (400), an unsupported media type
 (415) and an unacceptable `Accept` header (406), with a fixed message and the
-original status. `origin_refused` answers 403. `database_not_ready` answers 503,
-`insufficient_space` 507, `source_unreachable` 502 and `generation_running` 409. A settings
+original status. `origin_refused` answers 403. `database_not_ready` and `database_busy` answer 503,
+`insufficient_space` 507, `source_unreachable` 502, `generation_running` 409, and `validation`, `config_invalid` and `provider_not_available_yet` 400. The messages in `fields` are fixed texts chosen by the error kind; they never quote the submitted value. A settings
 list (status, generation, setup) uses the same objects, `{setting, code,
 message}`, with codes as stable as the error codes: `config_invalid` for a
 setting to fix and `ignored` for a setting ignored with a notice (RN-08). A
 configuration file that cannot be read is the single item `config_invalid`
 with `setting` equal to `.env` and a message for its cause (RN-40, CA-77).
 
-**Jobs.** `GET /api/jobs/{id}` returns `{id, kind, status, progress, result,
-error}`, where `error` is the envelope above. A job never stores the text of an
+**Jobs.** `GET /api/jobs/{id}` returns `{id, kind, status, progress, step,
+result, error}`, where `step` names the running step (RN-55: design, search,
+draft, validation, revision, later art) or is null, where `error` is the envelope above. A job never stores the text of an
 exception: an exception outside the mapped set becomes `internal` with a fixed
 message, and its detail goes only to the redacted log.
+A generation job's `result` is `{card: id, revision_failure: {code, message} |
+null}`, where `revision_failure` reports a failed automatic revision (RN-15); a
+build's is null. A provider error raised in a job becomes its envelope with the
+error's `code` and fixed message, never the provider's text; `model_not_found`
+carries `setting` `LLM_MODEL` (RN-08, RN-10).
+
+**Generations.** `POST /api/generations` takes `{idea, color_identity,
+power_level}`: the idea is required, not blank and at most 1,000 Unicode
+characters (CA-80); `color_identity` is a list of `W`, `U`, `B`, `R`, `G`,
+where `[]` is colorless chosen explicitly and null or missing is no choice
+(CA-26); `power_level` is `casual`, `medium` or `strong`. Each invalid field is
+named in `fields` of `validation`. The text configuration is then checked with
+no provider call: a text setting to fix answers `config_invalid` with that
+`setting`, and a provider with no adapter yet `provider_not_available_yet`, both
+400 with no job (RN-08, CA-05). Otherwise the generation is submitted through
+`core.jobs.submit` as a `generate` job (`api.services.start_generation`) and the
+answer is 202 with the job; while a generation-type job is queued or running
+the answer is 409 `generation_running` (RN-50). `GET /api/cards/{id}` returns
+`{id, current_version: {text fields, design_intent, rationale, comparables,
+power_indicator, power_justification, origin, status, validation}, usage: {text:
+[records]}}`; an unknown or malformed id answers 404 `not_found`.
 
 **Readiness gate.** A default DRF permission requires a ready catalog; the
 views that work without it (status, connection test, setup, jobs, instance,
@@ -211,7 +246,7 @@ serializers and the client types with no new dependency.
 | POST `cards/{id}/art` | generate art → job | 31–32, 38 |
 | POST `cards/{id}/art/upload` | multipart upload; an image chosen in the request is uploaded here after the generation job saves the card | 43 |
 | GET `images/{id}` | serves the stored file unchanged | 33, 44 |
-| GET `usage?card=` | usage records | 09 |
+| GET `usage?card=` | `{card, text: [{provider, model, input_tokens, output_tokens, outcome, created_at}]}`, oldest first, only records linked to the card; a missing or malformed `card` answers `validation`, an unknown card `not_found` | 09 |
 | POST `heartbeat` / GET `instance` | tab liveness / identifies Card Factory on the port | 41, 47 |
 
 **Instance contract.** `GET /api/instance` returns `{app: "card-factory",
@@ -415,11 +450,17 @@ application (unknown migrations), it stops with a message instead of migrating.
    name, type line and rules text. Power level shapes the candidate set: strong
    includes Game Changer cards and ranks by EDHREC rank; casual excludes Game
    Changer cards; medium allows Game Changer cards without prioritizing them
-   and ranks by BM25 alone. User text passed to `MATCH` is quoted per token.
-3. If fewer than a minimum number of results come back (a named constant,
-   10), the selector widens the filters deterministically (drop mana value,
-   then types). No second model call.
-4. The model writes the card and cites comparables from the candidates; cited
+   and ranks by BM25 alone. User text passed to `MATCH` is quoted per token,
+   and the tokens are joined with OR so BM25 ranks cards that match more of
+   them first. The selector keeps the best `MAX_RESULTS` (40) by BM25; strong
+   then orders those by EDHREC rank, unranked last. A search plan with no
+   usable keyword runs the filters alone, ordered by EDHREC rank.
+3. If fewer than a minimum number of legal results come back (a named
+   constant, 10), the selector widens the filters deterministically (drop
+   mana value, then types). Identity, legality, roles and the casual
+   exclusion of Game Changer cards are never dropped. No second model call.
+4. The draft call receives the first 8, 20 or 40 candidates for low, medium
+   and high effort (RN-53). The model writes the card and cites comparables from the candidates; cited
    cards not returned as legal are discarded (RN-12).
 5. `search_rules` uses FTS5 over `RuleSection` with the same keywords and adds
    the sections of every keyword the draft uses.
@@ -603,6 +644,12 @@ waitress as server, Django serves the built frontend.**
   registry, which can map `.js` to `text/plain` and block the module script.
   `core.paths` resolves the built folder and keeps every asset inside it
   (no `..`, no NTFS stream names). No extra package.
+- **Interface files:** the frontend has no `public/` folder. Only `index.html`
+  and `/assets/*` are served, so a root file such as `/favicon.ico` would get
+  `index.html` back. The favicon (SVG) lives in `frontend/src/assets/` and is
+  linked from `index.html`, so Vite emits it under `/assets/` (or inlines it);
+  fonts and icons follow the same path. SVG takes its type from the standard
+  table (`image/svg+xml`). Nothing is loaded from a CDN or font service.
 - **Clone (`start.cmd`, RN-45):** prepares `runtime/` and then calls the same
   launcher.
   - Downloads the embeddable Python (pinned version and SHA-256 in
@@ -726,7 +773,9 @@ The T26 evaluation measures whether the patterns plus keywords are good enough.
 | 45 | start.cmd, `runtime/prepared.json` | manual check |
 | 46 | README user guide | review |
 | 48 | art prompt artist credit; Result screen | fake adapter receives the credit; component test |
-| 49 | frontend components and screens | component tests, manual check |
+| 49 | frontend components and screens; Interface rules of `specs/code-standards.md` | component tests, manual check |
+| 51 | validators name check with `catalog.selectors.existing_card_names()` | CA-79 names and faces |
+| 52 | screen switch sets the tab title; icon in `src/assets/` linked from `index.html` | title tests; built-file check; manual check of the icon |
 
 Cross-site requests are refused by an origin check (section 8), tested on
 every non-GET endpoint. Tests block outgoing connections globally (a fixture that fails any socket
@@ -749,6 +798,22 @@ maintainer's approval. Any implementing agent may append rows to
 `docs/DECISIONS.md`. Each agent reads `CLAUDE.md`, the spec and this plan; a
 task names exactly one agent.
 
+**Models and cost.** Each agent runs on the model its work needs: Opus for
+architect, spec-reviewer, llm-engineer (prompts and the generation flow) and
+frontend-dev (interface design); Sonnet for backend-dev, release-dev, qa,
+reviewer and docs-writer. A task that touches keys or another security rule
+gets its review on Opus. When several tasks run in a row:
+- each task starts a fresh agent with a brief that names the files to read;
+  agents are not resumed across tasks once their context has grown;
+- agents run the tests of their task, and the full suites run once per commit
+  batch, on a clean checkout of the batch's commits;
+- reports stay short (files, results, open questions);
+- `qa` writes the tests first for tasks with rules to protect; for small
+  mechanical tasks the implementing agent writes them;
+- one review covers a batch of related tasks, and the interface audit and
+  critique run once per group of changed screens;
+- tasks that change the same files may share one commit, citing each task.
+
 ## 13. Dependencies
 
 - Runtime (approved): Django, Django REST Framework, waitress; embeddable Python
@@ -762,7 +827,9 @@ task names exactly one agent.
   build (required by jsdom), declared in `engines` of `frontend/package.json`.
 - Not added: SDKs of the providers, `python-dotenv`, an image library, a router
   library (the frontend uses a small hash-based switch), a task queue (jobs run
-  in a thread pool inside the process).
+  in a thread pool inside the process), an animation library, a component or
+  icon library, and fonts from a CDN (the interface uses CSS transitions and
+  local files; specs/code-standards.md, Interface).
 
 ### Tooling
 
@@ -787,8 +854,9 @@ sources.
 | M1 Double-click start | the locally built zip starts with a double click and stops after the last tab closes | server entry point, instance and heartbeat, watchdog, upgrade service, launcher, release zip, manual checklist |
 | M2 Reference database | Setup screen builds the database from Oracle Cards; Status lists the source | jobs, catalog models, downloader, Oracle import, roles, build, setup endpoints and gate, Setup screen |
 | M3 First card | a request becomes a validated, saved card shown on the Result screen, with OpenAI | provider protocol, OpenAI text adapter, factory, card models, usage, mana cost and color identity validators, comparables search, generation pipeline, Request and Result screens, key-leak sweep |
+| M3b Generation controls | the person picks the generation effort, sees the running step, gets design notes on high effort, and generates cards about existing characters and planeswalkers | effort and loyalty fields, job step, Battle and planeswalker checks, name exception, effort in the pipeline, existing characters in the prompts, screen updates |
 | M4 Text providers | the same request works with OpenAI, Anthropic and Google; Status tests the text key | Anthropic and Google text adapters, cross-provider test, connection test |
-| M5 Rules validation | type line, keyword and limits validators with terms from the Comprehensive Rules | rules import, terms, lexicon, rules search in the draft call |
+| M5 Rules validation | type line, keyword and limits validators with terms from the Comprehensive Rules; advanced options in the request | rules import, terms, lexicon, rules search in the draft call, advanced options |
 | M6 Library and versions | library, favorites, deletion, editing, quick adjustments, restore | library, edit, versions and adjustment endpoints and screens |
 | M7 Art | generated and uploaded art, shown beside the card text | image adapters, art availability, image storage and serving, art pipeline, upload, art screens |
 | M8 Base card | a chosen printing guides the design and is the art template | printings import, base card search, base image cache, template |
@@ -820,7 +888,12 @@ public release, the migrations are replaced by one initial migration per app
 
 - Backend: `pytest -q` with the fake provider and the network guard; every test
   names the RN or CA it covers. It includes the end-to-end suite of section 14.
-- Frontend: `npm run test` and `npx tsc -b`.
+- Frontend: `npm run test` and `npx tsc -b`. Screen tests check the document
+  title (`<Screen> · Card Factory`, CA-82) and a single `h1`; a check of the
+  built files finds no external address (CA-38); the reviewer checks the
+  rest of the Interface section of `specs/code-standards.md` (no gradients or
+  pill shapes outside the tokens, no emojis in UI text, motion off
+  under reduced motion, alt text on images).
 - Manual checks on a Windows machine: the CAs marked manual (zip start,
   clone start, port in use, firewall prompt, browser close), listed in
   `specs/manual-checks.md` from Milestone 1 on and extended by later

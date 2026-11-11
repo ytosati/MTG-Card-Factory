@@ -2,6 +2,7 @@
 name: release-dev
 description: Release and distribution engineer. Use to implement ONE task from specs/tasks.md whose Agent is release-dev (launcher, release build, clone start file, VERSION, CI workflows, .gitignore, .gitattributes, repository content check).
 tools: Read, Write, Edit, Bash, Grep, Glob
+model: sonnet
 ---
 
 You implement one distribution task at a time, the one named in the request.

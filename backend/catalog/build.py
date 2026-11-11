@@ -17,7 +17,13 @@ from catalog.ingest import BulkFileError, import_oracle_rows, iter_bulk_records,
 from catalog.models import BuildRun, OracleCard, SourceRecord
 from catalog.selectors import is_ready
 from core import jobs
-from core.errors import CODE_INTERNAL, MappedError
+from core.errors import (
+    CODE_INSUFFICIENT_SPACE,
+    CODE_INTERNAL,
+    CODE_SOURCE_UNREACHABLE,
+    MappedError,
+    database_busy_error,
+)
 from core.models import Job
 from core.paths import data_dir
 
@@ -29,11 +35,8 @@ SOURCE_INFO_SUFFIX = ".info.json"
 EXTRACT_SUFFIX = ".jsonl"
 HASH_READ_SIZE = 1024 * 1024
 
-CODE_DATABASE_BUSY = "database_busy"
-
 BULK_FILE_MESSAGE = "The data source sent a card file that could not be read. Try again later."
 NO_CARDS_MESSAGE = "The data source sent a card file with no cards. Try again later."
-DATABASE_BUSY_MESSAGE = "The database is busy with another task. Wait a moment and try again."
 READ_FAILURE_MESSAGE = (
     "Could not read a file the build prepared in the data folder. Check that no other program "
     "holds it, then try again."
@@ -86,7 +89,7 @@ def run_build(*, transport=None, sleep=None, report=None):
         report(EXTRACTED)
         _import(downloaded, extracts, started_at)
     except MappedError as error:
-        if error.code == download.CODE_INSUFFICIENT_SPACE:
+        if error.code == CODE_INSUFFICIENT_SPACE:
             _remove(kept)
         raise
     else:
@@ -175,11 +178,11 @@ def _extract_oracle(source_path, extract_path):
                 extract.write("\n")
                 count += 1
     except BulkFileError:
-        raise MappedError(download.CODE_SOURCE_UNREACHABLE, BULK_FILE_MESSAGE) from None
+        raise MappedError(CODE_SOURCE_UNREACHABLE, BULK_FILE_MESSAGE) from None
     except OSError as error:
         raise download.file_failure(error) from None
     if count == 0:
-        raise MappedError(download.CODE_SOURCE_UNREACHABLE, NO_CARDS_MESSAGE)
+        raise MappedError(CODE_SOURCE_UNREACHABLE, NO_CARDS_MESSAGE)
 
 
 def _import_oracle(extract_path):
@@ -238,10 +241,8 @@ def _mapped_database_error(error):
     # The low byte is the primary result code; extended codes share it.
     primary = code & 0xFF if isinstance(code, int) else None
     if primary == sqlite3.SQLITE_FULL or (primary is None and "database or disk is full" in text):
-        return MappedError(download.CODE_INSUFFICIENT_SPACE, download.DISK_FULL_MESSAGE)
-    if primary == sqlite3.SQLITE_BUSY or (primary is None and "database is locked" in text):
-        return MappedError(CODE_DATABASE_BUSY, DATABASE_BUSY_MESSAGE)
-    return None
+        return MappedError(CODE_INSUFFICIENT_SPACE, download.DISK_FULL_MESSAGE)
+    return database_busy_error(error)
 
 
 def _remove(paths):

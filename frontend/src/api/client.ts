@@ -1,12 +1,22 @@
 // Typed API client base: every request goes to the local application under /api/.
 // Details: specs/plan.md, section 6.
-import type { ErrorEnvelope, HeartbeatRequest, JobResponse, SetupResponse, StatusResponse } from "./types";
+import type {
+  ErrorEnvelope,
+  GenerationJobResponse,
+  GenerationRequest,
+  HeartbeatRequest,
+  JobResponse,
+  SetupResponse,
+  StatusResponse,
+} from "./types";
 
 /** An error response that carried the error envelope; callers branch on `code`, never on `message`. */
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
   readonly setting: string | null;
+  /** Each invalid request field with its messages (code `validation`), or null. */
+  readonly fields: Record<string, string[]> | null;
 
   constructor(status: number, envelope: ErrorEnvelope["error"]) {
     super(envelope.message);
@@ -14,6 +24,7 @@ export class ApiError extends Error {
     this.status = status;
     this.code = envelope.code;
     this.setting = envelope.setting;
+    this.fields = envelope.fields;
   }
 }
 
@@ -99,6 +110,16 @@ export function startBuild(): Promise<JobResponse> {
 /** GET /api/jobs/{id}: progress, result and error of a long operation. */
 export function getJob(id: string): Promise<JobResponse> {
   return getJson<JobResponse>(`/api/jobs/${encodeURIComponent(id)}`);
+}
+
+/** POST /api/generations: starts a card generation job (spec RN-11). */
+export function startGeneration(request: GenerationRequest): Promise<GenerationJobResponse> {
+  return postJson<GenerationJobResponse>("/api/generations", request);
+}
+
+/** GET /api/cards/{id}: the card with its current version and usage, as sent; callers check its shape. */
+export function getCard(id: string): Promise<unknown> {
+  return getJson<unknown>(`/api/cards/${encodeURIComponent(id)}`);
 }
 
 const HEARTBEAT_BODY: HeartbeatRequest = {};

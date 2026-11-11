@@ -67,7 +67,7 @@ are still cheap to change.
   `npm run test`, `npx tsc -b`) and its branch is merged into `main`.
 - Each milestone has its own branch, created from `main`
   (`milestone/m0-foundation`, `milestone/m1-double-click-start`,
-  `milestone/m2-reference-database`, `milestone/m3-first-card`,
+  `milestone/m2-reference-database`, `milestone/m3-first-card`, `milestone/m3b-generation-controls`,
   `milestone/m4-text-providers`, `milestone/m5-rules-validation`, `milestone/m6-library-and-versions`,
   `milestone/m7-art`, `milestone/m8-base-card`,
   `milestone/m9-portuguese-cards`, `milestone/m10-public-release`). Each task of
@@ -144,27 +144,42 @@ merged into `main`.
 
 ### Milestone 3 — First card
 
-- [ ] T35: Provider protocol, error set and fake adapter
-- [ ] T39: Shared HTTP transport for adapters
-- [ ] T40: OpenAI text adapter
-- [ ] T36: Provider factory for text
-- [ ] T37: Card models and version service
-- [ ] T38: Usage recording and usage endpoint (text)
-- [ ] T28: Validation result and mana cost validator
-- [ ] T29: Color identity validator
-- [ ] T138: Name validator against existing cards
-- [ ] T23: Comparables search
-- [ ] T26: Search quality evaluation script
-- [ ] T46: Generation prompts and output schemas
-- [ ] T48: Validation, one automatic revision and saving
-- [ ] T49: Generation endpoint and request serializer
-- [ ] T61: Key-leak and outgoing connection sweep
-- [ ] T65: Request screen (idea, color identity, power level)
-- [ ] T67: Result screen: card text
-- [ ] T133: Database busy errors in the API
-- [ ] T137: Error codes in one place and module table
-- [ ] T117: Milestone 3 end-to-end flow test
+- [x] T35: Provider protocol, error set and fake adapter
+- [x] T39: Shared HTTP transport for adapters
+- [x] T40: OpenAI text adapter
+- [x] T36: Provider factory for text
+- [x] T37: Card models and version service
+- [x] T38: Usage recording and usage endpoint (text)
+- [x] T28: Validation result and mana cost validator
+- [x] T29: Color identity validator
+- [x] T138: Name validator against existing cards
+- [x] T23: Comparables search
+- [x] T26: Search quality evaluation script
+- [x] T46: Generation prompts and output schemas
+- [x] T47a: Design intent, search plan and retrieval
+- [x] T47b: Draft call and discard of comparables
+- [x] T48: Validation, one automatic revision and saving
+- [x] T49: Generation endpoint and request serializer
+- [x] T61: Key-leak and outgoing connection sweep
+- [x] T65: Request screen (idea, color identity, power level)
+- [x] T67: Result screen: card text
+- [x] T139: Tab title, application icon and no external loads
+- [x] T133: Database busy errors in the API
+- [x] T137: Error codes in one place and module table
+- [x] T117: Milestone 3 end-to-end flow test
 - [ ] T94: Milestone 3 review
+
+### Milestone 3b — Generation controls
+
+- [ ] T140: Request generation effort and planeswalker fields
+- [ ] T142: Job step while a job runs
+- [ ] T143: Planeswalker and Battle checks
+- [ ] T144: Existing-character name exception
+- [ ] T141: Generation effort, design notes and steps in the pipeline
+- [ ] T145: Existing characters in the prompts
+- [ ] T146: Request and Result screens: effort, steps, design notes and loyalty
+- [ ] T147: Milestone 3b end-to-end flow test
+- [ ] T148: Milestone 3b review
 
 ### Milestone 4 — Text providers
 
@@ -187,6 +202,10 @@ merged into `main`.
 - [ ] T134: Download files cleaned after a build
 - [ ] T135: Progress during downloads
 - [ ] T136: Source listing cache that expires
+- [ ] T149: Advanced options in the request
+- [ ] T150: Advanced options check
+- [ ] T151: Advanced options in the prompts
+- [ ] T152: Request screen: advanced options
 - [ ] T120: Milestone 5 end-to-end flow test
 - [ ] T96: Milestone 5 review
 
@@ -879,7 +898,7 @@ Done when: tests with recorded fictional responses pass for success, rejected ke
 
 ### T36: Provider factory for text
 Implement `providers.factory`, the only reader of `LLM_PROVIDER` and the only
-caller of `Secret.reveal()`. It provides `text_adapter()`, with the OpenAI
+caller of `Secret.reveal()` apart from the log filter (plan section 8). It provides `text_adapter()`, with the OpenAI
 adapter; T41 and T42 register theirs. Until then, `anthropic` or `google` as
 `LLM_PROVIDER` returns no adapter with the error code
 `provider_not_available_yet` and no setting (the value is valid); this
@@ -889,7 +908,7 @@ factory comes with T90.
 Covers: RN-05, RN-06, RN-07, RN-08, CA-78
 Agent: llm-engineer
 Depends on: T35, T40
-Done when: tests pass for `openai` returning its adapter, an invalid configuration returning no adapter with the setting named (including a model value that looks like a key, CA-78, with no adapter call), and the key revealed only inside the factory.
+Done when: tests pass for `openai` returning its adapter, an invalid configuration returning no adapter with the setting named (including a model value that looks like a key, CA-78, with no adapter call), and the key revealed only inside the factory and the log filter (plan section 8).
 
 ### T37: Card models and version service
 Add `Card`, `CardVersion` (immutable, numbered per card) and `UsageRecord` with
@@ -1057,6 +1076,20 @@ Agent: frontend-dev
 Depends on: T62, T49
 Done when: Vitest tests pass for an approved card, a rejected card with its causes, a "too strong" indicator on an approved card, the artist credit shown (CA-58) and the text usage shown.
 
+### T139: Tab title, application icon and no external loads
+Every screen sets the tab title from its fixed name (Setup, Status, Request,
+Result, Library, Versions) as `<Screen> · Card Factory`, and the title is
+"Card Factory" before a screen is shown. An original SVG icon in the project's
+accent color lives in `frontend/src/assets/` and is linked from `index.html`,
+so it is built under `/assets/` (plan 9.5). A check of the built files fails
+when they reference an address outside the local application for images,
+fonts, scripts or style sheets. Screens added later set their titles in their
+own tasks.
+Covers: RN-33, RN-52, CA-38, CA-82
+Agent: frontend-dev
+Depends on: T65, T67
+Done when: Vitest tests pass for the title of each M3 screen, the Setup title when the database is not ready and the Request address is opened, and "Card Factory" while readiness loads; the built `index.html` links an icon under `/assets/` (or inlined); the external-address check passes on the build; the icon is seen in the tab by hand.
+
 ### T138: Name validator against existing cards
 Reject a card whose name is the name of an existing card or face in the
 reference database (RN-51), with the cause. The pipeline passes the set of
@@ -1107,12 +1140,111 @@ the zip with OpenAI and a real key. Run the T26 script, mark
 the relevant cards in each top ten, and apply the pass rule: at least 16 of 20
 requests with five or more relevant cards. On a fail, list the failed requests
 with a proposal for approval (better role patterns and keywords, or
-embeddings). Commit only the counts. Confirm that only the factory reveals keys. Record the
+embeddings). Commit only the counts. Confirm that only the factory and the log filter reveal keys. Record the
 findings, and check the Milestone 4 tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T23, T26, T28, T29, T35–T40, T46–T49, T61, T65, T67, T117, T133, T137, T138
+Depends on: T23, T26, T28, T29, T35–T40, T46–T49, T61, T65, T67, T117, T133, T137, T138, T139
 Done when: every suite passes, a card was generated with OpenAI, the T26 counts are recorded with the pass rule applied, the findings are recorded, and the blocking items of Milestone 4 are listed.
+
+## Milestone 3b — Generation controls
+
+Goal: the person chooses how much the generation analyzes, sees the running
+step, gets design notes on high effort, and can ask for cards about existing
+characters and for planeswalkers.
+Demo: with OpenAI and a real key, generate the same idea with low, medium and
+high effort and compare the tokens and the result (design notes only on high);
+watch the step names change; generate a card about an existing character whose
+name is an existing card, and a planeswalker with its starting loyalty.
+Later: advanced options (M5, once the game's types and subtypes are imported),
+the art side of existing characters (M7, T68), Battle stays out of scope.
+
+### T140: Request generation effort and planeswalker fields
+The request takes a generation effort (low, medium or high, required) and the
+card version a starting loyalty; both are stored (the effort with the card's
+request, plan section 7). `GET /api/cards/{id}` returns them, and the design
+notes with their possibly-outdated mark once T141 fills them.
+Covers: RN-11, RN-53, CA-26
+Agent: backend-dev
+Depends on: T94
+Done when: tests pass for a missing or unknown effort named in `fields`, the effort stored with the card, and the starting loyalty and design notes stored and returned; contract samples are regenerated.
+
+### T142: Job step while a job runs
+A running job reports a named step besides its progress, and
+`GET /api/jobs/{id}` returns it; steps of a generation are design, search,
+draft, validation and revision (art comes with M7).
+Covers: RN-55
+Agent: backend-dev
+Depends on: T94
+Done when: tests pass for a step reported by a job function and read back through the jobs endpoint, and for a job with no step.
+
+### T143: Planeswalker and Battle checks
+A card with the Battle type is rejected; a planeswalker that is not legendary
+or has no starting loyalty is rejected; a card that is not a planeswalker and
+has a starting loyalty is rejected (RN-57, last sentence).
+Covers: RN-57, CA-87
+Agent: backend-dev
+Depends on: T140
+Done when: tests pass for every case of CA-87.
+
+### T144: Existing-character name exception
+The name check accepts an existing card or face name when the idea of the
+request contains that whole name, compared with the RN-51 normalization; the
+pipeline passes the idea to it.
+Covers: RN-51, RN-56, CA-86
+Agent: backend-dev
+Depends on: T94
+Done when: tests pass for every case of CA-86 and CA-79 still passes.
+
+### T141: Generation effort, design notes and steps in the pipeline
+The draft call receives at most 8, 20 or 40 related cards for low, medium and
+high effort; only high effort asks for design notes, and its revision returns
+them; the card schemas and prompts carry the starting loyalty of a
+planeswalker; the pipeline reports each step through T142. Input tokens are
+cut where the result does not need them (shorter candidate text, the design
+call's output kept small).
+Covers: RN-15, RN-53, RN-55, CA-83
+Agent: llm-engineer
+Depends on: T140, T142, T143
+Done when: tests with the fake adapter pass for CA-83 (candidate counts per effort, design notes only on high, the revision replacing them), a planeswalker draft with its loyalty, and the steps reported in order.
+
+### T145: Existing characters in the prompts
+When the idea names an existing character, the prompts ask for that
+character's name and flavor in the manner of the Universes Beyond cards. The
+idea is sent unchanged, and a refusal (`ContentRefused`) ends the generation
+with that cause (RN-10).
+Covers: RN-56, CA-88
+Agent: llm-engineer
+Depends on: T141, T144
+Done when: tests pass for the idea reaching the provider unchanged, the prompt content, and a refused generation with its cause and no card.
+
+### T146: Request and Result screens: effort, steps, design notes and loyalty
+The Request screen asks for the generation effort, shows the running step
+while a generation runs, and on a refusal offers to edit the request. The
+Result screen shows the starting loyalty of a planeswalker and the design
+notes, with the possibly-outdated mark after an edit.
+Covers: RN-11, RN-49, RN-53, RN-55, RN-56, CA-26, CA-85, CA-88
+Agent: frontend-dev
+Depends on: T140, T141, T142, T145
+Done when: Vitest tests pass for the effort as a required field, CA-85, the refusal with the edit option, design notes shown only when present, and the loyalty of a planeswalker.
+
+### T147: Milestone 3b end-to-end flow test
+Extend the end-to-end suite with a generation at each effort, a high-effort
+card with design notes, a card named after an existing card the idea names,
+and a planeswalker with its loyalty; the earlier flows stay unchanged.
+Covers: RN-51, RN-53, RN-55, RN-57, CA-83, CA-86, CA-87
+Agent: qa
+Depends on: T141, T145
+Done when: the end-to-end suite passes with the flows of earlier milestones unchanged.
+
+### T148: Milestone 3b review
+Run every test suite, check the coverage of this milestone's RN and CA parts,
+run the demo from the zip with a real key (compare the tokens per effort),
+record the findings, and check the Milestone 4 tasks against the spec.
+Covers: none (review)
+Agent: maintainer
+Depends on: T140–T147
+Done when: every suite passes, the demo works, the token counts per effort are recorded, the findings are recorded, and the blocking items of Milestone 4 are listed.
 
 ## Milestone 4 — Text providers
 
@@ -1294,6 +1426,44 @@ Agent: backend-dev
 Depends on: T22
 Done when: tests with a fake clock pass for a cached listing reused within the period, read again after it, and read again after a failed build.
 
+### T149: Advanced options in the request
+The request takes the optional advanced options of RN-54 (card types,
+supertypes and subtypes from the imported terms, mana value, power and
+toughness, starting loyalty, rarity), refuses values outside their sets and
+combinations RN-54 refuses, naming the field, before any provider call, and
+stores them with the card's request.
+Covers: RN-11, RN-54, CA-84
+Agent: backend-dev
+Depends on: T24, T140
+Done when: tests pass for each refused value and combination of CA-84 with no provider call, and the options stored with the card.
+
+### T150: Advanced options check
+A draft and its revision match every chosen option (RN-57): the chosen types
+and supertypes are the card's only ones, the chosen subtypes are among its
+subtypes, and the chosen numbers and rarity are the card's. Manual edits,
+quick adjustments and restores are not checked against them.
+Covers: RN-57, CA-84
+Agent: backend-dev
+Depends on: T149, T30
+Done when: tests pass for CA-84 (the 2/2 rejected, the 2/3 Elf Warrior accepted) and for an edit that changes a chosen value staying approved.
+
+### T151: Advanced options in the prompts
+The design and draft calls receive the chosen options as fixed parts of the
+card, and the revision keeps them.
+Covers: RN-54, RN-57
+Agent: llm-engineer
+Depends on: T149, T150, T95
+Done when: tests with the fake adapter pass for the options in the prompts and a revision fixing a draft that broke an option.
+
+### T152: Request screen: advanced options
+The advanced options are hidden until the person asks for them; each is
+optional, offers only valid values (types and subtypes from the imported
+terms), and the screen names a refused field.
+Covers: RN-49, RN-54, CA-84
+Agent: frontend-dev
+Depends on: T149
+Done when: Vitest tests pass for the hidden options, each value set, a refused combination named on the screen, and a request sent with no option chosen.
+
 ### T120: Milestone 5 end-to-end flow test
 Extend the end-to-end suite with the demo path of this milestone: a build
 that includes the fictional rules text, then a generation whose draft uses an
@@ -1311,7 +1481,7 @@ or provider call. Run the demo from the zip with a rebuilt database and a real
 key. Record the findings, and check the Milestone 6 tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T18, T24, T30, T31, T32, T95, T120
+Depends on: T18, T24, T30, T31, T32, T95, T120, T149–T152
 Done when: every suite passes, the demo works, the findings are recorded, and the blocking items of Milestone 6 are listed.
 
 ## Milestone 6 — Library and versions
@@ -1555,9 +1725,10 @@ Done when: Vitest tests pass for a card with and without an image, the fitted di
 ### T68: Result screen: art actions, notices and usage
 Generate, retry or upload art (with the billing notice); open the image at full
 resolution; the outdated-text notice after an edit or adjustment; the
-print-quality notice for a small uploaded image; and usage with text and art
-shown separately.
-Covers: RN-09, RN-23, RN-32, RN-34, RN-35, RN-43, RN-44, RN-49, CA-35, CA-37, CA-39, CA-40, CA-50
+print-quality notice for a small uploaded image; usage with text and art
+shown separately; and an art refusal shown as a refusal, with the options to
+edit the art description or upload an image (RN-56).
+Covers: RN-09, RN-23, RN-32, RN-34, RN-35, RN-43, RN-44, RN-49, RN-56, CA-35, CA-37, CA-39, CA-40, CA-50, CA-88
 Agent: frontend-dev
 Depends on: T58, T59, T99
 Done when: Vitest tests pass for the art failure cause with retry, the outdated-text notice, the print-quality notice, the separate usage lists and the full-resolution link.
@@ -1922,10 +2093,9 @@ Done when: every suite and the content check pass, and the coverage table has no
 
 ## Reserved
 
-Interface quality tasks (design guidelines, accessibility, the generation wait
-experience, screen review passes, a final consistency pass) will be appended
-with the next free IDs, starting at T130. Design guidelines and accessibility
-basics fit in Milestone 2, before the first screens beyond Status. The wait
+Interface quality tasks (the generation wait experience, screen review passes,
+a final consistency pass) will be appended with the next free IDs. The design
+guidelines live in the Interface section of `specs/code-standards.md`. The wait
 experience fits in Milestone 3. A screen review pass fits in each milestone that
 changes screens, before its review task, and the final consistency pass before
 T84; those review tasks then add the new IDs to their dependencies.
@@ -1950,11 +2120,11 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | RN-08 | T4, T6, T9, T127, T128, T129, T40, T36, T49, T41, T42, T45, T92, T90, T91, T101 |
 | RN-09 | T38, T48, T67, T52, T50, T51, T68 |
 | RN-10 | T13, T35, T39, T40, T48, T117, T133, T41, T42 |
-| RN-11 | T49, T65, T117, T115, T33 |
+| RN-11 | T49, T65, T117, T115, T33, T140, T146, T149 |
 | RN-12 | T20, T23, T26, T46, T47a, T47b, T67, T24, T95, T103 |
 | RN-13 | T46, T47b, T67 |
 | RN-14 | T37, T48, T67, T117, T95 |
-| RN-15 | T48, T67, T117, T95, T120 |
+| RN-15 | T48, T67, T117, T95, T120, T141 |
 | RN-16 | T29 |
 | RN-17 | T28 |
 | RN-18 | T18, T24, T30, T120, T107, T33 |
@@ -1971,7 +2141,7 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | RN-30 | T9, T19, T107, T33, T108, T109, T124 |
 | RN-31 | T43, T44, T51, T58, T113, T122 |
 | RN-32 | T43, T44, T50, T51, T58, T68, T122 |
-| RN-33 | T10, T50, T58, T99, T100, T122 |
+| RN-33 | T10, T50, T58, T99, T100, T122, T139 |
 | RN-34 | T50, T68, T100, T122 |
 | RN-35 | T98, T68 |
 | RN-36 | T17, T25, T60, T66, T123 |
@@ -1987,9 +2157,15 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | RN-46 | T79 |
 | RN-47 | T4, T7, T8, T74, T131, T83 |
 | RN-48 | T67, T51 |
-| RN-49 | T9, T62, T63, T64, T65, T67, T92, T69, T70, T101, T98, T99, T68, T100, T66, T105, T109, T112 |
+| RN-49 | T146, T152, T9, T62, T63, T64, T65, T67, T92, T69, T70, T101, T98, T99, T68, T100, T66, T105, T109, T112 |
 | RN-50 | T13, T49 |
-| RN-51 | T138 |
+| RN-51 | T138, T144, T147 |
+| RN-52 | T139 |
+| RN-53 | T140, T141, T146, T147 |
+| RN-54 | T149, T151, T152 |
+| RN-55 | T142, T141, T146, T147 |
+| RN-56 | T144, T145, T146, T68 |
+| RN-57 | T143, T147, T150, T151 |
 | CA-01 | T29 |
 | CA-02 | T28 |
 | CA-03 | T30, T120 |
@@ -2014,7 +2190,7 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | CA-23 | T2, T75 |
 | CA-24 | T23, T47a |
 | CA-25 | T40, T49, T41, T42, T45, T92 |
-| CA-26 | T49, T65 |
+| CA-26 | T49, T65, T140, T146 |
 | CA-27 | T47b, T67, T117 |
 | CA-28 | T32 |
 | CA-29 | T47b, T67 |
@@ -2026,7 +2202,7 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | CA-35 | T50, T51, T68 |
 | CA-36 | T51 |
 | CA-37 | T51, T58, T68, T122 |
-| CA-38 | T10, T58, T99 |
+| CA-38 | T10, T58, T99, T139 |
 | CA-39 | T50, T68, T100, T122 |
 | CA-40 | T98, T68 |
 | CA-41 | T25, T60, T66, T123 |
@@ -2070,3 +2246,10 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | CA-79 | T138 |
 | CA-80 | T49, T65, T115 |
 | CA-81 | T121 |
+| CA-82 | T139 |
+| CA-83 | T141, T147 |
+| CA-84 | T149, T150, T152 |
+| CA-85 | T146 |
+| CA-86 | T144, T147 |
+| CA-87 | T143, T147 |
+| CA-88 | T145, T146, T68 |

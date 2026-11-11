@@ -1,0 +1,142 @@
+[
+  {
+    "id": "01-elf-mana",
+    "idea": "An elf druid that taps for extra mana when you control many forests.",
+    "color_identity": ["G"],
+    "power_level": "casual",
+    "search_plan": {"keywords": ["add", "mana", "forest", "elf"], "roles": ["ramp"], "card_types": ["Creature"], "mana_value_min": 1, "mana_value_max": 3}
+  },
+  {
+    "id": "02-spell-draw",
+    "idea": "A wizard that draws a card whenever you cast an instant or sorcery spell.",
+    "color_identity": ["U"],
+    "power_level": "medium",
+    "search_plan": {"keywords": ["draw", "card", "whenever", "cast", "instant", "sorcery"], "roles": ["card_draw"], "card_types": ["Creature"], "mana_value_min": 2, "mana_value_max": 4}
+  },
+  {
+    "id": "03-exile-enchantment",
+    "idea": "An enchantment that exiles a creature an opponent controls until the enchantment leaves the battlefield.",
+    "color_identity": ["W"],
+    "power_level": "medium",
+    "search_plan": {"keywords": ["exile", "target", "creature", "opponent", "until", "leaves"], "roles": ["removal"], "card_types": ["Enchantment"], "mana_value_min": 1, "mana_value_max": 3}
+  },
+  {
+    "id": "04-wrath",
+    "idea": "A sorcery that destroys every creature and lets you keep a small advantage afterwards.",
+    "color_identity": ["W"],
+    "power_level": "strong",
+    "search_plan": {"keywords": ["destroy", "all", "creatures"], "roles": ["board_wipe"], "card_types": ["Sorcery"], "mana_value_min": 3, "mana_value_max": 5}
+  },
+  {
+    "id": "05-cheap-counter",
+    "idea": "A cheap instant that counters a noncreature spell.",
+    "color_identity": ["U"],
+    "power_level": "strong",
+    "search_plan": {"keywords": ["counter", "target", "noncreature", "spell"], "roles": ["counterspell"], "card_types": ["Instant"], "mana_value_min": 1, "mana_value_max": 2}
+  },
+  {
+    "id": "06-life-tutor",
+    "idea": "A spell that searches your library for any card, paid for with life.",
+    "color_identity": ["B"],
+    "power_level": "strong",
+    "search_plan": {"keywords": ["search", "library", "card", "life", "hand"], "roles": ["tutor"], "card_types": ["Sorcery", "Instant"], "mana_value_min": 1, "mana_value_max": 3}
+  },
+  {
+    "id": "07-zombie-return",
+    "idea": "A zombie that returns a creature card from your graveyard to your hand when it enters.",
+    "color_identity": ["B"],
+    "power_level": "medium",
+    "search_plan": {"keywords": ["return", "creature", "graveyard", "hand", "enters"], "roles": ["recursion"], "card_types": ["Creature"], "mana_value_min": 3, "mana_value_max": 5}
+  },
+  {
+    "id": "08-soldier-army",
+    "idea": "A legendary commander that creates soldier tokens every turn and makes them stronger.",
+    "color_identity": ["G", "W"],
+    "power_level": "medium",
+    "search_plan": {"keywords": ["create", "token", "soldier", "creatures", "get"], "roles": ["tokens", "combat_boost"], "card_types": ["Creature"], "mana_value_min": 3, "mana_value_max": 5}
+  },
+  {
+    "id": "09-cleric-lifegain",
+    "idea": "A cleric that gains you life whenever another creature you control enters.",
+    "color_identity": ["W", "B"],
+    "power_level": "casual",
+    "search_plan": {"keywords": ["gain", "life", "whenever", "another", "creature", "enters"], "roles": ["life_gain"], "card_types": ["Creature"], "mana_value_min": 2, "mana_value_max": 3}
+  },
+  {
+    "id": "10-team-indestructible",
+    "idea": "An instant that makes your creatures indestructible until end of turn to survive a board wipe.",
+    "color_identity": ["W"],
+    "power_level": "casual",
+    "search_plan": {"keywords": ["indestructible", "creatures", "control", "until", "turn"], "roles": ["protection"], "card_types": ["Instant"], "mana_value_min": 1, "mana_value_max": 3}
+  },
+  {
+    "id": "11-goblin-warcry",
+    "idea": "A goblin that gives your attacking creatures +1/+0 and haste.",
+    "color_identity": ["R"],
+    "power_level": "medium",
+    "search_plan": {"keywords": ["haste", "attacking", "creatures", "+1/+0", "goblin"], "roles": ["combat_boost"], "card_types": ["Creature"], "mana_value_min": 2, "mana_value_max": 4}
+  },
+  {
+    "id": "12-any-color-artifact",
+    "idea": "An artifact that adds one mana of any color.",
+    "color_identity": [],
+    "power_level": "casual",
+    "search_plan": {"keywords": ["add", "mana", "any", "color"], "roles": ["mana_fixing", "ramp"], "card_types": ["Artifact"], "mana_value_min": 1, "mana_value_max": 3}
+  },
+  {
+    "id": "13-demon-sacrifice",
+    "idea": "A demon that lets you sacrifice a creature to make each opponent lose life.",
+    "color_identity": ["B", "R"],
+    "power_level": "strong",
+    "search_plan": {"keywords": ["sacrifice", "creature", "each", "opponent", "loses", "life"], "roles": ["sacrifice_outlet"], "card_types": ["Creature"], "mana_value_min": 2, "mana_value_max": 4}
+  },
+  {
+    "id": "14-mill-enters",
+    "idea": "A creature that mills several cards when it enters to fuel graveyard strategies.",
+    "color_identity": ["B", "G"],
+    "power_level": "medium",
+    "search_plan": {"keywords": ["mill", "graveyard", "enters", "cards"], "roles": ["graveyard_fill"], "card_types": ["Creature"], "mana_value_min": 2, "mana_value_max": 4}
+  },
+  {
+    "id": "15-small-flier",
+    "idea": "A small flying faerie that is hard to block and pecks at opponents every turn.",
+    "color_identity": ["U"],
+    "power_level": "casual",
+    "search_plan": {"keywords": ["flying", "blocked", "combat", "damage", "player", "faerie"], "roles": ["evasion"], "card_types": ["Creature"], "mana_value_min": 1, "mana_value_max": 3}
+  },
+  {
+    "id": "16-burn-instant",
+    "idea": "An efficient instant that deals damage to any target.",
+    "color_identity": ["R"],
+    "power_level": "strong",
+    "search_plan": {"keywords": ["damage", "any", "target"], "roles": ["removal"], "card_types": ["Instant"], "mana_value_min": 1, "mana_value_max": 2}
+  },
+  {
+    "id": "17-colorless-rock",
+    "idea": "A mana rock that taps for two colorless mana.",
+    "color_identity": [],
+    "power_level": "strong",
+    "search_plan": {"keywords": ["add", "{C}{C}", "mana", "artifact"], "roles": ["ramp"], "card_types": ["Artifact"], "mana_value_min": 1, "mana_value_max": 3}
+  },
+  {
+    "id": "18-five-color-land",
+    "idea": "A land that taps for any color in your commander's color identity.",
+    "color_identity": ["W", "U", "B", "R", "G"],
+    "power_level": "medium",
+    "search_plan": {"keywords": ["add", "mana", "any", "color", "commander", "identity"], "roles": ["mana_fixing"], "card_types": ["Land"], "mana_value_min": 0, "mana_value_max": 0}
+  },
+  {
+    "id": "19-pay-life-draw",
+    "idea": "An enchantment that draws you an extra card each upkeep at the cost of some life.",
+    "color_identity": ["B"],
+    "power_level": "casual",
+    "search_plan": {"keywords": ["upkeep", "draw", "card", "lose", "life"], "roles": ["card_draw"], "card_types": ["Enchantment"], "mana_value_min": 2, "mana_value_max": 4}
+  },
+  {
+    "id": "20-bant-guardian",
+    "idea": "A legendary commander that protects your creatures with hexproof and draws a card when a creature enters.",
+    "color_identity": ["G", "W", "U"],
+    "power_level": "strong",
+    "search_plan": {"keywords": ["hexproof", "creatures", "draw", "card", "enters"], "roles": ["protection", "card_draw"], "card_types": ["Creature"], "mana_value_min": 3, "mana_value_max": 5}
+  }
+]

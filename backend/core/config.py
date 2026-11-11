@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from core.environment import debug_enabled
+from core.errors import CODE_CONFIG_INVALID, CODE_IGNORED
 from core.paths import app_home
 
 DEFAULT_PORT = 47821
@@ -24,13 +25,11 @@ SETTING_NAMES = (
     "APP_PORT",
 )
 
-CODE_SETTING_TO_FIX = "config_invalid"
 # The setting of the item for a file that cannot be read (specs/plan.md, section 6).
 ENV_FILE_SETTING = ".env"
 # Messages never quote the file: it holds the keys.
 CANNOT_OPEN_MESSAGE = "The .env file cannot be opened. Check its permissions and that it is a file, not a folder."
 NOT_TEXT_MESSAGE = "The .env file cannot be read as text. Save it as UTF-8."
-CODE_IGNORED = "ignored"
 # How provider keys start (OpenAI and Anthropic, Google); case-sensitive, as the keys are.
 KEY_PREFIXES = ("sk-", "AIza")
 
@@ -44,7 +43,7 @@ class Secret:
         self._value = value
 
     def reveal(self):
-        """The key itself, for the provider factory only (see specs/plan.md, section 8)."""
+        """The key itself, for the provider factory and the log filter only (specs/plan.md, section 8)."""
         return self._value
 
     def __str__(self):
@@ -227,7 +226,7 @@ def _parse_port(text):
 
 
 def _setting_to_fix(setting, message):
-    return SettingIssue(setting=setting, code=CODE_SETTING_TO_FIX, message=message)
+    return SettingIssue(setting=setting, code=CODE_CONFIG_INVALID, message=message)
 
 
 def _notice(setting, message):

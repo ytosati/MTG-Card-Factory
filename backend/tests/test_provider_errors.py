@@ -124,3 +124,15 @@ def test_rn09_usage_is_immutable():
     usage = Usage(input_tokens=10, output_tokens=3)
     with pytest.raises(AttributeError):
         usage.input_tokens = 0
+
+
+def test_rn10_t154_provider_rejected_has_a_fixed_message_that_asks_to_check_the_model():
+    """RN-10, RN-08 (T154): the fixed message of `provider_rejected` points to the model setting and
+    is not a quotation of a provider's answer (no status number, no braces)."""
+    errors = _errors()
+    message = errors.MESSAGES[errors.CODE_PROVIDER_REJECTED]
+    assert message.strip()
+    assert "model" in message.lower()
+    assert "check" in message.lower()
+    assert "HTTP" not in message
+    assert "{" not in message and "}" not in message

@@ -7,7 +7,6 @@ import copy
 import json
 from typing import Any
 
-from core.errors import CODE_MODEL_NOT_FOUND
 from providers import transport
 from providers.base import Usage
 from providers.errors import (
@@ -22,6 +21,10 @@ from providers.schema import validate_json
 ENDPOINT = "https://api.openai.com/v1/chat/completions"
 SCHEMA_NAME = "card_factory_response"
 MODEL_SETTING = "LLM_MODEL"
+
+# OpenAI's own error codes; they belong to the wire format, not to the application's codes.
+_WIRE_MODEL_NOT_FOUND = "model_not_found"
+_WIRE_INVALID_API_KEY = "invalid_api_key"
 
 
 class OpenAITextAdapter:
@@ -157,10 +160,10 @@ def _classify_error(response: transport.HttpResponse) -> ProviderError | None:
         return None
     code, _ = _error_fields(response)
     # A 403 with this code means the project has no access to the model, not a rejected key.
-    if code == CODE_MODEL_NOT_FOUND:
+    if code == _WIRE_MODEL_NOT_FOUND:
         return ModelNotFound(
             f"The provider does not know the model set in {MODEL_SETTING}.", setting=MODEL_SETTING
         )
-    if response.status == 400 and code == "invalid_api_key":
+    if response.status == 400 and code == _WIRE_INVALID_API_KEY:
         return AuthError("The provider rejected the API key.")
     return None

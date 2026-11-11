@@ -168,7 +168,7 @@ merged into `main`.
 - [x] T137: Error codes in one place and module table
 - [x] T117: Milestone 3 end-to-end flow test
 - [x] T153: Card and its usage saved together
-- [ ] T154: Provider error codes owned by the adapter
+- [x] T154: Provider error codes owned by the adapter
 - [ ] T94: Milestone 3 review
 
 ### Milestone 3b — Generation controls

@@ -50,6 +50,17 @@ def _lookup_keys(tree):
     return nodes
 
 
+def _wire_constants(tree):
+    """A provider's own wire codes, kept by its adapter as `_WIRE_*` constants, are not application codes (T154)."""
+    nodes = set()
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and all(
+            isinstance(t, ast.Name) and t.id.startswith("_WIRE_") for t in node.targets
+        ):
+            nodes.add(id(node.value))
+    return nodes
+
+
 def test_every_plan_code_exists_in_core():
     missing = _plan_codes() - _core_codes()
     assert not missing, f"Codes of plan section 6 missing from core.errors: {sorted(missing)}"
@@ -67,6 +78,8 @@ def test_no_code_literal_outside_core_errors():
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
         skipped = _docstring_nodes(tree) | _lookup_keys(tree)
+        if path.parent.name == "providers":
+            skipped |= _wire_constants(tree)
         for node in ast.walk(tree):
             if isinstance(node, ast.Constant) and node.value in codes and id(node) not in skipped:
                 found.append(f"{path.relative_to(BACKEND)}:{node.lineno} {node.value!r}")
@@ -112,4 +125,11 @@ def test_provider_error_codes_reference_core():
         errors.CODE_PROVIDER_UNAVAILABLE,
         errors.CODE_INVALID_RESPONSE,
         errors.CODE_CONTENT_REFUSED,
+        errors.CODE_PROVIDER_REJECTED,
     }
+
+
+def test_rn10_t154_provider_rejected_is_a_core_code_with_its_plan_name():
+    """RN-10 (T154): the code of an unmapped 4xx answer is `provider_rejected` in core.errors."""
+    assert errors.CODE_PROVIDER_REJECTED == "provider_rejected"
+    assert errors.CODE_PROVIDER_REJECTED in _plan_codes()

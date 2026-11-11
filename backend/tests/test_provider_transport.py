@@ -576,3 +576,63 @@ def test_rn29_the_transport_uses_only_the_standard_library():
             continue
         for name in names:
             assert name.split(".")[0] in allowed, f"non-standard import {name!r}"
+
+
+# --- Unmapped 4xx answers are provider_rejected (RN-10, RN-08, T154) ---------------
+
+
+@pytest.mark.parametrize(
+    ("status", "model_setting"),
+    [(400, "LLM_MODEL"), (400, "IMAGE_MODEL"), (422, "LLM_MODEL")],
+    ids=["400-llm", "400-image", "422-llm"],
+)
+def test_rn10_t154_an_unmapped_400_or_422_answer_is_provider_rejected_naming_the_model_setting(status, model_setting):
+    """RN-10, RN-08 (T154): an unmapped 400 or 422 answer (say an unsupported response format) is
+    `provider_rejected`, names the model setting of the call, shows the fixed message and never the provider's text."""
+    errors = _errors()
+    send = FakeSend(_response(status, _echo_body("Unsupported response format")))
+    with pytest.raises(errors.ProviderError) as caught:
+        _request(send, model_setting=model_setting)
+    error = caught.value
+    assert error.code == "provider_rejected"
+    assert getattr(error, "setting", None) == model_setting
+    assert str(error) == errors.MESSAGES["provider_rejected"]
+    assert "model" in str(error).lower()
+    assert len(send.calls) == 1
+    _assert_error_text_is_clean(error)
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        b"",
+        b"<html>Bad Request</html>",
+        "ção — \U0001f525 unsupported".encode("utf-8"),
+        ("x" * 200_000 + BODY_SENTINEL).encode("utf-8"),
+    ],
+    ids=["empty", "html", "odd-characters", "huge"],
+)
+def test_rn10_t154_provider_rejected_text_is_fixed_whatever_the_body(body):
+    """RN-10 edge (T154): an unreadable or huge 400 body changes nothing in the message shown."""
+    errors = _errors()
+    send = FakeSend(_response(400, body))
+    with pytest.raises(errors.ProviderError) as caught:
+        _request(send)
+    assert caught.value.code == "provider_rejected"
+    assert str(caught.value) == errors.MESSAGES["provider_rejected"]
+    _assert_error_text_is_clean(caught.value)
+
+
+@pytest.mark.parametrize("status", [405, 409, 413])
+def test_rn10_t154_an_unmapped_answer_outside_400_and_422_is_provider_rejected_without_a_setting(status):
+    """RN-10 (T154): an unmapped 4xx other than 400, 404 and 422 is `provider_rejected` with no setting
+    to fix, since the model is not the likely cause."""
+    errors = _errors()
+    send = FakeSend(_response(status, _echo_body("Refused")))
+    with pytest.raises(errors.ProviderError) as caught:
+        _request(send)
+    error = caught.value
+    assert error.code == "provider_rejected"
+    assert getattr(error, "setting", None) is None
+    assert str(error) == errors.MESSAGES["provider_rejected"]
+    _assert_error_text_is_clean(error)

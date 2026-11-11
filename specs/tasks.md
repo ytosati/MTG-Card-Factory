@@ -154,7 +154,7 @@ merged into `main`.
 - [x] T29: Color identity validator
 - [x] T138: Name validator against existing cards
 - [x] T23: Comparables search
-- [ ] T26: Search quality evaluation script
+- [x] T26: Search quality evaluation script
 - [x] T46: Generation prompts and output schemas
 - [x] T47a: Design intent, search plan and retrieval
 - [x] T47b: Draft call and discard of comparables

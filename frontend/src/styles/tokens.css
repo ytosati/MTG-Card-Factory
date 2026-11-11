@@ -20,17 +20,31 @@
   --color-success-text: #1d5b33;
   --color-success-border: #5c9a72;
 
-  /* A light violet from the accent: at least 3:1 against the page and against the accent button. */
-  --focus-ring-color: #a272ff;
+  /* Mana symbol fills: light enough for the dark symbol text to keep at least 4.5:1. */
+  --color-mana-text: #1c1b19;
+  --color-mana-edge: #8a857a;
+  --color-mana-w: #f4efd2;
+  --color-mana-u: #b9d7ee;
+  --color-mana-b: #cbc2bf;
+  --color-mana-r: #f2b9a3;
+  --color-mana-g: #a8d4b2;
+  --color-mana-generic: #dcd8cf;
+
+  /* A violet from the accent: about 4:1 against the page and 4.3:1 against a surface. The offset keeps
+     the ring on the page, apart from the accent button. */
+  --focus-ring-color: #9256f5;
   --focus-ring-width: 3px;
   --focus-ring-offset: 2px;
 
   --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  /* The card's own text: an installed serif, as on printed cards. */
+  --font-card: Georgia, "Iowan Old Style", serif;
   --font-size-body: 1rem;
   --font-size-small: 0.875rem;
   --font-size-h1: 1.75rem;
   --font-size-h2: 1.25rem;
+  --font-size-card-name: 1.5rem;
   --line-height-body: 1.5;
 
   --space-1: 0.25rem;
@@ -43,5 +57,6 @@
   --icon-size: 1.125rem;
   --nav-indicator-width: 2px;
   --radius: 6px;
+  --radius-small: 2px;
   --content-width: 48rem;
 }

@@ -1,13 +1,15 @@
 // Application shell: a small hash-based screen switch (no router library) behind the readiness gate.
 // Details: specs/plan.md, section 13; spec RN-28, RN-40, RN-49.
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { getStatus } from "./api/client";
 import { BrandMark } from "./components/BrandMark";
 import { StatusIcon } from "./components/StatusIcon";
-import type { StatusResponse } from "./api/types";
+import type { GenerationResult, RevisionFailure, StatusResponse } from "./api/types";
 import { useHeartbeat } from "./hooks/useHeartbeat";
+import { RequestScreen } from "./screens/RequestScreen";
+import { ResultScreen } from "./screens/ResultScreen";
 import { SetupScreen } from "./screens/SetupScreen";
 import { StatusScreen } from "./screens/StatusScreen";
 
@@ -15,6 +17,10 @@ import { StatusScreen } from "./screens/StatusScreen";
 interface ShellActions {
   /** Reads readiness again; once the database is ready the shell leaves Setup. */
   onReady: () => void;
+  /** Opens the Result screen for a generated card. */
+  onGenerated: (result: GenerationResult) => void;
+  /** The revision failure of the card shown on Result, when it was just generated (spec RN-15). */
+  revisionFailureOf: (cardId: string) => RevisionFailure | null;
 }
 
 interface ScreenEntry {
@@ -29,12 +35,32 @@ const SETUP: ScreenEntry = {
   render: ({ onReady }) => <SetupScreen onReady={onReady} />,
 };
 const STATUS: ScreenEntry = { route: "#/status", label: "Status", render: () => <StatusScreen /> };
+const REQUEST: ScreenEntry = {
+  route: "#/request",
+  label: "Request",
+  render: ({ onGenerated }) => <RequestScreen onGenerated={onGenerated} />,
+};
+
+const RESULT_PREFIX = "#/result/";
+const CARD_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** The Result screen of one card; its address carries the card id, so a reload shows the card again. */
+function resultEntry(hash: string): ScreenEntry | null {
+  if (!hash.startsWith(RESULT_PREFIX)) return null;
+  const cardId = hash.slice(RESULT_PREFIX.length);
+  if (!CARD_ID.test(cardId)) return null;
+  return {
+    route: hash,
+    label: "Result",
+    render: ({ revisionFailureOf }) => <ResultScreen cardId={cardId} revisionFailure={revisionFailureOf(cardId)} />,
+  };
+}
 
 /** Screens offered before the database is ready, also during the build (see spec RN-28). */
 const GATED_SCREENS: ScreenEntry[] = [SETUP, STATUS];
 
-/** Screens offered once the database is ready. */
-const READY_SCREENS: ScreenEntry[] = [STATUS];
+/** Screens offered once the database is ready. Result is reached from Request, never from the navigation. */
+const READY_SCREENS: ScreenEntry[] = [REQUEST, STATUS];
 
 /** The screen opened once the database is ready and nothing needs fixing. */
 const HOME: ScreenEntry = STATUS;
@@ -140,8 +166,23 @@ export function App() {
     readAgain();
   }, [readAgain]);
 
+  const [generated, setGenerated] = useState<GenerationResult | null>(null);
+
+  const onGenerated = useCallback((result: GenerationResult) => {
+    setGenerated(result);
+    window.location.hash = `${RESULT_PREFIX}${result.card}`;
+  }, []);
+
+  const revisionFailureOf = useCallback(
+    (cardId: string) => (generated !== null && generated.card === cardId ? generated.revision_failure : null),
+    [generated],
+  );
+
   const { screens, fallback } = gate(readiness);
-  const current = screens.find((entry) => entry.route === hash) ?? fallback;
+  const ready = readiness.kind === "known" && readiness.ready;
+  // Kept per address, so the effects below see one entry while the screen stays the same.
+  const result = useMemo(() => resultEntry(hash), [hash]);
+  const current = (ready ? result : null) ?? screens.find((entry) => entry.route === hash) ?? fallback;
 
   // The address names the screen shown, so reloading or going back opens it again.
   useEffect(() => {
@@ -191,7 +232,7 @@ export function App() {
           <p role="status">Checking the card database…</p>
         </main>
       ) : (
-        <Fragment key={current.route}>{current.render({ onReady: readAgain })}</Fragment>
+        <Fragment key={current.route}>{current.render({ onReady: readAgain, onGenerated, revisionFailureOf })}</Fragment>
       )}
     </div>
   );

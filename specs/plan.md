@@ -812,8 +812,8 @@ task names exactly one agent.
 
 **Models and cost.** Each agent runs on the model its work needs: Opus for
 architect, spec-reviewer, llm-engineer (prompts and the generation flow) and
-frontend-dev (interface design); Sonnet for backend-dev, release-dev, qa,
-reviewer and docs-writer. A task that touches keys or another security rule
+frontend-dev (interface design); Sonnet for backend-dev, release-dev,
+reviewer and docs-writer; Haiku for qa. A task that touches keys or another security rule
 gets its review on Opus. When several tasks run in a row:
 - each task starts a fresh agent with a brief that names the files to read;
   agents are not resumed across tasks once their context has grown;

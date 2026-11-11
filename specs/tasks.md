@@ -155,7 +155,9 @@ merged into `main`.
 - [x] T138: Name validator against existing cards
 - [x] T23: Comparables search
 - [ ] T26: Search quality evaluation script
-- [ ] T46: Generation prompts and output schemas
+- [x] T46: Generation prompts and output schemas
+- [ ] T47a: Design intent, search plan and retrieval
+- [ ] T47b: Draft call and discard of comparables
 - [ ] T48: Validation, one automatic revision and saving
 - [ ] T49: Generation endpoint and request serializer
 - [ ] T61: Key-leak and outgoing connection sweep

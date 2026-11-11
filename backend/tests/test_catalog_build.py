@@ -237,7 +237,7 @@ def _user_rows():
     """Jobs of a person's earlier work: rows of a table the build must never touch."""
     from core.models import Job
 
-    Job.objects.create(kind="generate", status="done", progress=1.0, result=uuid.uuid4())
+    Job.objects.create(kind="generate", status="done", progress=1.0, result={"card": str(uuid.uuid4()), "revision_failure": None})
     Job.objects.create(
         kind="art",
         status="failed",

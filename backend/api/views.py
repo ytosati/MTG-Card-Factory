@@ -6,8 +6,10 @@ from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from api.exceptions import CARD_NOT_FOUND_MESSAGE, CODE_NOT_FOUND
+from api.exceptions import CARD_NOT_FOUND_MESSAGE
 from api.serializers import (
+    CardSerializer,
+    GenerationRequestSerializer,
     InstanceSerializer,
     JobSerializer,
     SetupSerializer,
@@ -15,10 +17,11 @@ from api.serializers import (
     UsageQuerySerializer,
     UsageSerializer,
 )
-from cards.selectors import get_card, usage_for
+from api.services import start_generation
+from cards.selectors import card_detail, get_card, usage_for
 from catalog.setup import request_build, setup_snapshot
 from core import watchdog
-from core.errors import MappedError
+from core.errors import CODE_NOT_FOUND, MappedError
 from core.instance import instance_snapshot
 from core.jobs import get_job
 from core.status import status_snapshot
@@ -98,6 +101,26 @@ class UsageView(APIView):
         if card is None:
             raise MappedError(CODE_NOT_FOUND, CARD_NOT_FOUND_MESSAGE)
         return Response(UsageSerializer({"card": card.pk, "text": usage_for(card)}).data)
+
+
+class GenerationsView(APIView):
+    """Starts a card generation as a job (see spec RN-11, RN-50)."""
+
+    def post(self, request):
+        serializer = GenerationRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        job = start_generation(serializer.validated_data)
+        return Response(JobSerializer(job).data, status=status.HTTP_202_ACCEPTED)
+
+
+class CardView(APIView):
+    """A card with its current version and its text usage (see spec RN-26)."""
+
+    def get(self, request, card_id):
+        detail = card_detail(card_id)
+        if detail is None:
+            raise MappedError(CODE_NOT_FOUND, CARD_NOT_FOUND_MESSAGE)
+        return Response(CardSerializer(detail).data)
 
 
 @api_view(ANY_METHOD)

@@ -2,7 +2,7 @@
 
 from rest_framework import serializers
 
-from cards.models import UsageRecord
+from cards.models import Card, UsageRecord
 from catalog.models import SourceRecord
 from core.models import Job
 
@@ -46,7 +46,7 @@ class InstanceSerializer(serializers.Serializer):
 
 
 class JobSerializer(serializers.ModelSerializer):
-    """A job's progress and outcome; `error` is the error envelope or None."""
+    """A job's progress and outcome; `result` is the job's JSON result and `error` the error envelope, or None."""
 
     class Meta:
         model = Job
@@ -84,3 +84,74 @@ class UsageSerializer(serializers.Serializer):
 
     card = serializers.UUIDField()
     text = TextUsageSerializer(many=True)
+
+
+# Every color letter of an identity; colorless is the empty list (see spec RN-11).
+COLOR_LETTERS = ("W", "U", "B", "R", "G")
+IDEA_MAX_LENGTH = 1000
+
+
+class ColorIdentityField(serializers.ListField):
+    """A list of color letters; an invalid item is reported on the field itself, not on its index."""
+
+    child = serializers.ChoiceField(choices=COLOR_LETTERS)
+    default_error_messages = {"invalid_choice": "This value is not one of the allowed choices."}
+
+    def to_internal_value(self, data):
+        try:
+            return super().to_internal_value(data)
+        except serializers.ValidationError as error:
+            # Item errors come keyed by index; a list-level error (not a list) is kept as is.
+            if isinstance(error.detail, dict):
+                self.fail("invalid_choice")
+            raise
+
+
+class GenerationRequestSerializer(serializers.Serializer):
+    """The request of `POST /api/generations` (see spec RN-11, CA-26, CA-80); unknown fields are ignored."""
+
+    # Not trimmed, so the idea is stored as sent; the limit counts Unicode characters.
+    idea = serializers.CharField(max_length=IDEA_MAX_LENGTH, trim_whitespace=False)
+    # An empty list is a colorless request chosen explicitly; null or a missing value is no choice.
+    color_identity = ColorIdentityField(allow_empty=True)
+    power_level = serializers.ChoiceField(choices=Card.PowerLevel.choices)
+
+    def validate_idea(self, value):
+        if not value.strip():
+            self.fields["idea"].fail("blank")
+        return value
+
+
+class CardVersionSerializer(serializers.Serializer):
+    """The fields of a card version shown by the Result screen (see spec RN-12, RN-13, RN-14, RN-22)."""
+
+    name = serializers.CharField()
+    mana_cost = serializers.CharField()
+    mana_value = serializers.IntegerField()
+    type_line = serializers.CharField()
+    rules_text = serializers.CharField()
+    power = serializers.CharField()
+    toughness = serializers.CharField()
+    rarity = serializers.CharField()
+    design_intent = serializers.CharField()
+    rationale = serializers.CharField()
+    comparables = serializers.JSONField()
+    power_indicator = serializers.CharField()
+    power_justification = serializers.CharField()
+    origin = serializers.CharField()
+    status = serializers.CharField()
+    validation = serializers.JSONField()
+
+
+class CardUsageSerializer(serializers.Serializer):
+    """The usage shown with a card: its text calls, oldest first."""
+
+    text = TextUsageSerializer(many=True)
+
+
+class CardSerializer(serializers.Serializer):
+    """A card with its current version and its usage (see spec RN-26, RN-09)."""
+
+    id = serializers.UUIDField()
+    current_version = CardVersionSerializer(allow_null=True)
+    usage = CardUsageSerializer()

@@ -7,7 +7,10 @@ it becomes a sample. The frontend client types the samples satisfy live in
 `frontend/src/api/types.ts`: `StatusResponse`, `ErrorEnvelope`,
 `InstanceResponse` (GET /api/instance, T8), `HeartbeatRequest` (the JSON body
 of POST /api/heartbeat, T8), `JobResponse` (GET /api/jobs/{id}, T13, and the 202
-answer of POST /api/setup/build, T22) and `SetupResponse` (GET /api/setup, T22).
+answer of POST /api/setup/build, T22), `SetupResponse` (GET /api/setup, T22),
+`GenerationJobResponse` (the 202 answer of POST /api/generations and GET
+/api/jobs/{id} of a generation, whose result is `{card, revision_failure}`, T49)
+and `CardResponse` (GET /api/cards/{id}, T49).
 The heartbeat answers 204 with no body, so its sample is the request body the
 endpoint accepted, not a response.
 
@@ -49,7 +52,22 @@ from tests.contract_samples import (
     sample_from_response,
 )
 from tests.catalog_build_helpers import ORACLE_URI, FakeDataSource, bulk_bytes
-from tests.job_helpers import JOB_FIELDS, envelope_error, inline_runner
+from tests.generation_api_helpers import (
+    CARD_VERSION_FIELDS,
+    CARD_VERSION_KEY,
+    GENERATIONS_URL,
+    GREEN_WHITE_REQUEST,
+    HeldExecutor,
+    card_path,
+    install_fake,
+    job_path,
+    result_card_id,
+    result_revision_failure,
+    script_approved,
+    script_revision_failure,
+    seed_catalog,
+)
+from tests.job_helpers import JOB_FIELDS, envelope_error, inline_runner, runner_installed
 from tests.settings_probe import REPOSITORY_ROOT
 from tests.setup_api_helpers import (
     BUILD_URL,
@@ -84,6 +102,9 @@ INSTANCE_TYPE = "InstanceResponse"
 HEARTBEAT_TYPE = "HeartbeatRequest"
 JOB_TYPE = "JobResponse"
 SETUP_TYPE = "SetupResponse"
+# A generation job (T49): its result is {card, revision_failure} instead of null.
+GENERATION_JOB_TYPE = "GenerationJobResponse"
+CARD_TYPE = "CardResponse"
 
 OWN_ORIGIN = own_origin(DEFAULT_PORT)
 
@@ -173,6 +194,70 @@ def _no_free_space(environment):
 
 def _unreadable_free_space(environment):
     environment.disk.error = PermissionError(13, "fictional access denied")
+
+
+# --- Generation samples (T49): a ready database, fictional catalog rows and the fake text adapter ---
+
+
+def _post_generation(api, body=GREEN_WHITE_REQUEST):
+    return api.request("POST", GENERATIONS_URL, data=body, **OWN_ORIGIN)
+
+
+def _generation(api, script):
+    """POST a generation scripted by `script(fake, rows)` and return the 202 response."""
+    from tests.setup_api_helpers import mark_ready
+
+    mark_ready()
+    rows = seed_catalog()
+    with pytest.MonkeyPatch.context() as patch:
+        fake = install_fake(patch)
+        script(fake, rows)
+        return _post_generation(api)
+
+
+def _ended_generation_job(script):
+    def obtain(api, environment):
+        accepted = _generation(api, script)
+        assert accepted.status_code == 202, accepted.content[:500]
+        return api.get(job_path(accepted.json()["id"]))
+
+    return obtain
+
+
+def _generated_card(api, environment):
+    accepted = _generation(api, script_approved)
+    assert accepted.status_code == 202, accepted.content[:500]
+    job = api.get(job_path(accepted.json()["id"])).json()
+    return api.get(card_path(result_card_id(job["result"])))
+
+
+def _generation_missing_fields(api, environment):
+    from tests.setup_api_helpers import mark_ready
+
+    mark_ready()
+    return _post_generation(api, {})
+
+
+def _generation_running(api, environment):
+    from tests.setup_api_helpers import mark_ready
+
+    mark_ready()
+    with runner_installed(HeldExecutor()):
+        first = _post_generation(api)
+        assert first.status_code == 202, first.content[:500]
+        return _post_generation(api)
+
+
+def _revision_unavailable(fake, rows):
+    from providers.errors import ProviderUnavailable
+
+    script_revision_failure(fake, rows, ProviderUnavailable("fictional upstream outage detail"))
+
+
+def _key_rejected(fake, rows):
+    from providers.errors import AuthError
+
+    fake.add_error(AuthError("fictional rejected key detail"))
 
 
 SAMPLE_REQUESTS = (
@@ -337,6 +422,61 @@ SAMPLE_REQUESTS = (
         status=507,
         arrange=_no_free_space,
         obtain=lambda api, environment: _post_build(api),
+    ),
+    SampleRequest(
+        name="generationAccepted",
+        client_type=GENERATION_JOB_TYPE,
+        configuration=full_text_settings(),
+        path=GENERATIONS_URL,
+        method="POST",
+        status=202,
+        obtain=lambda api, environment: _generation(api, script_approved),
+    ),
+    SampleRequest(
+        name="generationMissingFields",
+        client_type=ERROR_TYPE,
+        configuration=full_text_settings(),
+        path=GENERATIONS_URL,
+        method="POST",
+        status=400,
+        obtain=_generation_missing_fields,
+    ),
+    SampleRequest(
+        name="generationRunning",
+        client_type=ERROR_TYPE,
+        configuration=full_text_settings(),
+        path=GENERATIONS_URL,
+        method="POST",
+        status=409,
+        obtain=_generation_running,
+    ),
+    SampleRequest(
+        name="jobGenerationDone",
+        client_type=GENERATION_JOB_TYPE,
+        configuration=full_text_settings(),
+        path=JOBS_URL,
+        obtain=_ended_generation_job(script_approved),
+    ),
+    SampleRequest(
+        name="jobGenerationRevisionFailed",
+        client_type=GENERATION_JOB_TYPE,
+        configuration=full_text_settings(),
+        path=JOBS_URL,
+        obtain=_ended_generation_job(_revision_unavailable),
+    ),
+    SampleRequest(
+        name="jobGenerationKeyRejected",
+        client_type=GENERATION_JOB_TYPE,
+        configuration=full_text_settings(),
+        path=JOBS_URL,
+        obtain=_ended_generation_job(_key_rejected),
+    ),
+    SampleRequest(
+        name="cardGenerated",
+        client_type=CARD_TYPE,
+        configuration=full_text_settings(),
+        path="/api/cards",
+        obtain=_generated_card,
     ),
 )
 
@@ -510,8 +650,42 @@ def test_t126_every_sample_name_and_type_is_declared_once():
         HEARTBEAT_TYPE,
         JOB_TYPE,
         SETUP_TYPE,
+        GENERATION_JOB_TYPE,
+        CARD_TYPE,
     }
     assert {request.sample for request in SAMPLE_REQUESTS} <= {"response", "request"}
+
+
+# --- Generation and card samples (T49, RN-11, RN-15, RN-50, CA-25, CA-26) ---
+
+
+def test_t49_generation_samples_cover_the_request_and_result_screen_cases(configured_api):
+    """RN-11 / RN-15 / RN-50 / CA-25 / CA-26 / T49: the samples hold the accepted generation, the missing
+    fields, a generation already running, a done job with its card, a done job with a failed revision,
+    a job failed for a rejected key and the generated card with its current version and text usage."""
+    bodies = _by_name(_collect(configured_api))
+
+    accepted = bodies["generationAccepted"]
+    assert set(accepted) == JOB_FIELDS and accepted["kind"] == "generate"
+    missing = bodies["generationMissingFields"]["error"]
+    assert missing["code"] == "validation"
+    assert set(missing["fields"]) == {"idea", "color_identity", "power_level"}
+    assert bodies["generationRunning"]["error"]["code"] == "generation_running"
+
+    done = bodies["jobGenerationDone"]
+    assert (done["kind"], done["status"], done["error"]) == ("generate", "done", None)
+    assert result_revision_failure(done["result"]) is None
+    revision = bodies["jobGenerationRevisionFailed"]
+    assert result_revision_failure(revision["result"])["code"] == "provider_unavailable"
+    assert "fictional upstream outage detail" not in json.dumps(revision)
+    rejected = bodies["jobGenerationKeyRejected"]
+    assert (rejected["status"], rejected["result"]) == ("failed", None)
+    assert envelope_error(rejected["error"])["code"] == "auth"
+    assert "fictional rejected key detail" not in json.dumps(rejected)
+
+    card = bodies["cardGenerated"]
+    assert CARD_VERSION_FIELDS <= set(card[CARD_VERSION_KEY])
+    assert [record["input_tokens"] for record in card["usage"]["text"]] == [812, 2405]
 
 
 # --- Instance and heartbeat samples (T8, RN-41, RN-47) ---

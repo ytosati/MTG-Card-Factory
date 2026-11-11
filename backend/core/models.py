@@ -24,8 +24,8 @@ class Job(models.Model):
     kind = models.CharField(max_length=16, choices=Kind.choices)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.QUEUED)
     progress = models.FloatField(default=0.0)
-    # The card id a generation produced; a build has none.
-    result = models.UUIDField(null=True, blank=True)
+    # JSON: a generation's {"card": id, "revision_failure": {code, message} | null}; a build has none.
+    result = models.JSONField(null=True, blank=True)
     # The error envelope of plan section 6, never the text of an exception.
     error = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

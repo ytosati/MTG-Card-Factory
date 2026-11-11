@@ -5,7 +5,7 @@
 // Then review the diff and run again without CARDFACTORY_UPDATE_CONTRACT.
 // Details: specs/plan.md, section 6 (Contract samples).
 
-import type { ErrorEnvelope, HeartbeatRequest, InstanceResponse, JobResponse, SetupResponse, StatusResponse } from "../types";
+import type { CardResponse, ErrorEnvelope, GenerationJobResponse, HeartbeatRequest, InstanceResponse, JobResponse, SetupResponse, StatusResponse } from "../types";
 
 export const statusFullConfiguration = {
   text_provider: "openai",
@@ -305,3 +305,145 @@ export const setupBuildRefusedForSpace = {
     fields: null,
   },
 } satisfies ErrorEnvelope;
+
+export const generationAccepted = {
+  id: "00000000-0000-4000-8000-000000000001",
+  kind: "generate",
+  status: "queued",
+  progress: 0.0,
+  result: null,
+  error: null,
+} satisfies GenerationJobResponse;
+
+export const generationMissingFields = {
+  error: {
+    code: "validation",
+    message: "Some request fields are invalid. Correct them and try again.",
+    setting: null,
+    fields: {
+      idea: [
+        "This field is required.",
+      ],
+      color_identity: [
+        "This field is required.",
+      ],
+      power_level: [
+        "This field is required.",
+      ],
+    },
+  },
+} satisfies ErrorEnvelope;
+
+export const generationRunning = {
+  error: {
+    code: "generation_running",
+    message: "A card or art generation is already running. Wait for it to finish, then try again.",
+    setting: null,
+    fields: null,
+  },
+} satisfies ErrorEnvelope;
+
+export const jobGenerationDone = {
+  id: "00000000-0000-4000-8000-000000000001",
+  kind: "generate",
+  status: "done",
+  progress: 1.0,
+  result: {
+    card: "00000000-0000-4000-8000-000000000002",
+    revision_failure: null,
+  },
+  error: null,
+} satisfies GenerationJobResponse;
+
+export const jobGenerationRevisionFailed = {
+  id: "00000000-0000-4000-8000-000000000001",
+  kind: "generate",
+  status: "done",
+  progress: 1.0,
+  result: {
+    card: "00000000-0000-4000-8000-000000000002",
+    revision_failure: {
+      code: "provider_unavailable",
+      message: "The provider is not answering. Try again later.",
+    },
+  },
+  error: null,
+} satisfies GenerationJobResponse;
+
+export const jobGenerationKeyRejected = {
+  id: "00000000-0000-4000-8000-000000000001",
+  kind: "generate",
+  status: "failed",
+  progress: 0.0,
+  result: null,
+  error: {
+    error: {
+      code: "auth",
+      message: "The provider rejected the API key.",
+      setting: "LLM_API_KEY",
+      fields: null,
+    },
+  },
+} satisfies GenerationJobResponse;
+
+export const cardGenerated = {
+  id: "00000000-0000-4000-8000-000000000001",
+  current_version: {
+    name: "Vellwood Lanternkeeper",
+    mana_cost: "{2}{G}{W}",
+    mana_value: 4,
+    type_line: "Creature \u2014 Elf Druid",
+    rules_text: "Whenever another creature you control enters, create a 1/1 green Elf creature token.",
+    power: "2",
+    toughness: "3",
+    rarity: "rare",
+    design_intent: "Token maker for a go-wide green-white deck that rewards lanterns entering.",
+    rationale: "A four-mana token engine in line with Lanternroot Shaman, costed one higher for the trigger.",
+    comparables: [
+      {
+        oracle_id: "00000000-0000-4000-8000-000000000002",
+        name: "Lanternroot Shaman",
+        role: "token maker at three mana",
+      },
+      {
+        oracle_id: "00000000-0000-4000-8000-000000000003",
+        name: "Glowmoss Herder",
+        role: "life gain from tokens",
+      },
+    ],
+    power_indicator: "in_range",
+    power_justification: "Slightly stronger than Lanternroot Shaman, close to Glowmoss Herder in value.",
+    origin: "generated",
+    status: "approved",
+    validation: {
+      status: "approved",
+      checks_run: [
+        "mana_cost",
+        "color_identity",
+        "name",
+      ],
+      causes: [],
+      skipped: [],
+    },
+  },
+  usage: {
+    text: [
+      {
+        provider: "openai",
+        model: "fake-text-model-1",
+        input_tokens: 812,
+        output_tokens: 143,
+        outcome: "ok",
+        created_at: "2000-01-01T00:00:00Z",
+      },
+      {
+        provider: "openai",
+        model: "fake-text-model-1",
+        input_tokens: 2405,
+        output_tokens: 388,
+        outcome: "ok",
+        created_at: "2000-01-01T00:00:00Z",
+      },
+    ],
+  },
+} satisfies CardResponse;

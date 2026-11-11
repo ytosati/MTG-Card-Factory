@@ -48,7 +48,10 @@ and key for art. The person pays the providers directly for usage.
 - Comparable: an existing card, legal in Commander, found by the text model in
   the local database and used as a reference.
 - Power level: casual, medium or strong. Chooses which comparables serve as
-  the reference.
+  the reference. Shown in the request with one line each: casual, fun and fair
+  in a relaxed game, without efficient staples; medium, solid and synergistic,
+  at home at a typical Commander table; strong, efficient and competitive,
+  close to the best cards of its role.
 - Generation effort: low, medium or high, chosen in the request. It sets how
   many related cards the text model is given and whether the result has design
   notes (RN-53).
@@ -135,7 +138,12 @@ and key for art. The person pays the providers directly for usage.
   states the cause, names the setting to fix when there is one (an unknown model
   names the model setting), and creates no card. A model value that looks like
   a key (equal to a configured key, or starting the way provider keys start) is
-  a setting to fix: it is never shown and never sent to a provider. The same checks apply to the image settings: a problem in
+  a setting to fix: it is never shown and never sent to a provider. In the
+  configuration file, only a line that starts with # is a comment; text after a
+  value on the same line is part of the value. Spaces and quotes around a value
+  are ignored. A key (text or image) that still contains a whitespace character
+  or the character # is a setting to fix, and the key is never shown. An
+  ignored image key is not checked. The same checks apply to the image settings: a problem in
   them makes art unavailable and names the setting to fix, while text generation
   keeps working. Leaving the image settings empty only makes art unavailable,
   with the reason; it is not a setting to fix. An image setting that is set but
@@ -166,6 +174,10 @@ and key for art. The person pays the providers directly for usage.
   allowed by Generated card, and has one face.
   The idea is at most 1,000 characters and the art description at most 500,
   counted as Unicode characters.
+- RN-58: From a card's Result screen, the person can start a new request from
+  that card's request: the Request screen opens with the idea, color identity,
+  power level and generation effort of the card filled in, and the other fields
+  at their defaults. Nothing is sent until the person sends it.
 - RN-12: Before writing the card, the system defines the design intent. The text
   model then searches the local database for cards related to the request (and
   to the base card, when chosen) and picks the comparables among them. The search
@@ -179,7 +191,10 @@ and key for art. The person pays the providers directly for usage.
 - RN-15: A rejected card may go through at most one automatic revision. If it is
   still rejected, it is saved and shown as rejected, with the causes. If the
   revision call fails (RN-10), the first draft is saved as rejected with its
-  causes, and the provider failure is shown. The revision returns every card
+  causes, and the cause of the failure, with its fixed message, is saved with
+  that version and shown while it is the current version. A later version does
+  not show it; restoring that version brings it back (RN-25). The revision
+  returns every card
   field, the rationale, the comparables and the power indicator, which replace
   those of the draft; the design intent stays. Its comparables are checked as
   in RN-12. An invalid revision response counts as a failed revision call.
@@ -227,7 +242,9 @@ and key for art. The person pays the providers directly for usage.
   (which may repeat), then at most one generic number, then {C}, then {S},
   then one group of colored, hybrid and Phyrexian symbols in any order among
   themselves. A card with no mana cost (such as a land) is
-  accepted, has mana value 0 and is different from a cost of {0}.
+  accepted, has mana value 0 and is different from a cost of {0}. The cost {0}
+  is written alone and never combined with other symbols, and a generic number
+  has no leading zero.
 - RN-51: The card's name is not the name of an existing card in the reference
   database, or of one of its faces, unless the idea of the request contains
   that whole name (RN-56). Names are compared ignoring case, surrounding and
@@ -505,7 +522,8 @@ never use the network or a real provider.
 - CA-11 (RN-15): A card rejected twice is saved and shown as rejected, with the
   causes, with no third attempt. When the first draft is rejected and the
   revision call fails or its response is invalid, the first draft is saved as
-  rejected and the failure is shown. When the revision is used, its
+  rejected and the failure is shown, also when the card is opened again later,
+  until a new version is made. When the revision is used, its
   comparables and power indicator are the ones shown.
 - CA-12 (RN-23): When the cost of an approved card is edited to a malformed
   value, revalidation rejects it right away, without using the provider. After
@@ -679,7 +697,8 @@ never use the network or a real provider.
 - CA-66 (RN-17): The cost {X}{2/W}{G/P} has mana value 3; a land with no mana
   cost is accepted with mana value 0; the cost {G}{2} is rejected for symbol
   order; the costs {2}{C}{S}{G}, {G}{U}, {U}{G} and {1}{G}{G/W}{W} are
-  accepted; the cost {1}{1}{G} is rejected.
+  accepted; the cost {1}{1}{G} is rejected; the cost {0} is accepted with mana
+  value 0; the costs {0}{G}, {X}{0}, {0}{C} and {00} are rejected.
 - CA-67 (RN-05): With the image provider equal to the text provider and an empty
   image key, art uses the text key.
 - CA-68 (RN-07): With an image provider set and no image model, art is
@@ -758,6 +777,16 @@ never use the network or a real provider.
   character, the refusal is shown with the options to edit the request and,
   for art, to edit the art description or upload an image; the provider
   receives the idea and the art description unchanged.
+- CA-89 (RN-08): Given a text key followed on the same line by a space and a
+  comment, the Status screen names the text key setting to fix without showing
+  the key, and a generation or a connection test calls no provider and creates
+  no card. Given an image provider set and an image key with a #, art is
+  unavailable and names the image key setting, while text generation keeps
+  working.
+- CA-90 (RN-58): Given a saved card made from the idea "a squirrel that hoards
+  artifacts", green, medium power and low effort, starting a new request from
+  it opens the Request screen with those four values, the other fields at
+  their defaults, and no generation started.
 
 ## Screens
 - First-run setup: the expected download size and free disk space needed, the
@@ -767,7 +796,8 @@ never use the network or a real provider.
   image provider, image model and whether art is available, with the reason when
   it is not; the origin, publication date and download date of each data source; a connection test; the
   settings to fix
-- Request: idea or theme, color identity (colors or colorless), power level,
+- Request: idea or theme, color identity (colors or colorless), power level
+  (each with its one-line meaning),
   generation effort (low, medium or high), advanced options hidden until
   requested (card types, supertypes, subtypes, mana value, power and toughness,
   starting loyalty, rarity; all optional), card language (English or Portuguese), optional base card (search by name,
@@ -784,7 +814,7 @@ never use the network or a real provider.
   justification (and the possibly-outdated mark after an edit), skipped checks,
   usage (text and art separately), the outdated-text notice, the print-quality
   notice for a small uploaded image, the notice when an uploaded image was not
-  kept, the notice when art was generated without the base card template, the options to generate, retry or upload art, and to open the image at
+  kept, the notice when art was generated without the base card template, the options to generate, retry or upload art, the option to start a new request from this card (RN-58), and to open the image at
   full resolution
 - Library: saved cards with an image thumbnail when present, favorites and
   deletion
@@ -810,6 +840,7 @@ moved to Future work.
 - Refreshing the reference database with newer data from the source, for
   example from the Status screen (RN-42).
 - Aligning casual, medium and strong with the official Commander brackets.
+- Connecting through a network proxy. In v1 proxy settings are not supported.
 - Cancelling a running card generation, art generation or quick adjustment
   (RN-50).
 - Generated cards with more than one face (split, adventure, transform and modal

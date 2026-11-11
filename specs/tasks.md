@@ -166,7 +166,7 @@ merged into `main`.
 - [x] T139: Tab title, application icon and no external loads
 - [x] T133: Database busy errors in the API
 - [x] T137: Error codes in one place and module table
-- [ ] T117: Milestone 3 end-to-end flow test
+- [x] T117: Milestone 3 end-to-end flow test
 - [ ] T94: Milestone 3 review
 
 ### Milestone 4 — Text providers

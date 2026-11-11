@@ -21,12 +21,15 @@ _TEXT_ADAPTERS = {"openai": OpenAITextAdapter}
 
 @dataclass(frozen=True)
 class AdapterResult:
-    """An adapter, or the error code, setting and message that explain why there is none."""
+    """An adapter with the provider and model it was built for, or the error code, setting and
+    message that explain why there is none."""
 
     adapter: TextAdapter | None
     code: str | None = None
     setting: str | None = None
     message: str | None = None
+    provider: str | None = None
+    model: str | None = None
 
 
 def text_adapter() -> AdapterResult:
@@ -38,4 +41,5 @@ def text_adapter() -> AdapterResult:
     adapter_class = _TEXT_ADAPTERS.get(config.llm_provider)
     if adapter_class is None:
         return AdapterResult(adapter=None, code=CODE_NOT_AVAILABLE_YET, message=NOT_AVAILABLE_YET_MESSAGE)
-    return AdapterResult(adapter=adapter_class(api_key=config.llm_api_key.reveal(), model=config.llm_model))
+    adapter = adapter_class(api_key=config.llm_api_key.reveal(), model=config.llm_model)
+    return AdapterResult(adapter=adapter, provider=config.llm_provider, model=config.llm_model)

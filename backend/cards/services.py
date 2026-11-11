@@ -22,6 +22,19 @@ def save_version(card: Card, **fields) -> CardVersion:
     return version
 
 
+
+def create_card(*, idea, requested_color_identity, power_level, **version_fields) -> Card:
+    """Create a card with the request it came from and its first version, in one transaction (see spec RN-26)."""
+    _check_version_fields(version_fields)
+    with transaction.atomic():
+        card = Card.objects.create(
+            idea=idea,
+            requested_color_identity=list(requested_color_identity),
+            power_level=power_level,
+        )
+        save_version(card, **version_fields)
+    return card
+
 def _check_version_fields(fields):
     """Refuse values outside their choices and a status that disagrees with its validation (see spec RN-14)."""
     # create() does not enforce choices, so an unchecked value would be stored as is.

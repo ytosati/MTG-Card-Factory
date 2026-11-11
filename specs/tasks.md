@@ -156,9 +156,9 @@ merged into `main`.
 - [x] T23: Comparables search
 - [ ] T26: Search quality evaluation script
 - [x] T46: Generation prompts and output schemas
-- [ ] T47a: Design intent, search plan and retrieval
-- [ ] T47b: Draft call and discard of comparables
-- [ ] T48: Validation, one automatic revision and saving
+- [x] T47a: Design intent, search plan and retrieval
+- [x] T47b: Draft call and discard of comparables
+- [x] T48: Validation, one automatic revision and saving
 - [ ] T49: Generation endpoint and request serializer
 - [ ] T61: Key-leak and outgoing connection sweep
 - [ ] T65: Request screen (idea, color identity, power level)

@@ -160,7 +160,7 @@ merged into `main`.
 - [x] T47b: Draft call and discard of comparables
 - [x] T48: Validation, one automatic revision and saving
 - [x] T49: Generation endpoint and request serializer
-- [ ] T61: Key-leak and outgoing connection sweep
+- [x] T61: Key-leak and outgoing connection sweep
 - [ ] T65: Request screen (idea, color identity, power level)
 - [ ] T67: Result screen: card text
 - [ ] T139: Tab title, application icon and no external loads

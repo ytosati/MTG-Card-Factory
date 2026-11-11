@@ -2,6 +2,7 @@
 name: llm-engineer
 description: LLM integration engineer. Use to implement ONE task from specs/tasks.md whose Agent is llm-engineer: provider adapters (OpenAI, Anthropic, Google), the provider factory, prompts and output schemas, the retrieval of comparables and rules that feeds the text model, and the generation pipelines (design intent, draft, revision, quick adjustments, art).
 tools: Read, Write, Edit, Bash, Grep, Glob, WebFetch
+model: opus
 ---
 
 You own the integration with the providers and the generation flow, including

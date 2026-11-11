@@ -792,6 +792,22 @@ maintainer's approval. Any implementing agent may append rows to
 `docs/DECISIONS.md`. Each agent reads `CLAUDE.md`, the spec and this plan; a
 task names exactly one agent.
 
+**Models and cost.** Each agent runs on the model its work needs: Opus for
+architect, spec-reviewer, llm-engineer (prompts and the generation flow) and
+frontend-dev (interface design); Sonnet for backend-dev, release-dev, qa,
+reviewer and docs-writer. A task that touches keys or another security rule
+gets its review on Opus. When several tasks run in a row:
+- each task starts a fresh agent with a brief that names the files to read;
+  agents are not resumed across tasks once their context has grown;
+- agents run the tests of their task, and the full suites run once per commit
+  batch, on a clean checkout of the batch's commits;
+- reports stay short (files, results, open questions);
+- `qa` writes the tests first for tasks with rules to protect; for small
+  mechanical tasks the implementing agent writes them;
+- one review covers a batch of related tasks, and the interface audit and
+  critique run once per group of changed screens;
+- tasks that change the same files may share one commit, citing each task.
+
 ## 13. Dependencies
 
 - Runtime (approved): Django, Django REST Framework, waitress; embeddable Python

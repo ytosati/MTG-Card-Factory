@@ -24,6 +24,7 @@ backend/
   generation/           text and art generation pipelines, retrieval of
                         comparables and rules for the text model
   generation/prompts/   prompt text files
+  generation/assets/    Card Factory set symbol, one PNG per rarity (RN-62)
   cards/                cards, versions, images, usage, library, editing
   api/                  DRF views, serializers, urls
   tests/                pytest suites, fictional fixtures
@@ -34,9 +35,14 @@ frontend/
   src/api/              typed API client
   src/screens/          Setup, Status, Request, Result, Library, Versions
   src/components/       shared components
-  src/styles/           design tokens (single source)
-  src/assets/           favicon and any approved local font or icon files
+  src/styles/           design tokens (single source) and global element styles
+  src/assets/           favicon, local images (`images/`) and any approved
+                        local font or icon files
   src/hooks/            heartbeat, job polling
+  src/preview/          screen preview gallery, one states file per screen
+                        and fictional fixtures; loaded
+                        only by the development server (`import.meta.env.DEV`)
+                        and left out of the production build (M3c)
   index.html            document shell; links the favicon from src/assets/
 launcher/               start.pyw (zip and clone), Windows message boxes, tests
 release/                release build script, pinned versions and hashes,
@@ -105,12 +111,14 @@ Fields listed are the ones the spec needs; types are left to the tasks.
   migration with fixed SQL and queried only with parameters.
 
 **cards**
-- `Card`: `id` (UUID4), created_at, favorite, language, current_version, and
-  the request it came from: idea, requested color identity (possibly
-  colorless), power level, generation effort (low, medium, high) and advanced
-  options (JSON, M5). Revalidation after an edit, an adjustment or a restore
-  uses it (RN-16, RN-19, RN-51); the advanced options are checked only for the
-  draft and its revision (RN-57).
+- `Card`: `id` (UUID4), created_at, favorite, language, current_version, kind
+  (new, custom_art; M8), and the request it came from: idea, requested color
+  identity (possibly colorless), power level, generation effort (low, medium,
+  high) and advanced options (JSON, M5); a custom art version leaves them
+  empty (RN-59). Revalidation after an edit, an adjustment or a restore uses
+  it (RN-16, RN-19); the advanced options are checked only for the draft and
+  its revision (RN-57). A custom art version is never revalidated and refuses
+  edits and quick adjustments (RN-60).
 - `CardVersion`: card, number (1, 2, …), origin (generated, revised, edited,
   adjusted, restored, art_generated, art_uploaded), name, mana_cost, mana_value,
   type_line, rules_text, power, toughness, starting_loyalty (planeswalkers
@@ -118,7 +126,8 @@ Fields listed are the ones the spec needs; types are left to the tasks.
   design_notes_outdated,
   comparables (JSON: oracle_id, name, role), base_card (JSON snapshot: oracle_id,
   printing id, face, name, rules text), power_indicator, power_justification,
-  power_outdated, status (approved, rejected), validation (JSON causes),
+  power_outdated, status (approved, rejected, or custom_art for a custom art
+  version, which has no validation), validation (JSON causes),
   skipped_checks, image (nullable), revision_failure (JSON `{code, message}`
   or null; set only on the version saved after a failed automatic revision and
   copied by a restore, RN-15). Versions are immutable, with one exception:
@@ -152,12 +161,13 @@ Fields listed are the ones the spec needs; types are left to the tasks.
 | catalog.download | `read_listing()`, `download_file()`: resumable downloads from the allowed hosts only, with `DownloadError` mapped to section 6 codes |
 | catalog.setup | `setup_snapshot()` (download size, free space, the build job to show), `request_build()` |
 | catalog.build, catalog.ingest | `run_build()` and `start_build()` (catalog.build); `download_sources()`, `import_oracle()`, `import_printings()`, `import_rules()`, `import_pt_terms()`, `tag_roles()` |
-| catalog.selectors | `is_ready()`, `list_sources()`, `search_cards(query, filters)`, `existing_card_names()` (normalized names of cards and faces, RN-51), `search_rules(keywords)`, `get_lexicon(lang)`, `find_base_cards(name)`, `list_printings(oracle_id)` |
+| catalog.selectors | `is_ready()`, `list_sources()`, `search_cards(query, filters)`, `search_rules(keywords)`, `get_lexicon(lang)`, `find_base_cards(name, single_face=False)`, `list_printings(oracle_id)` |
 | providers.factory | `text_adapter()`, `image_adapter()`, `art_availability()` |
-| validators | `validate(card, lexicon, request, existing_names=None) -> ValidationResult` composed of color identity, mana cost, name, type line, keywords, limits; `request` gives the requested identity (possibly colorless) and the idea text; `existing_names` is the set from `existing_card_names()`, and without it the name check is listed as skipped |
+| validators | `validate(card, lexicon, request) -> ValidationResult` composed of color identity, mana cost, type line, keywords, limits; `request` gives the requested identity (possibly colorless) and the idea text. No check looks at the card's name (RN-51) |
 | generation.text | `generate_card(request)`, `revise(draft, causes)`, `quick_adjust(card, kind)` |
-| generation.art | `generate_art(card, description)`, `fetch_base_image(printing, face)` |
-| cards.services | `save_version()`, `edit_fields()`, `restore_version()`, `set_favorite()`, `delete_card()`, `attach_image()`, `upload_image()`, `record_usage()` |
+| generation.text | (also) `rarity_for(power_level)`: casual common, medium rare, strong mythic; the pipeline sets the rarity, the model does not return it |
+| generation.art | `generate_art(card, description)`, `fetch_base_image(printing, face)`, `set_symbol(rarity)` (the PNG bytes from `generation/assets/`) |
+| cards.services | `create_custom_art_version(printing, art)` (copies the fields once, RN-60), `save_version()`, `edit_fields()`, `restore_version()`, `set_favorite()`, `delete_card()`, `attach_image()`, `upload_image()`, `record_usage()` |
 | cards.selectors | `list_cards(favorite)`, `get_card()`, `card_detail()`, `list_versions()`, `usage_for(card)` |
 | api.services | `start_generation(request)`: checks the text configuration, then submits the generation job; a rejected key names `LLM_API_KEY` |
 
@@ -547,6 +557,16 @@ search by part of a name (RN-36) uses a case-insensitive `LIKE`, not FTS.
   the template when the adapter's capabilities exclude `image_template`, and
   retries once without it on `TemplateUnsupported`; either way the result
   carries a notice (RN-38).
+- Set symbol (RN-62): `backend/generation/assets/set-symbol-{common,uncommon,rare,mythic}.png`,
+  delivered by the maintainer: PNG, transparent background, 512 × 512, the
+  symbol centered and filling the square, each file already in its rarity's
+  color (black, silver, gold, orange-red); an optional SVG source may sit
+  beside them. Raster files because the providers take raster input images
+  and the application has no image library to recolor one. The adapter sends
+  the file as an extra input image with the template, or alone without one;
+  an adapter whose capabilities exclude input images gets a text description
+  of the symbol, and the result carries a notice. These files are the
+  project's own artwork, not card images or frames (RN-02).
 
 | Option | For | Against |
 |---|---|---|
@@ -794,7 +814,10 @@ The T26 evaluation measures whether the patterns plus keywords are good enough.
 | 46 | README user guide | review |
 | 48 | art prompt artist credit; Result screen | fake adapter receives the credit; component test |
 | 49 | frontend components and screens; Interface rules of `specs/code-standards.md` | component tests, manual check |
-| 51 | validators name check with `catalog.selectors.existing_card_names()` | CA-79 names and faces |
+| 51 | no name check in validators or the pipeline | CA-91 existing names accepted |
+| 59–60 | request serializer (kind, art required, one face); `cards.services.create_custom_art_version`; edit and adjustment services refuse it | CA-92 |
+| 61 | generation.art custom art prompt with template and credit | CA-93 fake adapter |
+| 62 | generation.art `set_symbol(rarity)`; adapters send it or describe it | CA-94 fake adapter |
 | 52 | screen switch sets the tab title; icon in `src/assets/` linked from `index.html` | title tests; built-file check; manual check of the icon |
 
 Cross-site requests are refused by an origin check (section 8), tested on
@@ -874,14 +897,52 @@ sources.
 | M1 Double-click start | the locally built zip starts with a double click and stops after the last tab closes | server entry point, instance and heartbeat, watchdog, upgrade service, launcher, release zip, manual checklist |
 | M2 Reference database | Setup screen builds the database from Oracle Cards; Status lists the source | jobs, catalog models, downloader, Oracle import, roles, build, setup endpoints and gate, Setup screen |
 | M3 First card | a request becomes a validated, saved card shown on the Result screen, with OpenAI | provider protocol, OpenAI text adapter, factory, card models, usage, mana cost and color identity validators, comparables search, generation pipeline, Request and Result screens, key-leak sweep |
-| M3b Generation controls | the person picks the generation effort, sees the running step, gets design notes on high effort, and generates cards about existing characters and planeswalkers | effort and loyalty fields, job step, Battle and planeswalker checks, name exception, effort in the pipeline, existing characters in the prompts, screen updates |
+| M3c Screen previews | every screen of the spec, in each state, in a gallery of the development server (`#/preview`) with fictional fixtures; nothing in the production build | preview gallery, fixture types shaped like section 6, shared card components, visual screens for Request, Result, Library, Versions and Status |
+| M3b Generation controls | the person picks the generation effort, sees the running step, gets design notes on high effort, and generates cards about existing characters and planeswalkers | effort and loyalty fields, job step, Battle and planeswalker checks, name check removed, rarity from the power level, effort in the pipeline, existing characters in the prompts, screen updates |
 | M4 Text providers | the same request works with OpenAI, Anthropic and Google; Status tests the text key | Anthropic and Google text adapters, cross-provider test, connection test |
 | M5 Rules validation | type line, keyword and limits validators with terms from the Comprehensive Rules; advanced options in the request | rules import, terms, lexicon, rules search in the draft call, advanced options |
 | M6 Library and versions | library, favorites, deletion, editing, quick adjustments, restore | library, edit, versions and adjustment endpoints and screens |
 | M7 Art | generated and uploaded art, shown beside the card text | image adapters, art availability, image storage and serving, art pipeline, upload, art screens |
-| M8 Base card | a chosen printing guides the design and is the art template | printings import, base card search, base image cache, template |
+| M8 Base card | a chosen printing guides the design and is the art template; custom art versions of existing cards; the Card Factory set symbol on every generated image | printings import, base card search, base image cache, template, custom art version request and image, set symbol, screen updates |
 | M9 Portuguese cards | cards in Portuguese with every validation | Portuguese terms and lexicon, card language |
 | M10 Public release | release zip and clone start for the public | release assets, clone start file, CI release, README, license, community files |
+
+**Screen previews.** M3c is the one milestone that is not a vertical slice
+(`specs/tasks.md`, Delivery method): it builds the visual screens ahead of
+their endpoints. Its gallery route and fixtures are imported behind
+`import.meta.env.DEV`, so Vite drops them from the production build; the
+built-file check confirms it. Later screen tasks wire those screens to the API
+client and replace the draft fixture types with the contract samples. M3c runs
+after M3 and before M3b.
+
+**Frontend structure for frequent visual changes (from M3c on).** The visual
+layer is expected to change often, so each kind of change has one place:
+- Tokens: `src/styles/tokens.css` holds every color, type size, space, radius,
+  shadow, z-index, motion duration and easing. A palette, spacing or speed
+  change edits only this file.
+- Styles: each component has a CSS Module beside it (`Name.module.css`, built
+  into Vite with no dependency) that uses only tokens; `global.css` keeps only
+  resets and element defaults. A component's look changes in one file and
+  cannot leak into another screen.
+- Views and containers: each screen is a container (`XScreen.tsx`: API calls,
+  hooks, state) that renders a view (`XView.tsx`: props in, markup out, no
+  fetching). Views are built from small components in `src/components/`. The
+  gallery renders views with fixtures, and later API tasks change containers
+  only, so visual work and API work do not touch the same files.
+- Copy: the UI text of each screen lives in one `copy.ts` beside its view.
+- Motion: CSS transitions and keyframes from the motion tokens; one
+  `prefers-reduced-motion` rule in `tokens.css` turns them off (RN-49). An
+  animation library is a new dependency and needs approval.
+- Images: local files under `src/assets/images/`, imported so Vite bundles
+  them (served by the application, RN-33), shown through one image component
+  that reserves its space and requires `alt`. They are the project's own or
+  licensed for it, never card images or frames (RN-02).
+- Tests check behavior and accessibility (roles, labels, text from `copy.ts`),
+  never class names, computed styles or snapshots, so a visual change does not
+  break them.
+- Gallery: every state has an address (`#/preview/<screen>/<state>`) so a
+  change request can name it; the gallery can switch the width (360, 768 and
+  1280 px) and reduced motion. The development server reloads on save.
 
 **Build sources by milestone.** M2 builds from Oracle Cards; M5 adds the
 Comprehensive Rules, M8 Default Cards and M9 All Cards. During development, a
@@ -910,7 +971,8 @@ public release, the migrations are replaced by one initial migration per app
   names the RN or CA it covers. It includes the end-to-end suite of section 14.
 - Frontend: `npm run test` and `npx tsc -b`. Screen tests check the document
   title (`<Screen> · Card Factory`, CA-82) and a single `h1`; a check of the
-  built files finds no external address (CA-38); the reviewer checks the
+  built files finds no external address (CA-38) and no preview gallery or
+  fixture (M3c); the reviewer checks the
   rest of the Interface section of `specs/code-standards.md` (no gradients or
   pill shapes outside the tokens, no emojis in UI text, motion off
   under reduced motion, alt text on images).

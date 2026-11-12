@@ -6,7 +6,9 @@ valid under the rules, have a clear role in some strategy of the format, and sit
 in a reasonable power range. The person adjusts the final result. Optionally, the
 system also generates the card image (art and frame), or the person uploads their
 own image, and the person can start from an existing card as a base: it serves as
-the template of the card image and as a design example for the new card.
+the template of the card image and as a design example for the new card. The
+person can also make a custom art version of an existing card: the card's text
+is kept exactly, and only the art is new.
 
 ## Context of use
 Card Factory is a free, open-source application that runs on the person's own
@@ -25,6 +27,8 @@ and key for art. The person pays the providers directly for usage.
 - Card languages other than English and Portuguese (Brazil)
 - Generated cards with more than one face (split, adventure, double-faced, and
   Battle cards, which are double-faced); see Future work
+- Custom art versions of cards with more than one face, or in Portuguese; see
+  Future work
 
 ## Concepts
 - Data sources: Scryfall (card data and card images) and the Comprehensive
@@ -60,7 +64,12 @@ and key for art. The person pays the providers directly for usage.
   abilities and the numbers express the idea or the character.
 - Advanced options: optional choices in the request that fix parts of the
   generated card: card types, supertypes, subtypes, mana value, power and
-  toughness, starting loyalty and rarity.
+  toughness and starting loyalty.
+- Rarity: common, uncommon, rare or mythic. A new card's rarity follows its
+  power level: common for casual, rare for medium and mythic for strong.
+- Card Factory set symbol: the project's own icon, drawn in the set symbol
+  area of every generated image (beside the type line), in the color of the
+  card's rarity.
 - Existing character: a person, creature, place or object from any fiction or
   franchise, named in the idea.
 - Design intent: the role of the card (for example ramp, removal, card draw)
@@ -68,7 +77,19 @@ and key for art. The person pays the providers directly for usage.
 - Power range: the expected interval of power for similar cards.
 - Base card: an existing card chosen by the person. Its image is the template of
   the card image (same frame, colors and layout), and its name and rules text
-  are a design example of an effect or strategy.
+  are a design example of an effect or strategy. In a custom art version, it is
+  the card whose text is kept.
+- Card with one face: a card the reference database holds with a single face.
+  Split, adventure, flip, transform, modal double-faced, meld and Battle cards
+  have more than one face.
+- Custom art version: a card that keeps the name, mana cost, mana value, type
+  line, rules text (the card's current Oracle text), power and toughness and
+  starting loyalty of an existing card with one face, and the rarity of the
+  chosen printing, with new art. They are copied once when the card is
+  created; a later rebuild of the reference database does not change them.
+  Copied values are kept as written, even outside the sets of RN-54, and the
+  color indicator is not copied. The frame and layout are those of the
+  printing unless the art description asks for others.
 - Art: the image of a card. A generated image is a full card image: illustration
   and frame, with the card's name, mana cost, type line, set symbol, rules text
   and power and toughness drawn inside. An uploaded image is used as is.
@@ -82,17 +103,20 @@ and key for art. The person pays the providers directly for usage.
   provider, image model and image key; the local port. Read from the local
   configuration file at startup. Keys are never stored by the application.
 - Source record: origin and date of each data source used in the build.
-- Request: idea or theme, color identity (one or more colors, or colorless),
+- Request: kind (new card or custom art version), idea or theme, color identity (one or more colors, or colorless),
   power level, generation effort and, optionally, advanced options, card language (English or Portuguese), base card (with the chosen printing and face), art requested (yes
-  or no), art description and uploaded image.
-- Card: the request it came from (idea, requested color identity, power level,
-  generation effort and advanced options), name, mana cost, mana value, type
+  or no), art description and uploaded image. A request for a custom art
+  version has only the kind, the base card (printing) and the art (RN-59).
+- Card: the request it came from (kind, idea, requested color identity, power level,
+  generation effort and advanced options; only the kind and the base card for
+  a custom art version), name, mana cost, mana value, type
   line, rules text, power and toughness (when applicable), starting loyalty
   (planeswalkers only), rarity, language, design intent, design rationale,
   design notes (high effort only), comparables used, base card (when chosen), power indicator with its
   justification, art (when present) with its origin (generated or uploaded),
-  artist credit, validation result, skipped checks (when any) and favorite
-  mark.
+  artist credit, validation result (none for a custom art version), skipped checks (when any) and favorite
+  mark. A custom art version has no design intent, rationale, design notes,
+  comparables or power indicator.
 - Card version: a previous state of a card, including its art, restorable.
 - Base card image: the downloaded image of a chosen printing, kept for reuse.
 - Usage record: one per provider call, linked to a card when one exists. For a
@@ -173,11 +197,14 @@ and key for art. The person pays the providers directly for usage.
   an uploaded image. The generated card may be of any card type and supertype
   allowed by Generated card, and has one face.
   The idea is at most 1,000 characters and the art description at most 500,
-  counted as Unicode characters.
+  counted as Unicode characters. A request for a custom art version follows
+  RN-59 instead.
 - RN-58: From a card's Result screen, the person can start a new request from
   that card's request: the Request screen opens with the idea, color identity,
   power level and generation effort of the card filled in, and the other fields
-  at their defaults. Nothing is sent until the person sends it.
+  at their defaults. From a custom art version, the Request screen opens as a
+  custom art version request with its base card and printing filled in and the
+  art fields at their defaults. Nothing is sent until the person sends it.
 - RN-12: Before writing the card, the system defines the design intent. The text
   model then searches the local database for cards related to the request (and
   to the base card, when chosen) and picks the comparables among them. The search
@@ -185,8 +212,8 @@ and key for art. The person pays the providers directly for usage.
   counterexamples (RN-04). Comparables cited by the text model that the search
   did not return as legal are discarded; a response left with no valid
   comparable is an invalid response (RN-10). The result shows the design intent.
-- RN-13: Every generated card includes a design rationale and the list of
-  comparables used.
+- RN-13: Every generated card, except a custom art version (RN-60), includes a
+  design rationale and the list of comparables used.
 - RN-14: No card is presented as approved without passing every validation.
 - RN-15: A rejected card may go through at most one automatic revision. If it is
   still rejected, it is saved and shown as rejected, with the causes. If the
@@ -209,8 +236,8 @@ and key for art. The person pays the providers directly for usage.
     is not offered;
   - mana value: a whole number from 0 to 16;
   - power and toughness: whole numbers from 0 to 99, chosen together;
-  - starting loyalty: a whole number from 1 to 99;
-  - rarity: common, uncommon, rare or mythic.
+  - starting loyalty: a whole number from 1 to 99.
+  Rarity is not an option: it follows the power level (Concepts).
   Power and toughness require Creature among the chosen types or a Vehicle or
   Spacecraft subtype; with no type chosen, the card must be a creature, a
   Vehicle or a Spacecraft. Starting loyalty requires Planeswalker among the
@@ -221,8 +248,8 @@ and key for art. The person pays the providers directly for usage.
 - RN-55: While a generation runs, the person sees which step is running:
   design intent, search for related cards, draft, validation, revision and,
   when art was requested, art.
-- RN-56: A card may be based on an existing character named in the idea; the
-  name exception of RN-51 applies to it. A provider refusal of the text or of
+- RN-56: A card may be based on an existing character named in the idea. A
+  provider refusal of the text or of
   the art is shown as a refusal (RN-10, RN-32), with the options to edit the
   request or the art description, or to upload an image. The application sends
   the idea and the art description as the person wrote them and never rewrites
@@ -245,17 +272,13 @@ and key for art. The person pays the providers directly for usage.
   accepted, has mana value 0 and is different from a cost of {0}. The cost {0}
   is written alone and never combined with other symbols, and a generic number
   has no leading zero.
-- RN-51: The card's name is not the name of an existing card in the reference
-  database, or of one of its faces, unless the idea of the request contains
-  that whole name (RN-56). Names are compared ignoring case, surrounding and
-  repeated spaces, and the apostrophe style, and the exception looks for the
-  name as whole words with the same comparison. Every card the database holds
-  counts; names are compared with the English names. The rule applies to manual
-  edits too (RN-23), where the exception follows the idea of the card's request.
+- RN-51: No check compares a card's name with the names of existing cards. A
+  generated, revised, adjusted or edited card may have the name of an existing
+  card or of one of its faces.
 - RN-57: A generated draft and its revision match every advanced option chosen
   in the request: the chosen card types and supertypes are the card's only
   ones, the chosen subtypes are among its subtypes (others may be added), and
-  the chosen mana value, power, toughness, starting loyalty and rarity are the
+  the chosen mana value, power, toughness and starting loyalty are the
   card's. Each difference is a cause. Manual edits, quick adjustments and
   restores are not checked against the advanced options. In every check, a
   card with the Battle type is rejected, a planeswalker that is not legendary
@@ -362,6 +385,44 @@ and key for art. The person pays the providers directly for usage.
   the base card still works as a design example, and art is generated without
   the template, as in RN-31.
 
+### Custom art versions
+- RN-59: The person can ask for a custom art version instead of a new card.
+  The request has the base card, chosen as in RN-36 except that only cards
+  with one face are offered, and art: generated, with an optional art
+  description, or uploaded (RN-43). Art is required: a request without it is
+  refused naming the field, before any provider call. The idea, color
+  identity, power level, generation effort, advanced options and card
+  language are not asked; the card language is English. When art cannot be
+  generated (RN-07), upload stays available.
+- RN-60: A custom art version copies its fields as described in Concepts and
+  calls no text model: it has no design intent, comparables, rationale,
+  design notes or power indicator, and records only art usage. It runs no
+  validation and is shown as a custom art version of its base card, neither
+  approved nor rejected. Its only step is art (RN-55), and it counts as an art
+  generation for RN-50. Saving, failure and retry of its art follow RN-32 and
+  RN-43: when the first art fails, the card stays saved without art, still a
+  custom art version, and art can be retried. The person cannot edit its text
+  fields or run quick adjustments on it; generating or uploading new art,
+  restoring a version, favoriting and deleting work as for any card.
+- RN-61: The generated image of a custom art version uses the image of the
+  chosen printing as the template (RN-38): same frame, colors, layout and card
+  text, with new art that follows the art description, the artist line
+  showing "Card Factory" (RN-48) and the Card Factory set symbol in place of
+  the printing's set symbol (RN-62). When the art description asks for a
+  different frame or layout (for example full art or borderless), the image
+  model follows it, and the card text drawn inside stays the copied text. When
+  the template cannot be used (RN-38, RN-39), the art is generated without it
+  from the copied fields and the art description, and the person is told.
+
+### Set symbol
+- RN-62: Every generated image, with or without a base card and for custom
+  art versions too, shows the Card Factory set symbol in the set symbol area
+  beside the type line, in the color of the card's rarity: black for common,
+  silver for uncommon, gold for rare and orange-red for mythic. The image
+  model receives the symbol as an image. When the image model does not accept
+  images as input, the art is generated with the symbol described in text and
+  the person is told. Uploaded images are used as is (RN-43).
+
 ### Use and editing
 - RN-23: The person can edit the text fields of the card: name, mana cost, type
   line, rules text, power and toughness, and starting loyalty. The mana value is
@@ -376,7 +437,9 @@ and key for art. The person pays the providers directly for usage.
   and the cause is shown.
 - RN-25: Every change creates a version, and earlier versions can be restored.
   Restoring a version brings back its fields, art, power indicator with its
-  justification and its possibly-outdated mark, and creates a new version. Favoriting is not a change of
+  justification and its possibly-outdated mark, and creates a new version.
+  Restoring a version of a custom art version brings back its art and runs no
+  validation (RN-60). Favoriting is not a change of
   the card and creates no version.
 - RN-26: Cards are saved locally and can be listed, favorited and deleted.
 
@@ -488,7 +551,7 @@ and key for art. The person pays the providers directly for usage.
 - RN-30: The interface is in English. The generated card text is in English by
   default, and the person can choose Portuguese (Brazil) instead. The request
   and the art description can be written in any language. Cards in both
-  languages go through every validation, with type words and keyword names
+  languages, except custom art versions (RN-60), go through every validation, with type words and keyword names
   checked against the official terms in that language. When the official
   Portuguese term of a keyword is not known to the database, a Portuguese card
   may use the keyword's official English name; that keyword check is skipped
@@ -530,7 +593,9 @@ never use the network or a real provider.
   a valid cost edit, the mana value is recomputed and one new version exists.
 - CA-13 (RN-25): When an earlier version is restored, the fields, the power
   indicator and its possibly-outdated mark come back, the card is revalidated,
-  and the restoration appears as a new version.
+  and the restoration appears as a new version. Restoring a version of a
+  custom art version brings back its art, runs no validation and appears as a
+  new version.
 - CA-14 (RN-07): The same scripted card, shaped as each provider's recorded
   response (OpenAI, Anthropic and Google), yields the same saved card and the
   same validation result.
@@ -567,11 +632,11 @@ never use the network or a real provider.
 - CA-26 (RN-11): Given a request without an idea or theme, a color identity or a
   power level, it is not sent and the missing field is named. Colorless counts
   as a color identity only when chosen explicitly.
-- CA-27 (RN-12, RN-13): Every generated card shows its design intent, its design
+- CA-27 (RN-12, RN-13): Every generated card except a custom art version shows its design intent, its design
   rationale and the list of comparables used.
 - CA-28 (RN-20): Given a text over the limit of abilities or of length, the card
   is rejected and the exceeded limit is named.
-- CA-29 (RN-22): Every generated card shows a power indicator (too strong, in
+- CA-29 (RN-22): Every generated card except a custom art version shows a power indicator (too strong, in
   range or too weak) with a justification that cites at least one comparable,
   and a "too strong" indicator does not make the card rejected.
 - CA-30 (RN-24): A quick adjustment creates a new validated version with a
@@ -740,10 +805,7 @@ never use the network or a real provider.
   key or starting the way a provider key starts, the Status screen names the
   model setting to fix, no response contains the value, and a generation calls
   no provider and creates no card.
-- CA-79 (RN-51): Given an existing card "Lantern Warden" and a two-faced card
-  "Ember // Ash", a card named "lantern  warden", "Ash" or with a typographic
-  apostrophe in place of a straight one is rejected with the cause; a new name
-  is accepted.
+- CA-79: Removed.
 - CA-80 (RN-11): An idea of 1,000 characters is accepted and one of 1,001 is
   refused naming the field, with no provider call; the same holds for an art
   description at 500 and 501. The Request screen also stops the request
@@ -765,11 +827,7 @@ never use the network or a real provider.
   mana value of 2 is refused naming the field, with no provider call.
 - CA-85 (RN-55): While a generation runs, the Request screen names the running
   step, and the name changes as the steps advance.
-- CA-86 (RN-51, RN-56): Given an existing card "Lantern Warden", the idea
-  "Lantern Warden as a five-mana dragon" accepts a card named "Lantern Warden"
-  and the idea "a five-mana dragon" rejects it; given an existing face "Ash",
-  the idea "an ashen fire storm" rejects a card named "Ash", because "Ash" is
-  not a whole word of that idea. CA-79 still holds.
+- CA-86: Removed.
 - CA-87 (RN-57): A planeswalker with no starting loyalty, a non-legendary
   planeswalker, a creature with a starting loyalty and a card with the Battle
   type are rejected with the cause.
@@ -788,6 +846,31 @@ never use the network or a real provider.
   it opens the Request screen with those four values, the other fields at
   their defaults, and no generation started.
 
+- CA-91 (RN-51): Given an existing card "Lantern Warden" and a two-faced card
+  "Ember // Ash", a generated card named "Lantern Warden" or "Ash" is not
+  rejected because of its name, and a manual edit to either name is saved.
+- CA-92 (RN-59, RN-60): Given the card with one face "Lantern Warden" and a
+  printing of rarity uncommon, a custom art version with generated art saves a
+  card whose name, mana cost, mana value, type line, rules text, power and
+  toughness equal the database's and whose rarity is uncommon, calls the image
+  model once and no text model, records art usage only, and is shown as a
+  custom art version with no validation result, design intent or power
+  indicator; its text fields cannot be edited and quick adjustments are not
+  offered. The two-faced card "Ember // Ash" is not offered. A request with no
+  art is refused naming the field, with no provider call. When the art fails,
+  the card is saved without art and art can be retried.
+- CA-93 (RN-61): The image request of a custom art version sends the
+  printing's image as the template, the copied fields, "Card Factory" as the
+  artist credit and the art description unchanged. When the printing's image
+  is missing, the art is generated without the template and the Result screen
+  shows the notice. Manual: with "full art" in the art description, the image
+  follows it.
+- CA-94 (RN-62, Concepts): A casual, medium and strong request yield the
+  rarities common, rare and mythic, and each image request carries the Card
+  Factory set symbol with that rarity's color; a custom art version of an
+  uncommon printing carries the silver symbol. With an image model that does
+  not accept images as input, the symbol is described in text and the person
+  is told.
 ## Screens
 - First-run setup: the expected download size and free disk space needed, the
   action that starts the build, the build with progress, the cause of a failure with a retry, a notice and a link
@@ -800,10 +883,13 @@ never use the network or a real provider.
   (each with its one-line meaning),
   generation effort (low, medium or high), advanced options hidden until
   requested (card types, supertypes, subtypes, mana value, power and toughness,
-  starting loyalty, rarity; all optional), card language (English or Portuguese), optional base card (search by name,
+  starting loyalty; all optional), card language (English or Portuguese), optional base card (search by name,
   printing and face), and optional art: generated, with an art description and
   the billing notice, or uploaded (checked when chosen); while a generation
-  runs, the running step
+  runs, the running step; a choice between a new card and a custom art version,
+  which asks only for the card (search among cards with one face), the
+  printing and the art (generated with art description and billing notice, or
+  uploaded)
 - Result: the card image, when present, beside the card text in rules format
   (name, mana cost, type line, rules text, power and toughness or starting
   loyalty), in the manner of
@@ -815,9 +901,11 @@ never use the network or a real provider.
   usage (text and art separately), the outdated-text notice, the print-quality
   notice for a small uploaded image, the notice when an uploaded image was not
   kept, the notice when art was generated without the base card template, the options to generate, retry or upload art, the option to start a new request from this card (RN-58), and to open the image at
-  full resolution
-- Library: saved cards with an image thumbnail when present, favorites and
-  deletion
+  full resolution; for a custom art version, the mark that names its base
+  card, the rarity, and no validation result, design sections, power
+  indicator, editing or quick adjustments
+- Library: saved cards with an image thumbnail when present, custom art
+  versions marked, favorites and deletion
 - Adjustments and versions: editing, quick adjustments, new or uploaded art and
   restoration
 
@@ -827,7 +915,8 @@ in the manual checklist, every CA passes, no [DECIDE] remains, the release
 zip and a fresh clone pass the manual checks on a clean Windows machine, a card
 was generated end to end with each text provider using a real key, art was
 generated with each image provider (OpenAI and Google) using a real key, with
-and without a base card, and every open question is answered or explicitly
+and without a base card, a custom art version was generated with a real key,
+and every open question is answered or explicitly
 moved to Future work.
 
 ## Open questions
@@ -835,6 +924,8 @@ moved to Future work.
 - Which license does the project use?
 - Do the data source's terms allow its card images to be sent to an image model
   as a template (RN-38)?
+- The image of the Card Factory set symbol, to be delivered by the maintainer
+  (RN-62).
 
 ## Future work
 - Refreshing the reference database with newer data from the source, for
@@ -848,3 +939,5 @@ moved to Future work.
   power and toughness, and art. This changes the card and its versions, the
   validators (the color identity covers every face), the generation and art
   steps, and the Result and editing screens.
+- Custom art versions of cards with more than one face, and with the printed
+  Portuguese text of a card.

@@ -170,7 +170,7 @@ merged into `main`.
 - [x] T153: Card and its usage saved together
 - [x] T154: Provider error codes owned by the adapter
 - [x] T160: Comparables search quality after the first evaluation
-- [ ] T94: Milestone 3 review
+- [x] T94: Milestone 3 review
 
 ### Milestone 3b — Generation controls
 

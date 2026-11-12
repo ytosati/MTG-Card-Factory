@@ -355,6 +355,11 @@ indicator with its justification, artist credit and text usage.
 
 - [x] Passed
 
+Second run, after T153, T154 and T160: version 0.1.0 · date 2026-11-11 ·
+same machine and provider, from a newly built zip.
+
+- [x] Passed
+
 ### Search quality evaluation (T26), first run
 
 Search plans written with the requests (plan section 9.1); relevant cards in

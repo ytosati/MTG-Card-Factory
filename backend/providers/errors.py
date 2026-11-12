@@ -9,6 +9,7 @@ from core.errors import (
     CODE_CONTENT_REFUSED,
     CODE_INVALID_RESPONSE,
     CODE_MODEL_NOT_FOUND,
+    CODE_PROVIDER_REJECTED,
     CODE_PROVIDER_UNAVAILABLE,
     CODE_QUOTA,
     CODE_RATE_LIMITED,
@@ -43,6 +44,17 @@ class ProviderUnavailable(ProviderError):
     def __init__(self, message: str, code: str = CODE_PROVIDER_UNAVAILABLE):
         super().__init__(message)
         self.code = code
+
+
+class ProviderRejected(ProviderError):
+    """The provider answered and refused the request outside the mapped set; `setting` is the model
+    setting of the call when the model is the likely cause, else None."""
+
+    code = CODE_PROVIDER_REJECTED
+
+    def __init__(self, setting: str | None = None):
+        super().__init__(MESSAGES[CODE_PROVIDER_REJECTED])
+        self.setting = setting
 
 
 class _AnsweredError(ProviderError):
@@ -86,6 +98,9 @@ MESSAGES = {
     CODE_RATE_LIMITED: "The provider is limiting requests. Wait a moment and try again.",
     CODE_MODEL_NOT_FOUND: "The provider does not know the configured model.",
     CODE_PROVIDER_UNAVAILABLE: "The provider is not answering. Try again later.",
+    CODE_PROVIDER_REJECTED: (
+        "The provider refused the request. Check the model setting: the model may not support this request."
+    ),
     CODE_INVALID_RESPONSE: "The provider answered in a form that could not be used.",
     CODE_CONTENT_REFUSED: "The provider refused to write this content.",
 }

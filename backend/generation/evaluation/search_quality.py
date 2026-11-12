@@ -29,7 +29,6 @@ TOP = 10
 # Plan 9.1: pass when at least 16 of the 20 requests have five or more relevant cards.
 RELEVANT_PER_REQUEST = 5
 PASSING_REQUESTS = 16
-TEXT_PREVIEW = 160
 
 
 def main(argv=None):
@@ -168,14 +167,23 @@ def _evaluate(request, adapter, *, interactive):
     top = list(candidates)[:TOP]
     if not top:
         print("No candidates.")
+    from catalog import selectors
+
+    # Power and toughness are not part of the search item; they help judge creatures.
+    stats = selectors.power_toughness(item["oracle_id"] for item in top)
     for number, item in enumerate(top, start=1):
-        mark = "  [banned counterexample]" if item["counterexample"] else ""
-        print(f"{number:>2}. {item['name']}  {item['mana_cost']}  {item['type_line']}{mark}")
-        text = " ".join(item["oracle_text"].split())
-        if len(text) > TEXT_PREVIEW:
-            text = text[: TEXT_PREVIEW - 3] + "..."
-        print(f"    {text}")
-        print(f"    roles: {', '.join(item['roles']) or '-'}; identity: {''.join(item['color_identity']) or 'C'}")
+        print(f"{number:>2}. {item['name']} — {item['mana_cost'] or '(no mana cost)'} — {item['type_line']}")
+        # The full text of every face, one line per ability: a cut text cannot be judged.
+        text_lines = (item["oracle_text"] or "(no rules text)").split("\n")
+        print(f"    Oracle text: {text_lines[0]}")
+        for line in text_lines[1:]:
+            print(f"                 {line}")
+        power, toughness = stats.get(item["oracle_id"], (None, None))
+        if power is not None:
+            print(f"    power/toughness: {power}/{toughness}")
+        print(f"    roles: {', '.join(item['roles']) or '-'}")
+        print(f"    identity: {''.join(item['color_identity']) or 'colorless'}")
+        print(f"    banned counterexample: {'yes' if item['counterexample'] else 'no'}")
     if not interactive:
         return None
 

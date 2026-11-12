@@ -8,12 +8,14 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass, replace
 from typing import Any
 
+from django.db import OperationalError
 
 # Modules, not functions, are imported where a test replaces the function.
 from catalog import selectors
 from cards import services
 from cards.models import Card, CardVersion
 from core.config import get_config
+from core.errors import database_busy_error
 from generation.prompts import draft_message, load_prompt, request_message, revision_message
 from generation.schemas import DESIGN_SCHEMA, DRAFT_SCHEMA, REVISION_SCHEMA
 from providers import factory
@@ -198,12 +200,17 @@ def run_generation(request: Mapping[str, Any]) -> GenerationOutcome:
         config = get_config()
         provider, model = config.llm_provider, config.llm_model
     usage = _UsageLog(provider=provider, model=model)
-    outcome = None
     try:
-        outcome = _generate(request, result.adapter, usage)
-        return outcome
+        # The card and its usage records are saved together inside _generate.
+        return _generate(request, result.adapter, usage)
+    except OperationalError as error:
+        # A busy database would refuse the fallback writes too: the job ends with database_busy and records nothing.
+        if database_busy_error(error) is not None:
+            usage.saved()
+        raise
     finally:
-        usage.write(card=outcome.card if outcome is not None else None)
+        # Without a card, the answered calls are still recorded on their own.
+        usage.write_unsaved()
 
 
 def _generate(request: Mapping[str, Any], adapter: TextAdapter, usage: "_UsageLog") -> GenerationOutcome:
@@ -229,7 +236,7 @@ def _generate(request: Mapping[str, Any], adapter: TextAdapter, usage: "_UsageLo
             draft, origin = revision, CardVersion.Origin.REVISED
             checked = validate(_validated_fields(draft), None, validator_request, existing_names)
 
-    return GenerationOutcome(card=_save_card(request, draft, origin, checked), revision_failure=revision_failure)
+    return GenerationOutcome(card=_save_card(request, draft, origin, checked, usage), revision_failure=revision_failure)
 
 
 _VALIDATED_FIELDS = ("name", "mana_cost", "mana_value", "type_line", "rules_text", "power", "toughness", "rarity")
@@ -244,19 +251,22 @@ def _validated_fields(draft: Draft) -> dict[str, Any]:
     return {field: getattr(draft, field) for field in _VALIDATED_FIELDS}
 
 
-def _save_card(request: Mapping[str, Any], draft: Draft, origin: str, checked) -> Card:
+def _save_card(request: Mapping[str, Any], draft: Draft, origin: str, checked, usage: "_UsageLog") -> Card:
     """The card with the request and its first version, written together."""
     fields = asdict(draft)
     del fields["usage"]
-    return services.create_card(
+    card = services.create_card(
         idea=request["idea"],
         requested_color_identity=request["color_identity"],
         power_level=request["power_level"],
         origin=origin,
         status=checked.status,
         validation=checked.to_dict(),
+        usage=usage.fields(),
         **fields,
     )
+    usage.saved()
+    return card
 
 
 class _UsageLog:
@@ -277,14 +287,24 @@ class _UsageLog:
         self.entries.append((usage_of(answer), "ok"))
         return answer
 
-    def write(self, card: Card | None) -> None:
+    def fields(self) -> list[dict[str, Any]]:
+        """The noted usage as record_usage() arguments, for the card's own transaction."""
+        return [self._fields(usage, outcome) for usage, outcome in self.entries]
+
+    def saved(self) -> None:
+        """The card and these records are committed; nothing is left to write."""
+        self.entries = []
+
+    def write_unsaved(self) -> None:
         entries, self.entries = self.entries, []
         for usage, outcome in entries:
-            services.record_usage(
-                provider=self.provider,
-                model=self.model,
-                input_tokens=usage.input_tokens,
-                output_tokens=usage.output_tokens,
-                outcome=outcome,
-                card=card,
-            )
+            services.record_usage(card=None, **self._fields(usage, outcome))
+
+    def _fields(self, usage: Usage, outcome: str) -> dict[str, Any]:
+        return {
+            "provider": self.provider,
+            "model": self.model,
+            "input_tokens": usage.input_tokens,
+            "output_tokens": usage.output_tokens,
+            "outcome": outcome,
+        }

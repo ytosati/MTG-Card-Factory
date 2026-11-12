@@ -119,7 +119,9 @@ Fields listed are the ones the spec needs; types are left to the tasks.
   comparables (JSON: oracle_id, name, role), base_card (JSON snapshot: oracle_id,
   printing id, face, name, rules text), power_indicator, power_justification,
   power_outdated, status (approved, rejected), validation (JSON causes),
-  skipped_checks, image (nullable). Versions are immutable, with one exception:
+  skipped_checks, image (nullable), revision_failure (JSON `{code, message}`
+  or null; set only on the version saved after a failed automatic revision and
+  copied by a restore, RN-15). Versions are immutable, with one exception:
   art requested in the request is attached to version 1 by the generation job
   that created it (RN-32). The artist credit "Card Factory" is a constant, not
   a stored field (RN-48).
@@ -173,7 +175,7 @@ where `setting` names the configuration setting to fix when there is one
 branches on `code`, never on `message`: `config_invalid`, `origin_refused`,
 `not_found`, `method_not_allowed`, `validation`, `database_not_ready`,
 `database_busy`, `insufficient_space`, `source_unreachable`, `auth`, `quota`,
-`rate_limited`, `model_not_found`, `provider_unavailable`,
+`rate_limited`, `model_not_found`, `provider_unavailable`, `provider_rejected`,
 `provider_not_available_yet`
 (development state of Milestone 3 only), `invalid_response`,
 `content_refused`, `art_unavailable`, `card_changed`, `generation_running`,
@@ -197,7 +199,13 @@ A generation job's `result` is `{card: id, revision_failure: {code, message} |
 null}`, where `revision_failure` reports a failed automatic revision (RN-15); a
 build's is null. A provider error raised in a job becomes its envelope with the
 error's `code` and fixed message, never the provider's text; `model_not_found`
-carries `setting` `LLM_MODEL` (RN-08, RN-10).
+carries `setting` `LLM_MODEL` (RN-08, RN-10). `provider_rejected` reports a 4xx
+answer outside the mapped set (auth, quota, rate limit, unknown model, and a
+content refusal, which maps to `content_refused` first): the provider answered
+and refused the request. Its fixed message asks to check the model setting; it
+carries `setting` with the model of the failed call (`LLM_MODEL`, later
+`IMAGE_MODEL`) only for 400, 404 and 422 answers, and never quotes the
+provider's text.
 
 **Generations.** `POST /api/generations` takes `{idea, color_identity,
 power_level}`: the idea is required, not blank and at most 1,000 Unicode
@@ -212,7 +220,8 @@ no provider call: a text setting to fix answers `config_invalid` with that
 answer is 202 with the job; while a generation-type job is queued or running
 the answer is 409 `generation_running` (RN-50). `GET /api/cards/{id}` returns
 `{id, current_version: {text fields, design_intent, rationale, comparables,
-power_indicator, power_justification, origin, status, validation}, usage: {text:
+power_indicator, power_justification, origin, status, validation,
+revision_failure}, usage: {text:
 [records]}}`; an unknown or malformed id answers 404 `not_found`.
 
 **Readiness gate.** A default DRF permission requires a ready catalog; the
@@ -448,16 +457,24 @@ application (unknown migrations), it stops with a message instead of migrating.
    request), commander legality (legal; banned returned only as
    counterexamples), roles, types and mana value, then ranks with FTS5 BM25 over
    name, type line and rules text. Power level shapes the candidate set: strong
-   includes Game Changer cards and ranks by EDHREC rank; casual excludes Game
-   Changer cards; medium allows Game Changer cards without prioritizing them
-   and ranks by BM25 alone. User text passed to `MATCH` is quoted per token,
-   and the tokens are joined with OR so BM25 ranks cards that match more of
-   them first. The selector keeps the best `MAX_RESULTS` (40) by BM25; strong
-   then orders those by EDHREC rank, unranked last. A search plan with no
+   includes Game Changer cards; casual excludes Game Changer cards; medium
+   allows Game Changer cards without prioritizing them. User text passed to
+   `MATCH` is quoted per token, and the tokens are joined with OR. Relevance is
+   a tiered order: cards whose creature type (a word after the dash of a
+   creature face of the type line, case-insensitive, either face of a `//`
+   line) is a keyword come first; then cards matching at least one keyword
+   outside `COMMON_WORDS` (a fixed set of common rules-text words) before cards
+   matching only common words. Inside a tier, medium and casual order by
+   BM25 alone, then name, then id. Strong orders a tier by the sum of the BM25
+   rank and the EDHREC rank, both taken among the cards of that tier (equal
+   values share a rank, unranked cards rank last), with ties broken by BM25,
+   then name, then id; popularity never crosses a tier. The selector keeps the
+   best `MAX_RESULTS` (40) by relevance (tier, then BM25) before strong reorders
+   them. A search plan with no
    usable keyword runs the filters alone, ordered by EDHREC rank.
 3. If fewer than a minimum number of legal results come back (a named
-   constant, 10), the selector widens the filters deterministically (drop
-   mana value, then types). Identity, legality, roles and the casual
+   constant, 10), the selector widens the filters deterministically (accept mana values one beyond the range,
+   `MANA_VALUE_TOLERANCE`, in the first stage; then drop mana value, then types). Identity, legality, roles and the casual
    exclusion of Game Changer cards are never dropped. No second model call.
 4. The draft call receives the first 8, 20 or 40 candidates for low, medium
    and high effort (RN-53). The model writes the card and cites comparables from the candidates; cited
@@ -477,7 +494,10 @@ written requests covering the main roles, every color and the three power
 levels, run against a real local database (a manual script outside the test
 suite, since tests never use real data). For each request a person marks the
 relevant cards in the top ten. Pass: at least 16 of 20 requests have five or
-more relevant cards. On pass, embeddings stay out. On fail, the task records
+more relevant cards. The pass rule applies to the run with the search plans
+written with the requests and committed with them before the run; it measures
+the search alone and calls no provider. A run with the text model's search
+plans is optional and recorded apart. On pass, embeddings stay out. On fail, the task records
 which requests failed and why, and proposes either better role patterns and
 keywords or an embeddings option for approval. Only the request texts and the
 counts are committed, never card data (RN-02).
@@ -800,8 +820,8 @@ task names exactly one agent.
 
 **Models and cost.** Each agent runs on the model its work needs: Opus for
 architect, spec-reviewer, llm-engineer (prompts and the generation flow) and
-frontend-dev (interface design); Sonnet for backend-dev, release-dev, qa,
-reviewer and docs-writer. A task that touches keys or another security rule
+frontend-dev (interface design); Sonnet for backend-dev, release-dev,
+reviewer and docs-writer; Haiku for qa. A task that touches keys or another security rule
 gets its review on Opus. When several tasks run in a row:
 - each task starts a fresh agent with a brief that names the files to read;
   agents are not resumed across tasks once their context has grown;

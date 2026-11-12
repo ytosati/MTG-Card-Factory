@@ -167,7 +167,10 @@ merged into `main`.
 - [x] T133: Database busy errors in the API
 - [x] T137: Error codes in one place and module table
 - [x] T117: Milestone 3 end-to-end flow test
-- [ ] T94: Milestone 3 review
+- [x] T153: Card and its usage saved together
+- [x] T154: Provider error codes owned by the adapter
+- [x] T160: Comparables search quality after the first evaluation
+- [x] T94: Milestone 3 review
 
 ### Milestone 3b — Generation controls
 
@@ -178,6 +181,9 @@ merged into `main`.
 - [ ] T141: Generation effort, design notes and steps in the pipeline
 - [ ] T145: Existing characters in the prompts
 - [ ] T146: Request and Result screens: effort, steps, design notes and loyalty
+- [ ] T156: Cost {0} alone and no leading zero
+- [ ] T157: Revision failure saved with the version
+- [ ] T158: Power level meanings and a new request from a card
 - [ ] T147: Milestone 3b end-to-end flow test
 - [ ] T148: Milestone 3b review
 
@@ -189,6 +195,7 @@ merged into `main`.
 - [ ] T45: Connection test endpoint (text key)
 - [ ] T92: Status screen: connection test
 - [ ] T93: Manual checks: real-key generation
+- [ ] T159: Keys with whitespace or # are settings to fix
 - [ ] T119: Milestone 4 review
 
 ### Milestone 5 — Rules validation
@@ -202,6 +209,7 @@ merged into `main`.
 - [ ] T134: Download files cleaned after a build
 - [ ] T135: Progress during downloads
 - [ ] T136: Source listing cache that expires
+- [ ] T155: Comparables search without a scan of the whole catalog
 - [ ] T149: Advanced options in the request
 - [ ] T150: Advanced options check
 - [ ] T151: Advanced options in the prompts
@@ -1133,6 +1141,47 @@ Agent: qa
 Depends on: T49, T61
 Done when: the end-to-end suite passes with the Milestone 2 flow unchanged.
 
+### T153: Card and its usage saved together
+Found in T94: the card is saved before its usage records, which are written
+one by one outside its transaction. A usage write that fails (for example with
+`database_busy`) ends the job with an error while the card stays saved, so a
+new attempt leaves a duplicate card, and the remaining records are lost. Save
+the card and every usage record of the generation in one transaction; a
+generation with no card keeps recording its usage on its own.
+Covers: RN-09, RN-10, CA-16
+Agent: backend-dev
+Depends on: T48, T133
+Done when: tests pass for a usage write that fails with a busy database after the draft (no card and no usage record saved, the job ends with `database_busy`), the approved and the revised paths (card and records saved together), and a failed generation that still records its usage with no card.
+
+### T154: Provider error codes owned by the adapter
+Found in T94: the OpenAI adapter compares the provider's error code with the
+application's `model_not_found` code, which only works because both strings
+are equal; and a 4xx answer with no mapping becomes `provider_unavailable`,
+whose message says the provider is not answering although it answered (for
+example a model without structured output). The adapter keeps the provider's
+wire codes as its own constants, and an unmapped 4xx answer gets a code whose
+fixed message says the provider refused the request and points to the model
+setting (plan section 6, error codes).
+Covers: RN-10
+Agent: llm-engineer
+Depends on: T40, T137
+Done when: tests pass for the wire code `model_not_found` mapped through the adapter's own constant, and for an unmapped 400 answer shown with the new code and its fixed message, never the provider's text; contract samples are regenerated.
+
+### T160: Comparables search quality after the first evaluation
+Found in T94: the first run of the T26 evaluation failed, 11 of 20 requests
+with five or more relevant cards (specs/manual-checks.md, Milestone 3).
+Candidates lacked the requested creature type (01, 07, 08, 11, 13), matched
+only common words (10, 19, 20), or fell outside the requested power level
+(04, 13, 20). Improve the search without embeddings: creature types named in
+the search plan rank the cards that have them first, common words weigh less
+in the ranking, a plan with several roles takes cards with any of them, and
+the shaping by power level is checked against the failed requests. The
+request texts and their search plans stay as committed.
+Covers: RN-04, RN-12, CA-24
+Agent: backend-dev
+Depends on: T23, T26
+Done when: tests with fictional cards pass for the creature type ranking, the lower weight of common words, a plan with two roles and the power level shaping, the tests of T23 still pass, and a second run of the T26 evaluation by the maintainer passes the rule (at least 16 of 20), recorded in specs/manual-checks.md.
+
 ### T94: Milestone 3 review
 Run every test suite and confirm that the sweep of T61 covers every endpoint.
 Check the coverage of the RN and CA parts of this milestone. Run the demo from
@@ -1141,11 +1190,11 @@ the relevant cards in each top ten, and apply the pass rule: at least 16 of 20
 requests with five or more relevant cards. On a fail, list the failed requests
 with a proposal for approval (better role patterns and keywords, or
 embeddings). Commit only the counts. Confirm that only the factory and the log filter reveal keys. Record the
-findings, and check the Milestone 4 tasks against the spec.
+findings, and check the Milestone 3b tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T23, T26, T28, T29, T35–T40, T46–T49, T61, T65, T67, T117, T133, T137, T138, T139
-Done when: every suite passes, a card was generated with OpenAI, the T26 counts are recorded with the pass rule applied, the findings are recorded, and the blocking items of Milestone 4 are listed.
+Depends on: T23, T26, T28, T29, T35–T40, T46–T49, T61, T65, T67, T117, T133, T137, T138, T139, T153, T154, T160
+Done when: every suite passes, a card was generated with OpenAI, the T26 counts are recorded with the pass rule applied, the findings are recorded, and the blocking items of Milestone 3b are listed.
 
 ## Milestone 3b — Generation controls
 
@@ -1228,6 +1277,35 @@ Agent: frontend-dev
 Depends on: T140, T141, T142, T145
 Done when: Vitest tests pass for the effort as a required field, CA-85, the refusal with the edit option, design notes shown only when present, and the loyalty of a planeswalker.
 
+### T156: Cost {0} alone and no leading zero
+Found in T94: the mana cost validator accepts {0} combined with other symbols.
+The cost {0} is written alone, and a generic number has no leading zero.
+Covers: RN-17, CA-66
+Agent: backend-dev
+Depends on: T28, T94
+Done when: tests pass for the cost {0} accepted with mana value 0 and the costs {0}{G}, {X}{0}, {0}{C} and {00} rejected, with the earlier CA-66 cases unchanged.
+
+### T157: Revision failure saved with the version
+Found in T94: the failure of the automatic revision is only in the job result,
+so it is lost when the Result screen is opened again. Save its code and fixed
+message with the version saved after the failed revision, copy it on a
+restore, and return it in `GET /api/cards/{id}` (plan sections 4 and 6).
+Covers: RN-15, CA-11
+Agent: backend-dev
+Depends on: T48, T140
+Done when: tests pass for a failed and an invalid revision whose failure is read back through `GET /api/cards/{id}`, an approved or revised card with no failure, and the end-to-end flow of T117 unchanged; contract samples are regenerated.
+
+### T158: Power level meanings and a new request from a card
+The Request screen shows the one-line meaning of each power level (spec,
+Concepts). The Result screen shows the revision failure read from the card
+instead of the job, and offers to start a new request from the card: the
+Request screen opens with its idea, color identity, power level and generation
+effort, the other fields at their defaults, and nothing sent.
+Covers: RN-15, RN-58, CA-11, CA-90
+Agent: frontend-dev
+Depends on: T146, T157
+Done when: Vitest tests pass for the three meanings, the failure shown after a reload of `#/result/<id>`, and CA-90 with no request sent; `npx tsc -b` passes.
+
 ### T147: Milestone 3b end-to-end flow test
 Extend the end-to-end suite with a generation at each effort, a high-effort
 card with design notes, a card named after an existing card the idea names,
@@ -1243,7 +1321,7 @@ run the demo from the zip with a real key (compare the tokens per effort),
 record the findings, and check the Milestone 4 tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T140–T147
+Depends on: T140–T147, T156–T158
 Done when: every suite passes, the demo works, the token counts per effort are recorded, the findings are recorded, and the blocking items of Milestone 4 are listed.
 
 ## Milestone 4 — Text providers
@@ -1307,6 +1385,17 @@ Agent: docs-writer
 Depends on: T65, T67
 Done when: each provider has steps and an expected result.
 
+### T159: Keys with whitespace or # are settings to fix
+Found in T94: a key with a comment written after it on the same line reached
+the provider and was refused as invalid. In the configuration file only a line
+starting with # is a comment; a text or image key that still contains a
+whitespace character or # after spaces and quotes are removed is a setting to
+fix, never shown; an ignored image key is not checked.
+Covers: RN-08, CA-89
+Agent: backend-dev
+Depends on: T45
+Done when: tests pass for CA-89 (text key: Status, generation and connection test call no provider; image key: art unavailable, text keeps working), a key in quotes with surrounding spaces accepted, and an ignored image key with # not reported.
+
 ### T119: Milestone 4 review
 Run every test suite and confirm that the sweep of T61 covers the connection
 test endpoint. Check the coverage of the RN and CA parts of this milestone. Run
@@ -1315,7 +1404,7 @@ call sites never branch on the provider. Record the findings, and check the
 Milestone 5 tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T41, T42, T45, T92, T93, T118
+Depends on: T41, T42, T45, T92, T93, T118, T159
 Done when: every suite passes, a card was generated with each text provider, the findings are recorded, and the blocking items of Milestone 5 are listed.
 
 ## Milestone 5 — Rules validation
@@ -1464,6 +1553,16 @@ Agent: frontend-dev
 Depends on: T149
 Done when: Vitest tests pass for the hidden options, each value set, a refused combination named on the screen, and a request sent with no option chosen.
 
+### T155: Comparables search without a scan of the whole catalog
+Found in T94: when a request yields few usable keywords, the color identity and
+role filters of `search_cards` run in Python over every legal or banned card of
+the catalog, on each generation. Move these filters into the database query so
+the result and its order stay the same while only the candidates are loaded.
+Covers: RN-04, RN-12
+Agent: backend-dev
+Depends on: T94
+Done when: the existing tests of T23 pass unchanged, and a test with a request with no usable keyword checks the same results and order as before with the filters applied in the query.
+
 ### T120: Milestone 5 end-to-end flow test
 Extend the end-to-end suite with the demo path of this milestone: a build
 that includes the fictional rules text, then a generation whose draft uses an
@@ -1481,7 +1580,7 @@ or provider call. Run the demo from the zip with a rebuilt database and a real
 key. Record the findings, and check the Milestone 6 tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T18, T24, T30, T31, T32, T95, T120, T149–T152
+Depends on: T18, T24, T30, T31, T32, T95, T120, T149–T152, T155
 Done when: every suite passes, the demo works, the findings are recorded, and the blocking items of Milestone 6 are listed.
 
 ## Milestone 6 — Library and versions

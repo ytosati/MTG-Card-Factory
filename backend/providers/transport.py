@@ -15,6 +15,7 @@ from providers.errors import (
     AuthError,
     ModelNotFound,
     ProviderError,
+    ProviderRejected,
     ProviderUnavailable,
     QuotaError,
 )
@@ -26,6 +27,9 @@ IMAGE_READ_TIMEOUT = 300
 # Network failures worth one retry. The test network guard is not one of them,
 # so a test that would go out fails instead of being retried.
 _NETWORK_ERRORS = (OSError, http.client.HTTPException)
+
+# Unmapped 4xx statuses whose `provider_rejected` names the model setting (plan section 6).
+_MODEL_CAUSED_STATUSES = (400, 404, 422)
 
 
 @dataclass(frozen=True)
@@ -125,7 +129,8 @@ def _status_error(
         )
     if status >= 500:
         return ProviderUnavailable("The provider is not answering. Try again later.")
-    return ProviderError(f"The provider refused the request (HTTP {status}).")
+    # The provider answered and refused; for these statuses the model is the likely cause.
+    return ProviderRejected(setting=model_setting if status in _MODEL_CAUSED_STATUSES else None)
 
 
 def _send(

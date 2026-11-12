@@ -342,3 +342,78 @@ JSON array (`download_uri`, `size`) to gzip-compressed JSON Lines
 (`jsonl_download_uri`, `compressed_size`); the build reads both. The space
 factor of 10 covers the download, the extract, a database of about 30 MB and
 its write-ahead log with a wide margin.
+
+## Milestone 3 — First card
+
+Run record: version 0.1.0 · date 2026-11-11 · Windows 11 Pro, development
+machine, from the locally built zip, OpenAI as text provider with a real key.
+
+Demo (specs/tasks.md, Milestone 3): a request sent from the Request screen,
+the job followed to its end, and the Result screen read: card text, approved
+or rejected with causes, design intent, rationale, comparables, power
+indicator with its justification, artist credit and text usage.
+
+- [x] Passed
+
+Second run, after T153, T154 and T160: version 0.1.0 · date 2026-11-11 ·
+same machine and provider, from a newly built zip.
+
+- [x] Passed
+
+### Search quality evaluation (T26), first run
+
+Search plans written with the requests (plan section 9.1); relevant cards in
+the top ten of each request, marked by hand.
+
+| Request | Relevant | Request | Relevant |
+|---|---|---|---|
+| 01-elf-mana | 4 | 11-goblin-warcry | 2 |
+| 02-spell-draw | 5 | 12-any-color-artifact | 9 |
+| 03-exile-enchantment | 10 | 13-demon-sacrifice | 2 |
+| 04-wrath | 3 | 14-mill-enters | 10 |
+| 05-cheap-counter | 7 | 15-small-flier | 8 |
+| 06-life-tutor | 5 | 16-burn-instant | 10 |
+| 07-zombie-return | 4 | 17-colorless-rock | 5 |
+| 08-soldier-army | 3 | 18-five-color-land | 10 |
+| 09-cleric-lifegain | 6 | 19-pay-life-draw | 4 |
+| 10-team-indestructible | 4 | 20-bant-guardian | 1 |
+
+Result: 11 of 20 requests with five or more relevant cards; the pass rule
+asks for 16. **Fail.**
+
+Failed requests: 01, 04, 07, 08, 10, 11, 13, 19 and 20. Observed while
+marking: candidates without the requested creature type (01, 07, 08, 11, 13),
+candidates that match only common words (10, 19, 20), and candidates outside
+the requested power level (04, 13, 20). Decision: better role patterns and
+keywords, no embeddings (T160), then a second run.
+
+### Search quality evaluation (T26), second run (after T160)
+
+Same requests and search plans as the first run; the search ranks a creature
+type named in the keywords first, then cards with a less common keyword, by
+BM25 within each tier (strong adds popularity within the tier), and accepts
+one mana value beyond each edge of the plan's range. Marked by hand with
+stricter criteria: a card is relevant when a designer would use it to
+calibrate the requested card; a card that covers only part of a compound
+request is a borderline case and does not count.
+
+| Request | Relevant | Request | Relevant |
+|---|---|---|---|
+| 01-elf-mana | 1 | 11-goblin-warcry | 5 |
+| 02-spell-draw | 6 | 12-any-color-artifact | 6 |
+| 03-exile-enchantment | 10 | 13-demon-sacrifice | 0 |
+| 04-wrath | 10 | 14-mill-enters | 10 |
+| 05-cheap-counter | 9 | 15-small-flier | 5 |
+| 06-life-tutor | 6 | 16-burn-instant | 8 |
+| 07-zombie-return | 8 | 17-colorless-rock | 6 |
+| 08-soldier-army | 3 | 18-five-color-land | 5 |
+| 09-cleric-lifegain | 10 | 19-pay-life-draw | 5 |
+| 10-team-indestructible | 9 | 20-bant-guardian | 0 |
+
+Result: 16 of 20 requests with five or more relevant cards. **Pass.**
+Embeddings stay out.
+
+Failed requests: 01, 08, 13 and 20. Observed while marking: generic mana
+creatures outrank the cards that scale with Forests or Elves (01); most
+candidates cover only one part of a compound request (08, 20); the search
+plan of 13 names no creature type, so no Demon is ranked first.

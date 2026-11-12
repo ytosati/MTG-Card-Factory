@@ -865,3 +865,60 @@ def test_ca06_no_error_text_contains_the_key_or_the_response_body(outcomes):
     with pytest.raises(errors.ProviderError) as caught:
         _adapter(send).complete_json(SYSTEM, MESSAGES, SCHEMA)
     _assert_error_text_is_clean(caught.value)
+
+
+# --- Unmapped 400 answers and the wire code (RN-08, RN-10, T154) ------------------
+
+UNSUPPORTED_FORMAT = _error_body(
+    "Unsupported value: 'response_format' of type 'json_schema' is not supported with this model.",
+    "invalid_request_error",
+    "unsupported_value",
+)
+
+
+def test_rn10_t154_an_unmapped_400_answer_is_provider_rejected_naming_llm_model():
+    """RN-10, RN-08 (T154): a 400 the adapter does not map (here an unsupported response format) is
+    `provider_rejected`, names LLM_MODEL, shows the fixed message and is not retried."""
+    errors = _errors()
+    send = FakeSend(_http(400, UNSUPPORTED_FORMAT))
+    with pytest.raises(errors.ProviderError) as caught:
+        _adapter(send).complete_json(SYSTEM, MESSAGES, SCHEMA)
+    error = caught.value
+    assert not isinstance(error, (errors.AuthError, errors.ModelNotFound, errors.QuotaError))
+    assert error.code == "provider_rejected"
+    assert getattr(error, "setting", None) == "LLM_MODEL"
+    assert str(error) == errors.MESSAGES["provider_rejected"]
+    assert len(send.calls) == 1
+    _assert_error_text_is_clean(error)
+
+
+@pytest.mark.parametrize(
+    ("status", "payload"),
+    [(400, MODEL_NOT_FOUND_CODE), (403, PROJECT_WITHOUT_MODEL_ACCESS)],
+    ids=["400-model-not-found", "403-model-not-found"],
+)
+def test_rn08_t154_the_wire_code_model_not_found_maps_through_the_adapters_own_constant(
+    monkeypatch, status, payload
+):
+    """RN-08, RN-10 (T154): the adapter compares OpenAI's wire code with its own constant, not with the
+    application's CODE_MODEL_NOT_FOUND. The application constant is changed and the adapter reloaded:
+    an adapter that still reads the application constant no longer recognizes `model_not_found`."""
+    import importlib
+
+    import core.errors
+    import providers.openai_text as openai_text
+
+    errors = _errors()
+    monkeypatch.setattr(core.errors, "CODE_MODEL_NOT_FOUND", "application_model_code_changed")
+    try:
+        importlib.reload(openai_text)
+        send = FakeSend(_http(status, payload))
+        adapter = openai_text.OpenAITextAdapter(api_key=FAKE_KEY, model=MODEL, send=send)
+        with pytest.raises(errors.ModelNotFound) as caught:
+            adapter.complete_json(SYSTEM, MESSAGES, SCHEMA)
+        assert caught.value.setting == "LLM_MODEL"
+        assert caught.value.code == "model_not_found"
+        _assert_error_text_is_clean(caught.value)
+    finally:
+        monkeypatch.undo()
+        importlib.reload(openai_text)

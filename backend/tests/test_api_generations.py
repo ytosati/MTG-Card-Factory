@@ -746,3 +746,68 @@ def test_t49_generations_answers_only_post(api, fake):
     """Plan section 6: GET on the generation endpoint is not allowed and starts nothing."""
     assert_error_envelope(api.get(GENERATIONS_URL), 405, "method_not_allowed")
     _nothing_started(fake)
+
+
+# --- An unmapped 4xx answer to the draft (RN-08, RN-10, T154) ---------------------
+
+
+def _unmapped_error(status):
+    """The error the transport raises for an unmapped 4xx answer; the fictional body echoes the key."""
+    from providers import transport
+
+    body = json.dumps(
+        {
+            "error": {
+                "message": f"Unsupported value: 'response_format' is not supported. key={FAKE_TEXT_KEY}",
+                "type": "invalid_request_error",
+                "param": "response_format",
+                "code": "unsupported_value",
+            }
+        }
+    ).encode("utf-8")
+
+    def send(method, url, headers, request_body, *, connect_timeout, read_timeout):
+        return transport.HttpResponse(status=status, headers={}, body=body)
+
+    try:
+        transport.request(
+            "POST",
+            "https://api.provider.invalid/v1/fictional",
+            headers={"Authorization": f"Bearer {FAKE_TEXT_KEY}"},
+            body=b"{}",
+            read_timeout=transport.TEXT_READ_TIMEOUT,
+            model_setting="LLM_MODEL",
+            is_quota_error=lambda response: False,
+            send=send,
+        )
+    except transport.ProviderError as error:
+        return error
+    raise AssertionError("the transport accepted an answer with status %d" % status)
+
+
+@pytest.mark.parametrize(
+    ("status", "setting"),
+    [(400, "LLM_MODEL"), (409, None)],
+    ids=["400-names-model-setting", "409-names-no-setting"],
+)
+def test_t154_rn10_an_unmapped_draft_answer_fails_the_job_as_provider_rejected_with_no_card(
+    api, fake, rows, status, setting
+):
+    """RN-08 / RN-10 (T154): an unmapped 4xx answer to the draft fails the job with `provider_rejected`,
+    the fixed message, the model setting only for a 400, and no card; the provider's text never appears."""
+    fake.add_response(design_answer(), DESIGN_USAGE)
+    fake.add_error(_unmapped_error(status))
+
+    job = _generate(api)
+
+    assert job["status"] == "failed", job
+    assert job["result"] is None
+    inner = envelope_error(job["error"])
+    assert inner["code"] == "provider_rejected"
+    assert inner["setting"] == setting
+    assert inner["message"] == MESSAGES["provider_rejected"]
+    assert "unsupported_value" not in json.dumps(job)
+    assert "Unsupported value" not in json.dumps(job)
+    assert FAKE_TEXT_KEY not in json.dumps(job)
+    assert _models().Card.objects.count() == 0
+    assert _models().CardVersion.objects.count() == 0

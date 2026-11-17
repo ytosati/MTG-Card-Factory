@@ -1,0 +1,4 @@
+.mark {
+  flex: none;
+  color: var(--color-accent);
+}

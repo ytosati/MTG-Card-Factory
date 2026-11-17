@@ -61,7 +61,8 @@ when new documents appear (for example `docs/ARCHITECTURE.md`).
 
 ## Tests
 
-- Each test cites the RN or CA it protects, in its name or docstring.
+- What to test follows the Testing policy of `specs/tasks.md`.
+- A test that protects a rule cites its RN or CA, in its name or docstring.
 - Tests use fictional cards written by hand and the fake provider, which stands
   in for text and image generation. They never use the network.
 

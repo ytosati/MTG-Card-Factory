@@ -2,7 +2,7 @@
 name: next-task
 description: Finish the current task and start the next one in a single run: commit the task on its milestone branch, push the milestone branch, then run the implementation cycle of the next task of the milestone. Use only when the maintainer asks to close a task and move on.
 disable-model-invocation: true
-argument-hint: [task id] [auto]
+argument-hint: [task id]
 ---
 
 Close the current task and start the next one. Tasks have no branches of their
@@ -13,8 +13,7 @@ never authorizes anything that touches `main`.
 
 The steps reuse the project skills by reading their files and following them
 exactly: `.claude/skills/commit/SKILL.md` and `.claude/skills/run-task/SKILL.md`.
-Where this file adds or overrides a step, it says so. If `$ARGUMENTS` contains
-`auto`, pass it on to run-task (skips its checkpoint A only).
+Where this file adds or overrides a step, it says so.
 
 ## 0. Pre-flight
 1. Run `git status` and show the current branch. It must be a `milestone/`
@@ -27,10 +26,8 @@ Where this file adds or overrides a step, it says so. If `$ARGUMENTS` contains
    the maintainer's decision.
 
 ## 1. Commit (follows commit/SKILL.md)
-1. Run every test suite that exists in the repository and stop if any fails:
-   `pytest -q` from `backend/`; `pytest launcher release` from the root when
-   `launcher/` or `release/` exist; `npm run test` and `npx tsc -b` from
-   `frontend/` when `frontend/package.json` exists.
+1. If run-task already ran the suites on these exact changes, do not run them
+   again; otherwise run the suites the change touches and stop if any fails.
 2. Follow every step of `.claude/skills/commit/SKILL.md` for the current task,
    including the secret check and waiting for the maintainer to confirm the
    message and the file list. If there is nothing to commit and the milestone
@@ -58,9 +55,9 @@ Where this file adds or overrides a step, it says so. If `$ARGUMENTS` contains
 3. Show the chosen task (id, title, agent, dependencies) and why it was chosen.
 
 ## 4. Run the next task (follows run-task/SKILL.md)
-Follow `.claude/skills/run-task/SKILL.md` for the chosen task id (with `auto`
-if given), on the same milestone branch. Its checkpoints apply unchanged:
-checkpoint A unless `auto`, and checkpoint B always, with no commit at the end.
+Follow `.claude/skills/run-task/SKILL.md` for the chosen task id (grouping
+the tasks of the same feature), on the same milestone branch, with no commit
+at the end.
 
 ## Rules
 - Stop at the first failure and report what was done and what was not.

@@ -12,11 +12,16 @@ You implement one interface task at a time, the one named in the request.
    specs/spec.md and the plan sections it names or touches (search by ID or
    heading; do not read the three files whole).
 2. Run the frontend tests to see the current state.
-3. Implement the minimum needed and make the tests pass.
+3. Implement the minimum needed, with its tests.
 4. Run the tests and the type check before finishing.
 
 Rules:
-- Work only in frontend/. Do not change test files and do not touch backend/.
+- Work only in frontend/. Do not touch backend/.
+- Write the tests of your own work together with the code, following the
+  Testing policy of specs/tasks.md: rules, keys, ownership and the main path,
+  not every state or rare edge case. Tests written first by `qa` are not
+  changed unless plainly wrong; say so in the report.
+  For screens this means `npx tsc -b` and at most a smoke test per screen.
 - Consume only the API contract described in specs/plan.md, and only the
   endpoints that exist on the milestone branch. If something is missing, stop
   and report instead of inventing an endpoint.
@@ -41,8 +46,8 @@ Rules:
   Interface section of specs/code-standards.md (document structure,
   identity, shapes and motion, content). A screen is not done when it is
   merely correct: compare it with the direction before finishing.
-- For a screen task, list in the report the gallery addresses of the states
-  you changed, so screenshots can be taken at 360, 768 and 1280 px.
+- For a screen task, say in the report how to reach the screen in the
+  running application.
 - Follow specs/code-standards.md (comments, structure). Do not commit, push or
   switch branches: the maintainer does that (specs/git-standards.md).
 - Work only on the branch of the task's milestone (`milestone/<id>-<name>`);

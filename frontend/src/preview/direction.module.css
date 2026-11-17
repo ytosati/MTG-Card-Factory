@@ -1,0 +1,304 @@
+/* The direction sample: saved cards as ruled rows with card-shaped thumbnails, and a deck list as a printed
+   table. Details: frontend/DESIGN.md, "Lists and tables". */
+.sample {
+  max-width: var(--measure-wide);
+}
+
+/* Saved cards: one ruled row per card, no box around it. */
+.cardList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-rule-strong);
+}
+
+/* The name column stops at a measure, so the cost stays beside the name as on a card's title bar; the rarity
+   follows, and the marks take the rest of the row and sit at its end. */
+.cardRow {
+  display: grid;
+  grid-template-columns:
+    var(--card-thumb-width) minmax(0, var(--card-list-identity-width)) var(--card-list-cost-width)
+    minmax(calc(var(--card-list-rarity-width) + var(--card-list-marks-width)), 1fr);
+  grid-template-areas: "thumb identity cost facts";
+  align-items: center;
+  column-gap: var(--space-5);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cardRow p {
+  margin: 0;
+}
+
+/* A card-shaped thumbnail: the card corner and the card shadow, the image whole inside. */
+.thumb {
+  grid-area: thumb;
+  display: block;
+  width: var(--card-thumb-width);
+  aspect-ratio: var(--card-aspect-ratio);
+  overflow: hidden;
+  background: var(--color-sunken);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.thumbImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Without an image the thumbnail is an empty card in the colors of the cost: flat, outlined, no shadow. */
+.thumbEmpty {
+  background: var(--card-tint);
+  border: 1px solid var(--color-border-control);
+  box-shadow: var(--shadow-none);
+}
+
+.identity {
+  grid-area: identity;
+  min-width: 0;
+}
+
+.cardName {
+  font-family: var(--font-card);
+  font-size: var(--font-size-lead);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-snug);
+  overflow-wrap: anywhere;
+}
+
+.typeLine {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-snug);
+}
+
+.cost {
+  grid-area: cost;
+  --mana-symbol-size: var(--mana-symbol-size-compact);
+  --mana-symbol-text: var(--mana-symbol-text-compact);
+}
+
+/* Rarity and marks share one area: two columns on a wide row, one line split at its ends on a narrow one. */
+.facts {
+  grid-area: facts;
+  display: grid;
+  grid-template-columns: var(--card-list-rarity-width) minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--space-5);
+}
+
+.rarity {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+/* The rarity as the color of a set symbol; the word beside it carries the meaning. */
+.rarityMark {
+  flex: none;
+  width: var(--rarity-mark-size);
+  height: var(--rarity-mark-size);
+  background: var(--color-rarity-common);
+  transform: rotate(45deg);
+}
+
+.rarity-uncommon {
+  background: var(--color-rarity-uncommon);
+}
+
+.rarity-rare {
+  background: var(--color-rarity-rare);
+}
+
+.rarity-mythic {
+  background: var(--color-rarity-mythic);
+}
+
+.marks {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.tag {
+  padding: 0 var(--space-2);
+  color: var(--color-text);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-strong);
+  letter-spacing: var(--letter-spacing-tag);
+  line-height: var(--line-height-body);
+  white-space: nowrap;
+  background: var(--color-sunken);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-small);
+}
+
+/* A favorite is the person's own choice, so it takes the accent. */
+.favorite {
+  display: inline-flex;
+  color: var(--color-accent);
+}
+
+/* The deck list: a printed table. Ink rule above the column names, hairlines between rows, ink rule
+   above the total. */
+.deck {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.deck th,
+.deck td {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.deck thead th {
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-strong);
+  letter-spacing: var(--letter-spacing-rubric);
+  text-transform: uppercase;
+  border-top: 1px solid var(--color-rule-strong);
+  border-bottom-color: var(--color-border-control);
+}
+
+.deck .count {
+  width: var(--table-count-width);
+  padding-left: 0;
+  text-align: right;
+}
+
+.deck .costColumn {
+  width: var(--table-cost-width);
+  --mana-cost-wrap: nowrap;
+  --mana-symbol-size: var(--mana-symbol-size-compact);
+  --mana-symbol-text: var(--mana-symbol-text-compact);
+}
+
+.deck .typeColumn {
+  padding-right: 0;
+}
+
+.deck td.typeColumn {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+/* The group name starts at the left end of the rule, like the first column. */
+.group th {
+  padding-top: var(--space-5);
+  padding-left: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-strong);
+  letter-spacing: var(--letter-spacing-rubric);
+  text-transform: uppercase;
+  border-bottom-color: var(--color-border-control);
+}
+
+.groupCount {
+  color: var(--color-text-muted);
+}
+
+.deckRow {
+  height: var(--row-height);
+}
+
+/* A tint follows the pointer across a wide row, so the eye keeps its line. It comes at once and fades on
+   leaving, so moving down the table does not lag behind the pointer. */
+@media (hover: hover) and (pointer: fine) {
+  .deckRow > * {
+    transition: background-color var(--motion-duration-fast) var(--motion-easing-out);
+  }
+
+  .deckRow:hover > * {
+    background: var(--color-row-hover);
+    transition-duration: 0ms;
+  }
+}
+
+.deckName {
+  font-family: var(--font-card);
+  font-weight: var(--font-weight-regular);
+  font-size: var(--font-size-lead);
+}
+
+/* The type folds under the name only on a narrow screen; on a wide one it has its column. */
+.typeInline {
+  display: none;
+}
+
+.deck tfoot th,
+.deck tfoot td {
+  font-weight: var(--font-weight-bold);
+  border-top: 1px solid var(--color-rule-strong);
+  border-bottom: 0;
+}
+
+@container (max-width: 40rem) {
+  .cardRow {
+    grid-template-columns: var(--card-thumb-width-narrow) minmax(0, 1fr) auto;
+    grid-template-areas:
+      "thumb identity cost"
+      "thumb facts facts";
+    column-gap: var(--space-3);
+    row-gap: var(--space-1);
+    align-items: start;
+  }
+
+  .thumb {
+    width: var(--card-thumb-width-narrow);
+  }
+
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-1) var(--space-3);
+  }
+
+  .deck .typeColumn {
+    display: none;
+  }
+
+  .typeInline {
+    display: block;
+    color: var(--color-text-muted);
+    font-family: var(--font-ui);
+    font-size: var(--font-size-small);
+  }
+
+  .deck th,
+  .deck td {
+    padding-left: var(--space-2);
+    padding-right: var(--space-2);
+  }
+
+  .deck .count,
+  .deck .group th {
+    padding-left: 0;
+  }
+
+  .deck .count {
+    width: var(--table-count-width-narrow);
+  }
+
+  .deckName {
+    font-size: var(--font-size-body);
+  }
+
+  .deck .costColumn {
+    width: 1%;
+    padding-right: 0;
+  }
+}

@@ -1,12 +1,15 @@
-// Setup screen: opens first while the reference database is not ready.
+// Setup screen container: reads what the build needs, starts and follows it, and hands each state to the view.
 // Details: specs/spec.md, RN-28 and "Screens" (First-run setup); specs/plan.md, section 6.
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 
 import { ApiError, getSetup, startBuild } from "../api/client";
 import type { JobResponse, SetupResponse } from "../api/types";
-import { StatusIcon } from "../components/StatusIcon";
 import { useJob } from "../hooks/useJob";
+import { setupCopy } from "./setup/copy";
+import { formatSize } from "./setup/formatSize";
+import { SetupView } from "./setup/SetupView";
+import type { SetupAction } from "./setup/SetupView";
 
 interface SetupScreenProps {
   /** Called once the database is ready, so the shell moves to the normal screens. */
@@ -38,43 +41,8 @@ interface Problem {
   message: string;
 }
 
-/** What the action area shows; a change of view may move focus (see moveFocus). */
-type View =
-  | { kind: "loading" }
-  | { kind: "load-failed"; message: string }
-  | { kind: "ready" }
-  | { kind: "listing-failed"; message: string }
-  | { kind: "start"; problem: Problem | null }
-  | { kind: "short"; missing: string | null }
-  | { kind: "starting" }
-  | { kind: "building"; job: JobResponse }
-  | { kind: "build-failed"; message: string };
-
-const UNITS = ["B", "KB", "MB", "GB", "TB", "PB"];
-const STEP = 1024;
-
-const LOST_MESSAGE = "Card Factory lost track of the build. Try again to follow or restart it.";
-const FAILED_MESSAGE = "The build failed. Try again.";
-const RUNNING_TEXT = "Downloading the card data and building the database. The build keeps running if you close this tab.";
-
-/** A byte count in binary units with at most one decimal, for example "77.5 KB"; null when it is not a size. */
-function formatSize(bytes: number): string | null {
-  if (!Number.isFinite(bytes) || bytes < 0) return null;
-  let value = bytes;
-  let unit = 0;
-  while (value >= STEP && unit < UNITS.length - 1) {
-    value /= STEP;
-    unit += 1;
-  }
-  const digits = unit === 0 || value >= 100 ? 0 : 1;
-  // Rounding can reach the next unit (1048575 bytes is "1024 KB"), so promote it.
-  if (Number(value.toFixed(digits)) >= STEP && unit < UNITS.length - 1) {
-    value /= STEP;
-    unit += 1;
-  }
-  const text = value.toFixed(unit === 0 || value >= 100 ? 0 : 1).replace(/\.0$/, "");
-  return `${text} ${UNITS[unit]}`;
-}
+/** What the action area shows; a change of it may move focus (see useMoveFocus). */
+type View = SetupAction;
 
 function isActive(job: JobResponse): boolean {
   return job.status === "queued" || job.status === "running";
@@ -91,7 +59,7 @@ function runFromSetup(setup: SetupResponse, attempt: number): BuildRun | null {
 function problemOf(reason: unknown): Problem {
   if (reason instanceof ApiError) return { code: reason.code, message: reason.message };
   if (reason instanceof Error) return { code: null, message: reason.message };
-  return { code: null, message: "Something went wrong in Card Factory. Try again." };
+  return { code: null, message: setupCopy.unknownFailure };
 }
 
 function viewOf(
@@ -107,9 +75,9 @@ function viewOf(
   if (starting) return { kind: "starting" };
   if (run !== null) {
     const seen = followed !== null && followed.attempt === run.attempt ? followed : null;
-    if (seen?.lost) return { kind: "build-failed", message: LOST_MESSAGE };
+    if (seen?.lost) return { kind: "build-failed", message: setupCopy.lost };
     const job = seen?.job ?? run.known;
-    if (job.status === "failed") return { kind: "build-failed", message: job.error?.error.message ?? FAILED_MESSAGE };
+    if (job.status === "failed") return { kind: "build-failed", message: job.error?.error.message ?? setupCopy.failed };
     return { kind: "building", job };
   }
   // A refused start is newer than the listing error of the snapshot read on open.
@@ -119,29 +87,6 @@ function viewOf(
   // See spec RN-28: the build would be refused, so the screen asks for space instead of offering it.
   if (free !== null && needed !== null && free < needed) return { kind: "short", missing: formatSize(needed - free) };
   return { kind: "start", problem: null };
-}
-
-function statusText(view: View): string {
-  switch (view.kind) {
-    case "loading":
-      return "Reading what the build needs…";
-    case "ready":
-      return "Opening Card Factory…";
-    case "start":
-      return view.problem === null ? "Nothing is downloaded until you start." : "";
-    case "starting":
-      return "Starting the build…";
-    case "building":
-      if (view.job.status === "queued") return "Waiting to start…";
-      if (view.job.status === "done") return "Done. Opening Card Factory…";
-      return RUNNING_TEXT;
-    case "build-failed":
-      return "The build stopped.";
-    case "load-failed":
-    case "listing-failed":
-    case "short":
-      return "";
-  }
 }
 
 /** The Setup screen. */
@@ -242,37 +187,18 @@ export function SetupScreen({ onReady }: SetupScreenProps) {
   const lacksSpace = startError?.code === "insufficient_space";
 
   return (
-    <main className="screen setup">
-      <h1 tabIndex={-1}>Setup</h1>
-      <p className="summary">
-        Card Factory checks every card it designs against a local database of existing Magic cards. Build it once
-        to open the other screens.
-      </p>
-
-      {settingsToFix && (
-        <div className="notice tone setup-settings">
-          <StatusIcon tone="notice" />
-          <p>
-            Some settings need fixing. You can still build the database now.{" "}
-            <a href="#/status">See them on the Status screen</a>
-          </p>
-        </div>
-      )}
-
+    <>
+      <SetupView
+        action={view}
+        setup={setup}
+        settingsToFix={settingsToFix}
+        lacksSpace={lacksSpace}
+        actionRef={actionRef}
+        onStart={start}
+        onReadAgain={readAgain}
+      />
       {run !== null && <Follower key={run.attempt} run={run} onSeen={setFollowed} />}
-
-      <section className="setup-panel" aria-label="Card database">
-        {setup !== null && <SizeLedger setup={setup} lacksSpace={lacksSpace} />}
-
-        {/* The focus target when the control that was used disappears (see useMoveFocus). */}
-        <div className="setup-action" ref={actionRef} tabIndex={-1}>
-          <ActionContent view={view} onStart={start} onReadAgain={readAgain} />
-          <p className="hint setup-status" role="status">
-            {statusText(view)}
-          </p>
-        </div>
-      </section>
-    </main>
+    </>
   );
 }
 
@@ -302,130 +228,4 @@ function Follower({ run, onSeen }: { run: BuildRun; onSeen: (followed: Followed)
   }, [polled.job, lost, run.attempt, onSeen]);
 
   return null;
-}
-
-interface ActionContentProps {
-  view: View;
-  onStart: () => void;
-  onReadAgain: () => void;
-}
-
-function ActionContent({ view, onStart, onReadAgain }: ActionContentProps) {
-  switch (view.kind) {
-    case "loading":
-    case "ready":
-      return null;
-    case "load-failed":
-    case "listing-failed":
-      return <ProblemBlock message={view.message} actionLabel="Try again" onAction={onReadAgain} />;
-    case "build-failed":
-      return <ProblemBlock message={view.message} actionLabel="Try again" onAction={onStart} />;
-    case "start":
-      return view.problem === null ? (
-        <div className="setup-start">
-          <button type="button" onClick={onStart}>
-            Start the build
-          </button>
-        </div>
-      ) : (
-        <ProblemBlock message={view.problem.message} actionLabel="Try again" onAction={onStart} />
-      );
-    case "short":
-      return (
-        <div className="setup-start">
-          <div className="setup-problem tone">
-            <StatusIcon tone="danger" />
-            <p>
-              This drive does not have enough free space for the build.{" "}
-              {view.missing === null ? "Free some space" : `Free ${view.missing} on this drive`}, then check again.
-            </p>
-          </div>
-          <button type="button" onClick={onReadAgain}>
-            Check again
-          </button>
-        </div>
-      );
-    case "starting":
-      return (
-        <div className="setup-start">
-          <button type="button" disabled>
-            Start the build
-          </button>
-        </div>
-      );
-    case "building":
-      return <BuildProgress job={view.job} />;
-  }
-}
-
-function ProblemBlock({ message, actionLabel, onAction }: { message: string; actionLabel: string; onAction: () => void }) {
-  return (
-    <div className="setup-start">
-      <div className="setup-problem tone" role="alert">
-        <StatusIcon tone="danger" />
-        <p>{message}</p>
-      </div>
-      <button type="button" onClick={onAction}>
-        {actionLabel}
-      </button>
-    </div>
-  );
-}
-
-function SizeLedger({ setup, lacksSpace }: { setup: SetupResponse; lacksSpace: boolean }) {
-  const download = setup.download_size === null ? null : formatSize(setup.download_size);
-  const needed = setup.space_needed === null ? null : formatSize(setup.space_needed);
-  const free = setup.free_space === null ? null : formatSize(setup.free_space);
-  if (download === null && needed === null && free === null) return null;
-  const short =
-    lacksSpace || (setup.free_space !== null && setup.space_needed !== null && setup.free_space < setup.space_needed);
-
-  return (
-    <dl className="setup-ledger">
-      {download !== null && <LedgerItem label="Download" size={download} />}
-      {needed !== null && <LedgerItem label="Space needed" size={needed} />}
-      {free !== null && <LedgerItem label="Free on this drive" size={free} short={short} />}
-    </dl>
-  );
-}
-
-function LedgerItem({ label, size, short = false }: { label: string; size: string; short?: boolean }) {
-  return (
-    <div className={short ? "setup-ledger-item setup-ledger-short" : "setup-ledger-item"}>
-      <dt>{label}</dt>
-      {/* The trailing space keeps the size apart from the next label when the text is copied or read as one. */}
-      <dd>
-        {size}
-        {short && <span className="setup-ledger-note"> Not enough space</span>}{" "}
-      </dd>
-    </div>
-  );
-}
-
-function BuildProgress({ job }: { job: JobResponse }) {
-  const labelId = useId();
-  const fraction = Math.min(1, Math.max(0, Number.isFinite(job.progress) ? job.progress : 0));
-  const percent = Math.round(fraction * 100);
-
-  return (
-    <div className="setup-progress">
-      <div className="setup-progress-head">
-        <span id={labelId}>Building the card database</span>
-        <span className="setup-progress-value" aria-hidden="true">
-          {percent}%
-        </span>
-      </div>
-      <div
-        className="setup-progress-track"
-        role="progressbar"
-        aria-labelledby={labelId}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={percent}
-        aria-valuetext={`${percent}%`}
-      >
-        <div className="setup-progress-fill" style={{ transform: `scaleX(${fraction})` }} />
-      </div>
-    </div>
-  );
 }

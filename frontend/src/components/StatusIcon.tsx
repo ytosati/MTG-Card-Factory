@@ -1,12 +1,17 @@
 // Small decorative icons that mark the tone of a message; the text beside them carries the meaning.
+import { cx } from "./classNames";
+import styles from "./StatusIcon.module.css";
+
+/** Layout of an icon beside its message: `tone` on the pair, `toneBody` on a message of several lines. */
+export const toneStyles = { tone: styles.tone, toneBody: styles.toneBody };
 
 /** The tone of a message: a problem to fix, a notice, or a good state. */
 export type StatusTone = "danger" | "notice" | "success";
 
 /** A status icon, hidden from assistive technology; it takes the color of its text. */
-export function StatusIcon({ tone }: { tone: StatusTone }) {
+export function StatusIcon({ tone, className }: { tone: StatusTone; className?: string | undefined }) {
   return (
-    <svg className="status-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+    <svg className={cx(styles.icon, className)} viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
       {tone === "danger" && (
         <>
           <circle cx="8" cy="8" r="6.75" fill="none" stroke="currentColor" strokeWidth="1.5" />

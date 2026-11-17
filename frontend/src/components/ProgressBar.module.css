@@ -1,0 +1,48 @@
+/* A progress bar with its label and value above it. */
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-4);
+  margin-bottom: var(--space-2);
+  font-weight: var(--font-weight-strong);
+}
+
+.value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-accent);
+}
+
+.track {
+  position: relative;
+  height: var(--space-2);
+  overflow: hidden;
+  background-color: var(--color-accent-surface);
+  border-radius: var(--radius);
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+  background: var(--color-accent);
+  transform-origin: left center;
+  transition: transform var(--motion-duration-medium) var(--motion-easing-out);
+}
+
+/* Quarter marks drawn over the fill, so the progress reads at a glance. */
+.track::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    to right,
+    transparent calc(25% - 1px),
+    var(--color-surface) calc(25% - 1px) 25%,
+    transparent 25% calc(50% - 1px),
+    var(--color-surface) calc(50% - 1px) 50%,
+    transparent 50% calc(75% - 1px),
+    var(--color-surface) calc(75% - 1px) 75%,
+    transparent 75%
+  );
+}

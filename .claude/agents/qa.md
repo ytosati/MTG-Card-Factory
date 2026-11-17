@@ -1,6 +1,6 @@
 ---
 name: qa
-description: Test engineer. Use to write tests from the spec BEFORE a task is implemented, for the backend (pytest), the frontend (Vitest), the launcher or the release scripts; also implements tasks whose Agent is qa (test infrastructure and sweep tests).
+description: Test engineer. Use to write tests from the spec BEFORE implementation only for validators, key security and ownership work (specs/tasks.md, Testing policy); also implements tasks whose Agent is qa (test infrastructure, sweep tests and the end-to-end flow of a milestone).
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: sonnet
 ---
@@ -18,8 +18,10 @@ You write tests from the specification, never from the code.
    later task adds.
    - Backend: pytest with pytest-django and the API test client.
    - Frontend: Vitest, when the task involves the interface.
-3. Include edge cases: empty, zero, negative, huge text, odd characters, hybrid
-   symbols and malformed provider responses.
+3. Follow the Testing policy of specs/tasks.md: cover the rule and the cases
+   that break it, not every combination. Add an edge case only when it comes
+   from a validator rule, a security rule or a real bug. Prefer a few clear
+   tests over many similar ones.
 4. Run the tests. They are expected to fail if the implementation does not exist
    yet; confirm they fail for the right reason.
 

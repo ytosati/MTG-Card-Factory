@@ -1,0 +1,40 @@
+/* The card-shaped area: the whole image fitted inside, never cropped or stretched (spec RN-44). A card is the
+   one object that casts a shadow on the paper. */
+.area {
+  width: 100%;
+  max-width: var(--card-image-width);
+  margin: 0;
+}
+
+.frame {
+  display: grid;
+  place-items: center;
+  aspect-ratio: var(--card-aspect-ratio);
+  overflow: hidden;
+  background: var(--color-sunken);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* Without an image the area stays, flat and outlined, so it does not pretend to be a card. */
+.frame:has(.empty) {
+  border: 1px solid var(--color-border-control);
+  box-shadow: var(--shadow-none);
+}
+
+.frame .image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+.caption {
+  margin-top: var(--space-3);
+  font-size: var(--font-size-small);
+}

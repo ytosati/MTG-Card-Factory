@@ -859,11 +859,11 @@ connection), so CA-19 and the "tests never touch the network" rule hold.
 
 | Agent | May change | Never changes |
 |---|---|---|
-| backend-dev | `backend/**` except `providers/` and `generation/`; `.env.example` | `frontend/`, `specs/`, `launcher/`, `release/`, tests |
-| llm-engineer | `backend/providers/**`, `backend/generation/**` (adapters, factory, prompts, retrieval for the text model, generation pipelines, the search evaluation script) | models, catalog, validators, cards, api, tests |
-| qa | test files: `backend/**/tests/**`, `backend/**/conftest.py`, `backend/pytest.ini`, `frontend/**/*.test.ts(x)`, `frontend/src/api/contract/**` (generated contract samples), `launcher/tests/**`, `release/tests/**`, test fixtures and helpers | production code |
-| frontend-dev | `frontend/**` except tests | `backend/`, `specs/` |
-| release-dev | `launcher/**`, `release/**` (except tests), `start.cmd`, `VERSION`, `.github/workflows/**`, `.gitignore`, `.gitattributes` | `backend/`, `frontend/` |
+| backend-dev | `backend/**` except `providers/` and `generation/`; `.env.example` | `frontend/`, `specs/`, `launcher/`, `release/` |
+| llm-engineer | `backend/providers/**`, `backend/generation/**` (adapters, factory, prompts, retrieval for the text model, generation pipelines, the search evaluation script) | models, catalog, validators, cards, api |
+| qa (validators, security, ownership; any implementing agent also writes the tests of its own work) | test files: `backend/**/tests/**`, `backend/**/conftest.py`, `backend/pytest.ini`, `frontend/**/*.test.ts(x)`, `frontend/src/api/contract/**` (generated contract samples), `launcher/tests/**`, `release/tests/**`, test fixtures and helpers | production code |
+| frontend-dev | `frontend/**`, including its tests | `backend/`, `specs/` |
+| release-dev | `launcher/**`, `release/**`, `start.cmd`, `VERSION`, `.github/workflows/**`, `.gitignore`, `.gitattributes` | `backend/`, `frontend/` |
 | docs-writer | `README.md`, `docs/**`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `.github/ISSUE_TEMPLATE/**`, `specs/manual-checks.md` | code, other `specs/` files |
 | reviewer, spec-reviewer, architect | nothing (read only) | everything |
 
@@ -873,25 +873,19 @@ maintainer's approval. Any implementing agent may append rows to
 task names exactly one agent.
 
 **Models and cost.** Each agent runs on the model its work needs: Opus for
-architect, spec-reviewer, llm-engineer (prompts and the generation flow) and
-frontend-dev (interface design); Sonnet for backend-dev, release-dev,
-reviewer and docs-writer; Sonnet for qa when the task has rules to protect
-(validators, pipelines, endpoints, accounts and ownership), since its tests
-define what correct means, and Haiku for qa on mechanical tasks. A task that
-touches keys, accounts, ownership or another security rule gets its review on
-Opus. When several tasks run in a row:
-- each task starts a fresh agent with a brief that names the files to read
-  and quotes the task, the RN and CA it covers and the plan section it needs;
-  agents search `specs/` for those IDs instead of reading the three files
-  whole, and are not resumed across tasks once their context has grown;
-- agents run the tests of their task, and the full suites run once per commit
-  batch, on a clean checkout of the batch's commits;
+llm-engineer (prompts and the generation flow) and frontend-dev (interface
+design); Sonnet for the other agents. Work that touches keys, accounts or
+ownership gets its review on Opus. To keep runs fast and cheap
+(`specs/tasks.md`, "Process" and "Testing policy"):
+- small changes are made directly, without a subagent;
+- one fresh agent per feature, with a brief that quotes the task and the RN
+  it covers; agents search `specs/` by ID instead of reading files whole;
+- the implementing agent writes the tests with the code; `qa` runs first
+  only for validators, security and ownership work;
+- agents run the tests of their feature; the full suites run once before
+  each commit batch;
 - reports stay short (files, results, open questions);
-- `qa` writes the tests first for tasks with rules to protect; for small
-  mechanical tasks the implementing agent writes them;
-- one review covers a batch of related tasks, and the interface audit and
-  critique run once per group of changed screens;
-- tasks that change the same files may share one commit, citing each task.
+- one review and one interface audit per milestone.
 
 ## 13. Dependencies
 

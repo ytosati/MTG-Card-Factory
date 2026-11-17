@@ -1,0 +1,111 @@
+/* Setup screen: the settings notice, the size ledger and the build action. */
+.notice {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-notice-surface);
+  color: var(--color-notice-text);
+  border: 1px solid var(--color-notice-border);
+  border-radius: var(--radius-small);
+}
+
+.notice p {
+  margin: 0;
+}
+
+.panel {
+  margin-top: var(--space-8);
+  border-top: 1px solid var(--color-rule-strong);
+}
+
+.ledger {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ledgerItem {
+  padding: var(--space-4) var(--space-6) var(--space-5) 0;
+}
+
+.ledgerItem + .ledgerItem {
+  padding-left: var(--space-6);
+  border-left: 1px solid var(--color-border);
+}
+
+.ledger dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-strong);
+  letter-spacing: var(--letter-spacing-rubric);
+  text-transform: uppercase;
+}
+
+.ledger dd {
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-display);
+  font-size: var(--font-size-figure);
+  font-weight: var(--font-weight-regular);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.ledgerShort dd {
+  color: var(--color-danger-text);
+}
+
+.ledgerNote {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+  white-space: normal;
+}
+
+.action {
+  padding: var(--space-6) 0;
+}
+
+.start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+}
+
+.status {
+  margin: var(--space-3) 0 0;
+}
+
+.status:empty {
+  margin: 0;
+}
+
+.problem {
+  flex-basis: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-danger-surface);
+  color: var(--color-danger-text);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-small);
+}
+
+.problem p {
+  margin: 0;
+}
+
+@container (max-width: 32rem) {
+  .ledger {
+    grid-template-columns: 1fr;
+  }
+
+  .ledgerItem,
+  .ledgerItem + .ledgerItem {
+    padding: var(--space-3) 0;
+    border-left: 0;
+  }
+
+  .ledgerItem + .ledgerItem {
+    border-top: 1px solid var(--color-border);
+  }
+}

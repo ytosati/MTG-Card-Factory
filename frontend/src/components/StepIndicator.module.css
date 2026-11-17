@@ -1,0 +1,66 @@
+/* The steps of a running job, one per line, joined by a line; the marker says done, current or waiting. */
+.steps {
+  --step-marker: 0.75rem;
+  --step-gap: var(--space-2);
+  display: grid;
+  gap: var(--step-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-text-muted);
+  transition: color var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+/* The line from this marker down to the next one; the rows share one height, so the line meets it. */
+.step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--step-marker) / 2 - 1px);
+  top: calc(50% + var(--step-marker) / 2);
+  width: 2px;
+  height: calc(100% + var(--step-gap) - var(--step-marker));
+  background: var(--color-border);
+}
+
+.marker {
+  width: var(--step-marker);
+  height: var(--step-marker);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border-control);
+  border-radius: 50%;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-easing-out),
+    border-color var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+.done {
+  color: var(--color-text);
+}
+
+.step.done:not(:last-child)::before {
+  background: var(--color-accent);
+}
+
+.done .marker {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.current {
+  color: var(--color-accent);
+  font-weight: var(--font-weight-strong);
+}
+
+.current .marker {
+  border-color: var(--color-accent);
+  background: var(--color-accent-surface);
+  box-shadow: 0 0 0 3px var(--color-accent-surface);
+}

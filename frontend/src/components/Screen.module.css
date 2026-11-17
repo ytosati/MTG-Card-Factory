@@ -1,0 +1,64 @@
+/* The frame every screen shares: the content axis, the reading column, the summary under the heading, hints
+   and error panels. */
+.screen {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: var(--space-10) var(--space-6) var(--space-16);
+}
+
+/* Screens read as a left-aligned column on the axis of the header; a part that needs the width opts out. */
+:where(.screen > *) {
+  max-width: var(--measure-column);
+}
+
+.screen h1 + :not(.summary):not(.summaryRow) {
+  margin-top: var(--space-8);
+}
+
+.summary {
+  max-width: var(--measure-prose);
+  margin: 0 0 var(--space-8);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lead);
+}
+
+.summaryRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-4);
+  margin: 0 0 var(--space-8);
+}
+
+.summaryRow .summary {
+  margin: 0;
+}
+
+.hint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+.actions {
+  margin: var(--space-4) 0;
+}
+
+.errorPanel [role="alert"] {
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  background: var(--color-danger-surface);
+  color: var(--color-danger-text);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-small);
+}
+
+.errorPanel [role="alert"] p {
+  margin: 0;
+}
+
+@container (max-width: 32rem) {
+  .screen {
+    padding: var(--space-6) var(--space-4) var(--space-12);
+  }
+}

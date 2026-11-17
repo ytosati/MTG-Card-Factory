@@ -1,0 +1,23 @@
+/* A status icon beside its message; the text carries the meaning. */
+.icon {
+  flex: none;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  /* Centers the icon on the first line of text. */
+  margin-top: calc((var(--line-height-body) * 1em - var(--icon-size)) / 2);
+}
+
+/* The icon and its message side by side. */
+.tone {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: var(--space-2) var(--space-3);
+}
+
+.toneBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}

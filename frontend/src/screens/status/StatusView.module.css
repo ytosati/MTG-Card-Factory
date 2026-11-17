@@ -1,0 +1,163 @@
+/* Status screen: configuration values, settings lists, database readiness and data sources. */
+.valueDanger {
+  color: var(--color-danger-text);
+  font-weight: var(--font-weight-strong);
+}
+
+/* Values and lists are ruled rows on the paper, not boxes (frontend/DESIGN.md, "Lists and tables"). */
+.fields {
+  margin: 0;
+  border-top: 1px solid var(--color-rule-strong);
+}
+
+.field {
+  display: grid;
+  grid-template-columns: 12rem 1fr;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.field dt {
+  color: var(--color-text-muted);
+}
+
+.field dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.settings {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-rule-strong);
+}
+
+.settings li {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+  overflow-wrap: anywhere;
+}
+
+.settings li:not(.toFixItem) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.settings code {
+  align-self: flex-start;
+}
+
+.settingsToFix li {
+  padding-left: var(--space-3);
+  padding-right: var(--space-3);
+  background: var(--color-danger-surface);
+  border-bottom-color: var(--color-danger-border);
+}
+
+.dangerIcon {
+  color: var(--color-danger-text);
+}
+
+.settingsIgnored li {
+  color: var(--color-text-muted);
+  background: transparent;
+}
+
+.notice {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-notice-surface);
+  color: var(--color-notice-text);
+  border: 1px solid var(--color-notice-border);
+  border-radius: var(--radius-small);
+}
+
+.fileUnreadable {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-danger-surface);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-small);
+}
+
+.fileUnreadable code {
+  align-self: flex-start;
+}
+
+.readiness {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid;
+  border-radius: var(--radius-small);
+}
+
+.readinessReady {
+  background: var(--color-success-surface);
+  color: var(--color-success-text);
+  border-color: var(--color-success-border);
+}
+
+.readinessMissing {
+  background: var(--color-notice-surface);
+  color: var(--color-notice-text);
+  border-color: var(--color-notice-border);
+}
+
+.readinessMissing a {
+  color: inherit;
+  font-weight: var(--font-weight-bold);
+}
+
+.sources {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-rule-strong);
+}
+
+.source {
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sourceName {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--font-size-lead);
+  font-weight: var(--font-weight-bold);
+}
+
+.sourceDetails {
+  margin: 0;
+  font-size: var(--font-size-small);
+}
+
+.sourceDetail {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: var(--space-4);
+  padding: var(--space-1) 0;
+}
+
+.sourceDetail dt {
+  color: var(--color-text-muted);
+}
+
+.sourceDetail dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.sourceUrl {
+  font-family: var(--font-mono);
+}
+
+@container (max-width: 32rem) {
+  .field,
+  .sourceDetail {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

@@ -73,6 +73,17 @@ are still cheap to change.
 
 - One task at a time. Nothing outside the current task.
 - Milestone 3c runs after Milestone 3 and before Milestone 3b.
+- The card generator is the main delivery: Milestones 0 to 10 end with its
+  public release (definition of done v1 of the spec). Milestones 10b to 17
+  (the Settings screen, hosted mode, collection, decks, import, printing and
+  art selection) start only after Milestone 10 is complete. Before that, the
+  only work of the new phase is what the generator itself uses: the design
+  direction (T180), the cost and latency changes (T175 to T179), the fast
+  text model (T184, T185) and the owner of saved data (T188), which is cheap
+  before the first release and a data migration after it.
+- Every feature is specified in the spec and built in this stack, under
+  these standards and in English, whatever inspired it. No code, asset or
+  data is copied from another project.
 - A milestone starts only when the previous milestone is complete: its review
   task passed, every test suite passes (`pytest -q`, `pytest launcher release`,
   `npm run test`, `npx tsc -b`) and its branch is merged into `main`.
@@ -81,7 +92,11 @@ are still cheap to change.
   `milestone/m2-reference-database`, `milestone/m3-first-card`, `milestone/m3c-screen-previews`, `milestone/m3b-generation-controls`,
   `milestone/m4-text-providers`, `milestone/m5-rules-validation`, `milestone/m6-library-and-versions`,
   `milestone/m7-art`, `milestone/m8-base-card`,
-  `milestone/m9-portuguese-cards`, `milestone/m10-public-release`). Each task of
+  `milestone/m9-portuguese-cards`, `milestone/m10-public-release`, `milestone/m10b-settings-screen`,
+  `milestone/m11-accounts-and-hosted-mode`, `milestone/m12-hosted-release`,
+  `milestone/m13-collection`, `milestone/m14-decks`,
+  `milestone/m15-import-export-backup`, `milestone/m16-print-and-extras`,
+  `milestone/m17-art-selection`). Each task of
   the milestone is committed and pushed on the milestone branch, with no branch
   of its own. The milestone branch merges into `main` after its review task
   (`specs/git-standards.md`, section 2).
@@ -192,6 +207,7 @@ merged into `main`.
 - [ ] T171: Library screen preview
 - [ ] T172: Adjustments and versions screen preview
 - [ ] T173: Status screen preview: art and connection test
+- [ ] T180: Design direction and tokens
 - [ ] T174: Milestone 3c review
 
 Design changes (added when the maintainer asks, Milestone 3c rules):
@@ -210,6 +226,11 @@ Design changes (added when the maintainer asks, Milestone 3c rules):
 - [ ] T156: Cost {0} alone and no leading zero
 - [ ] T157: Revision failure saved with the version
 - [ ] T158: Power level meanings and a new request from a card
+- [ ] T175: Mana value computed by the application
+- [ ] T176: Prompts: shared prefix, lighter candidates, no mana value
+- [ ] T177: Provider calls: effort per step, timeouts and usage details
+- [ ] T178: Seconds of each call in the usage
+- [ ] T179: Result screen: seconds of each call
 - [ ] T147: Milestone 3b end-to-end flow test
 - [ ] T148: Milestone 3b review
 
@@ -222,6 +243,8 @@ Design changes (added when the maintainer asks, Milestone 3c rules):
 - [ ] T92: Status screen: connection test
 - [ ] T93: Manual checks: real-key generation
 - [ ] T159: Keys with whitespace or # are settings to fix
+- [ ] T184: Fast text model setting
+- [ ] T185: Fast text model in the pipeline
 - [ ] T119: Milestone 4 review
 
 ### Milestone 5 — Rules validation
@@ -245,6 +268,7 @@ Design changes (added when the maintainer asks, Milestone 3c rules):
 
 ### Milestone 6 — Library and versions
 
+- [ ] T188: Owner of saved data
 - [ ] T54: Library API
 - [ ] T55: Edit with revalidation
 - [ ] T56: Versions and restore API
@@ -316,6 +340,96 @@ Design changes (added when the maintainer asks, Milestone 3c rules):
 - [ ] T132: Startup integration test and hardening
 - [ ] T83: Clean-machine installation test
 - [ ] T84: Milestone 10 review
+
+### Milestone 10b — Settings screen
+
+- [ ] T181: Previews: Settings, Home, accounts and the footer
+- [ ] T186: Settings endpoints and the configuration file writer
+- [ ] T187: Settings screen
+- [ ] T248: Milestone 10b end-to-end flow test
+- [ ] T249: Milestone 10b review
+
+### Milestone 11 — Accounts and hosted mode
+
+- [ ] T189: Mode setting and hosted server settings
+- [ ] T190: Accounts: create, sign in, sign out, password change
+- [ ] T191: Password reset by email
+- [ ] T192: Ownership in every endpoint
+- [ ] T193: Ownership sweep test
+- [ ] T194: Provider settings sent with the request
+- [ ] T195: Factory from a given configuration
+- [ ] T196: Generations per account and the site limit
+- [ ] T197: Account limits, Account endpoints and account deletion
+- [ ] T198: Signed-out visitors
+- [ ] T199: Screens: Home, Sign in, Create account, Account
+- [ ] T200: Settings kept in the browser
+- [ ] T201: Footer, Privacy and Terms
+- [ ] T202: Milestone 11 end-to-end flow test
+- [ ] T203: Milestone 11 review
+
+### Milestone 12 — Hosted release
+
+- [ ] T204: Reference database in its own file and refresh
+- [ ] T205: Status screen: refresh
+- [ ] T206: Hosted upgrade and scheduled refresh
+- [ ] T207: Container image and deployment
+- [ ] T208: Storage backup
+- [ ] T209: Operator guide and hosted user guide
+- [ ] T210: Manual checks: hosted site
+- [ ] T211: Milestone 12 review
+
+### Milestone 13 — Collection
+
+- [ ] T182: Previews: Collection, Decks and Deck
+- [ ] T212: Prices and printing data for lists
+- [ ] T213: Collection models, services and endpoints
+- [ ] T214: Statistics selector
+- [ ] T215: Collection screen
+- [ ] T216: Milestone 13 end-to-end flow test
+- [ ] T217: Milestone 13 review
+
+### Milestone 14 — Decks
+
+- [ ] T218: Deck, deck entry and tag API
+- [ ] T219: Links to the collection, owned and missing
+- [ ] T220: Commander pair rule and deck checks
+- [ ] T221: Custom cards in the collection and decks
+- [ ] T222: Decks screen
+- [ ] T223: Deck screen
+- [ ] T224: Library and Result: add to collection and deck
+- [ ] T225: Milestone 14 end-to-end flow test
+- [ ] T226: Milestone 14 review
+
+### Milestone 15 — Import, export and backup
+
+- [ ] T183: Previews: Print, Extras, Import and export, art selection
+- [ ] T227: List import: parser, lookup and report
+- [ ] T228: List exports
+- [ ] T229: Backup and restore
+- [ ] T230: Import and export screen
+- [ ] T231: Deck picture
+- [ ] T232: Milestone 15 end-to-end flow test
+- [ ] T233: Milestone 15 review
+
+### Milestone 16 — Print and extras
+
+- [ ] T234: Extras in the reference database
+- [ ] T235: Print queue API
+- [ ] T236: Extras screen
+- [ ] T237: Print screen and print sheets
+- [ ] T238: PDF download
+- [ ] T239: Manual checks: printed sheets
+- [ ] T240: Milestone 16 end-to-end flow test
+- [ ] T241: Milestone 16 review
+
+### Milestone 17 — Art selection and community art
+
+- [ ] T242: Art choice API and own art
+- [ ] T243: Art selection screen
+- [ ] T244: Community order file and pasted link
+- [ ] T245: Community art in the screens
+- [ ] T246: Milestone 17 end-to-end flow test
+- [ ] T247: Milestone 17 review
 ## Milestone 0 — Foundation
 
 Goal: a walking skeleton. The backend runs on `127.0.0.1`, serves the built
@@ -1350,6 +1464,19 @@ Agent: frontend-dev
 Depends on: T167
 Done when: Vitest tests render each named state; the current Status screen behavior and its tests are unchanged; `npx tsc -b` passes.
 
+### T180: Design direction and tokens
+Write `frontend/DESIGN.md` (plan section 16.9): the character of the product
+now that it holds a generator, a collection and decks; type families and
+scale; spacing rhythm and density; the use of the purple accent; the shape of
+lists, tables and card displays; motion. Update `tokens.css` to carry it, and
+show the direction on two gallery states (one form screen, one list screen)
+for the maintainer to accept before the other previews follow it. A bundled
+font family is proposed here and added only when approved.
+Covers: RN-49
+Agent: frontend-dev
+Depends on: T167
+Done when: the maintainer accepts the direction in the gallery, the existing tests and `npx tsc -b` pass, and screenshots of the two states at 360, 768 and 1280 px are in the task report.
+
 ### T174: Milestone 3c review
 Run every test suite, walk the gallery against the spec's Screens section and
 list any screen part or state missing, record the design findings, confirm
@@ -1357,7 +1484,7 @@ the preview is absent from the built zip, and check the Milestone 3b tasks
 against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T167–T173 and every design change task of this milestone
+Depends on: T167–T173 and every design change task of this milestone, T180
 Done when: every suite passes, every screen part of the spec has a gallery state or a recorded reason, the findings are recorded, and the blocking items of Milestone 3b are listed.
 
 ## Milestone 3b — Generation controls
@@ -1490,6 +1617,51 @@ Agent: frontend-dev
 Depends on: T146, T157, T168, T170
 Done when: Vitest tests pass for the three meanings, the failure shown after a reload of `#/result/<id>`, and CA-90 with no request sent; `npx tsc -b` passes.
 
+### T175: Mana value computed by the application
+The card services compute the mana value from the mana cost for generated,
+revised, adjusted and edited cards; the mana cost validator no longer has a
+cause for a stated value that differs. Replaces the stated-value check of T28.
+Covers: RN-17, CA-02
+Agent: backend-dev
+Depends on: T94
+Done when: tests pass for the computed value of the costs of CA-66, for a draft saved with the computed value, and for no cause about a stated value.
+
+### T176: Prompts: shared prefix, lighter candidates, no mana value
+One system prompt for the draft and the revision, with the revision's
+instructions after the causes; candidates sent with a short alias, without
+reminder text and with a one-word status, the alias mapped back by the
+pipeline; no mana value and no comparable name in the output schema (plan
+section 9.2).
+Covers: RN-12, RN-15, RN-17, CA-02, CA-56
+Agent: llm-engineer
+Depends on: T175, T141
+Done when: tests with the fake adapter pass for the alias mapping (including an alias the search did not return), for a revision whose messages start with the draft's messages, and for schemas with no mana value; the search evaluation script still runs.
+
+### T177: Provider calls: effort per step, timeouts and usage details
+The text protocol takes an effort hint, low for the design intent and the
+revision; a read timeout is not retried; `Usage` carries the seconds of the
+call and, when reported, cached and reasoning tokens, which go to the
+application log; an output token limit per step (plan section 9.2).
+Covers: RN-09, RN-10
+Agent: llm-engineer
+Depends on: T94
+Done when: tests pass for the hint reaching the OpenAI request only for a model that accepts it, for one attempt after a read timeout and two after a refused connection, and for the seconds on a successful and on a failed call.
+
+### T178: Seconds of each call in the usage
+The usage record stores the seconds of its call and the usage endpoint
+returns them.
+Covers: RN-09, CA-134
+Agent: backend-dev
+Depends on: T177
+Done when: tests pass for the seconds of a draft, of a revision and of a failed call, and the contract sample of the usage endpoint has the field.
+
+### T179: Result screen: seconds of each call
+The usage on the Result screen shows the seconds of each call.
+Covers: RN-09, CA-134
+Agent: frontend-dev
+Depends on: T178, T146
+Done when: the screen test passes with the contract sample.
+
 ### T147: Milestone 3b end-to-end flow test
 Extend the end-to-end suite with a generation at each effort, a high-effort
 card with design notes, a card named after an existing card, the rarity of
@@ -1506,7 +1678,7 @@ run the demo from the zip with a real key (compare the tokens per effort),
 record the findings, and check the Milestone 4 tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T140–T143, T145–T147, T156–T158, T161, T162
+Depends on: T140–T143, T145–T147, T156–T158, T161, T162, T175, T176, T177, T178, T179
 Done when: every suite passes, the demo works, the token counts per effort are recorded, the findings are recorded, and the blocking items of Milestone 4 are listed.
 
 ## Milestone 4 — Text providers
@@ -1582,6 +1754,23 @@ Agent: backend-dev
 Depends on: T45
 Done when: tests pass for CA-89 (text key: Status, generation and connection test call no provider; image key: art unavailable, text keeps working), a key in quotes with surrounding spaces accepted, and an ignored image key with # not reported.
 
+### T184: Fast text model setting
+The configuration loader reads the optional fast text model, with the checks
+of a model (RN-08); the status endpoint reports whether it is set; the
+configuration template documents it.
+Covers: RN-05, RN-08
+Agent: backend-dev
+Depends on: T94
+Done when: tests pass for an empty value (no setting to fix), a value that looks like a key (setting to fix, never shown) and a valid value.
+
+### T185: Fast text model in the pipeline
+The factory returns the adapter for a step; the design intent step uses the
+fast text model when set. Quick adjustments use it when T52 adds them.
+Covers: RN-05, CA-133
+Agent: llm-engineer
+Depends on: T184
+Done when: tests with the fake adapter pass for the model of each call with and without a fast text model.
+
 ### T119: Milestone 4 review
 Run every test suite and confirm that the sweep of T61 covers the connection
 test endpoint. Check the coverage of the RN and CA parts of this milestone. Run
@@ -1590,7 +1779,7 @@ call sites never branch on the provider. Record the findings, and check the
 Milestone 5 tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T41, T42, T45, T92, T93, T118, T159
+Depends on: T41, T42, T45, T92, T93, T118, T159, T184, T185
 Done when: every suite passes, a card was generated with each text provider, the findings are recorded, and the blocking items of Milestone 5 are listed.
 
 ## Milestone 5 — Rules validation
@@ -1780,6 +1969,16 @@ to a malformed value and see it rejected without a provider call, fix it, apply
 "cheaper", restore the first version, and delete another card.
 Later: art in versions and the library (M7).
 
+### T188: Owner of saved data
+Every saved model gets a required owner (plan section 16.2): the single local
+user is created by the upgrade service, every request acts as it, and the
+card and usage services and selectors take the owner. No account screen or
+sign-in is added.
+Covers: RN-26, RN-63, CA-105
+Agent: backend-dev
+Depends on: T96
+Done when: tests pass for cards and usage saved and listed under the local user, for a selector that returns nothing for another owner, and for an upgraded data folder whose earlier cards belong to the local user.
+
 ### T54: Library API
 `GET /api/cards?favorite=`, favorite through `PATCH` (no new version, RN-25), and `DELETE`, which removes
 the card and its versions. Removing image files on delete is added by T50.
@@ -1868,7 +2067,7 @@ data folder of the previous milestone's zip, to exercise the upgrade service
 the Milestone 7 tasks against the spec.
 Covers: none (review)
 Agent: maintainer
-Depends on: T52, T54, T55, T56, T57, T69, T70, T121
+Depends on: T52, T54, T55, T56, T57, T69, T70, T121, T188
 Done when: every suite passes, the demo works, the upgrade keeps every card and version, the findings are recorded, and the blocking items of Milestone 7 are listed.
 
 ## Milestone 7 — Art
@@ -2451,6 +2650,622 @@ Agent: maintainer
 Depends on: T76–T83, T111, T112, T125, T132
 Done when: every suite and the content check pass, and the coverage table has no open entry.
 
+## Milestone 10b — Settings screen
+
+Goal: the person sets the providers, models and keys on a screen instead of
+editing the configuration file by hand.
+Demo: start the zip with an empty configuration file; the Request screen
+points to Settings; save a provider, a model and a key; see the key field
+empty and marked as set, the comments of the file kept, and a card generated
+without a restart.
+Later: the settings kept in the browser in hosted mode (Milestone 11).
+This milestone and the following ones start after the public release of the
+generator (Process).
+
+### T181: Previews: Settings, Home, accounts and the footer
+Gallery states for Settings in local and hosted mode (empty, key set, a field
+refused, saved, where the keys are kept), Home, Sign in, Create account,
+Account (limits, backup, deletion), Privacy, Terms, the footer of RN-69 on
+every screen, the Request notice of RN-94 and the hosted "site is being
+prepared" notice.
+Covers: RN-52, RN-64, RN-66, RN-67, RN-69, RN-71, RN-72, RN-93, RN-94
+Agent: frontend-dev
+Depends on: T180, T84
+Done when: every state has a gallery address, the tests for titles, labels and keyboard use pass, and the screenshots are in the task report.
+
+### T186: Settings endpoints and the configuration file writer
+`GET /api/settings` (values, a boolean per key) and `PUT /api/settings`
+(changed fields only), with the local store of plan section 16.4: comments
+and other lines kept, line breaks and control characters refused, a missing
+file created from the template, an unreadable or unwritable file refused with
+the cause, the file unchanged after a failed write, an invalid port refused.
+Covers: RN-05, RN-06, RN-08, RN-71, RN-72, CA-95, CA-96, CA-98
+Agent: backend-dev
+Depends on: T184, T159
+Done when: tests pass for each case of CA-95, CA-96 and CA-98 against temporary configuration files, no response contains a key, and the contract samples exist.
+
+### T187: Settings screen
+The Settings screen wired to T186, from the preview of T181: write-only key
+fields, show-while-typing, the refusal naming the field, the connection test,
+where the keys are kept. Status links each setting to fix to Settings, and
+the Request screen shows the notice of RN-94.
+Covers: RN-52, RN-71, RN-72, RN-94, CA-95, CA-98, CA-99
+Agent: frontend-dev
+Depends on: T186, T92, T181
+Done when: the screen tests pass with the contract samples, including an empty key field after saving and the link from Request with no settings.
+
+### T248: Milestone 10b end-to-end flow test
+The demo path through the API with a temporary configuration file.
+Covers: RN-71, RN-72, CA-96
+Agent: qa
+Depends on: T187
+Done when: the flow passes and the earlier flows keep passing.
+
+### T249: Milestone 10b review
+Suites, coverage, the demo from the locally built zip, a key-leak sweep that
+includes the settings endpoints, and the README user guide updated for the
+Settings screen (RN-46).
+Agent: maintainer
+Depends on: T248
+Done when: the demo passes and the findings are recorded.
+
+## Milestone 11 — Accounts and hosted mode
+
+Goal: the same application, started in hosted mode, serves several people,
+each with an account and their own data, using a key that stays in the
+browser.
+Demo: start the development server in hosted mode; create two accounts in two
+browsers; set a key in Settings and generate a card in each; see that neither
+sees the other's card, that the key is in no log or database row, that a
+signed-out visitor can search cards and is asked to sign in for the Library,
+and delete one account.
+Later: the public site, its domain, email service and refresh (Milestone 12).
+
+### T189: Mode setting and hosted server settings
+`CARDFACTORY_MODE` and `core.mode.is_hosted()`; hosted settings (hosts and
+origin from the environment, secure cookies, HSTS, CSRF, the
+Content-Security-Policy of plan section 16.4); no launcher, watchdog, Setup
+or port in hosted mode.
+Covers: RN-29, RN-63, CA-105
+Agent: backend-dev
+Depends on: T249
+Done when: tests pass for both modes of the settings, for the CSRF refusal in hosted mode and for the response headers; the local suite is unchanged.
+
+### T190: Accounts: create, sign in, sign out, password change
+Endpoints for RN-64 with Django's users and sessions: the password length,
+the email in use, the same message for an unknown email and a wrong password,
+the lockout, the limit of new accounts per address, the other sessions ended
+by a password change. Hosted mode only; local mode answers these as not
+found.
+Covers: RN-64, CA-100, CA-132
+Agent: backend-dev
+Depends on: T189
+Done when: tests pass for each case of CA-100 and the session part of CA-132, and no response or log line holds a password.
+
+### T191: Password reset by email
+The reset request and confirmation, a link that works once and for one hour,
+the same answer for any email, sent through Django's email framework (console
+backend in tests).
+Covers: RN-29, RN-64, CA-132
+Agent: backend-dev
+Depends on: T190
+Done when: tests pass for a reset, a reused link, an expired link and an unknown email, with the message captured in memory.
+
+### T192: Ownership in every endpoint
+Every endpoint takes the signed-in user as the owner in hosted mode; images
+are served only to their owner; another owner's item is not found.
+Covers: RN-33, RN-65, CA-101
+Agent: backend-dev
+Depends on: T190
+Done when: tests pass for each kind of item of CA-101 with two accounts.
+
+### T193: Ownership sweep test
+A test that enumerates the URL configuration and calls every endpoint that
+takes an identifier as a second account and as a signed-out visitor, so
+endpoints added later are covered without editing it.
+Covers: RN-65, RN-92, CA-101
+Agent: qa
+Depends on: T192
+Done when: the sweep passes and fails when an endpoint is given no owner filter (shown once with a deliberately broken test double).
+
+### T194: Provider settings sent with the request
+In hosted mode the endpoints that start a provider call read the settings
+from the request headers, run the checks of RN-08, hand the configuration to
+the job and drop it when the job ends; the values join the log redaction set;
+jobs left running by a restart are marked failed.
+Covers: RN-06, RN-08, RN-72, CA-06, CA-97, CA-99
+Agent: backend-dev
+Depends on: T192, T195
+Done when: tests pass for a generation with header settings, for the refusals of CA-99, for a search of the database, the data folder and the log for the key after the job, and for a job marked failed on start.
+
+### T195: Factory from a given configuration
+`providers.factory` and the pipelines take the configuration as an argument
+instead of reading it, so the local file and the hosted request use one path.
+Covers: RN-05, RN-06, RN-07
+Agent: llm-engineer
+Depends on: T189
+Done when: the existing provider and pipeline tests pass with the configuration passed in, and no module under `providers/` or `generation/` reads the configuration itself.
+
+### T196: Generations per account and the site limit
+One job at a time per owner, the operator's limit of generations at once with
+the busy message, and the job read back by its owner after a reload.
+Covers: RN-50, CA-127
+Agent: backend-dev
+Depends on: T192
+Done when: tests pass for each case of CA-127.
+TODO: the default of the operator's limit, measured on the hosted machine in Milestone 12.
+
+### T197: Account limits, Account endpoints and account deletion
+The limits of RN-67 with their use, refusals before any provider call, and
+the deletion of an account with everything that belongs to it.
+TODO: the limits are [DECIDE] in RN-67.
+Covers: RN-66, RN-67, CA-102, CA-104
+Agent: backend-dev
+Depends on: T192
+Done when: tests pass for CA-102 and CA-104, and no file of a deleted account remains.
+
+### T198: Signed-out visitors
+The screens and endpoints of RN-92 are open in hosted mode and the others
+answer that sign-in is needed; the hosted notice of RN-28 while the reference
+database is not ready.
+Covers: RN-28, RN-92, CA-103, CA-131
+Agent: backend-dev
+Depends on: T192
+Done when: tests pass for the open and the closed endpoints as a visitor and for the not-ready notice.
+
+### T199: Screens: Home, Sign in, Create account, Account
+The screens from the previews of T181 wired to T190, T191 and T197, with the
+return to the requested screen after sign-in.
+Covers: RN-52, RN-64, RN-66, RN-67, RN-92, CA-100, CA-102, CA-103, CA-104
+Agent: frontend-dev
+Depends on: T190, T191, T197, T198
+Done when: the screen tests pass with the contract samples, and no account screen is reachable in local mode.
+
+### T200: Settings kept in the browser
+In hosted mode the Settings screen keeps the values in the browser (until it
+closes, or remembered on the device), sends them only with the requests that
+start a provider call, and removes them on sign-out, on a different account
+and on account deletion.
+Covers: RN-06, RN-71, RN-72, RN-94, CA-95, CA-97, CA-99
+Agent: frontend-dev
+Depends on: T194, T199, T187
+Done when: tests pass for both storage choices, for the removal cases, and for no settings header on a request that starts no provider call.
+
+### T201: Footer, Privacy and Terms
+The footer of RN-69 on every screen, and the Privacy and Terms screens with
+the maintainer's texts.
+TODO: the fan content notice, the privacy notice and the terms are delivered by the maintainer (spec, Open questions).
+Covers: RN-52, RN-69, RN-93, CA-125, CA-131
+Agent: frontend-dev
+Depends on: T199
+Done when: a test over every screen finds the notice and the links, and the texts are the delivered ones.
+
+### T202: Milestone 11 end-to-end flow test
+The demo path through the API in hosted mode with two accounts, and the whole
+earlier suite still passing in local mode.
+Covers: RN-63, RN-65, RN-72, CA-97, CA-101, CA-105
+Agent: qa
+Depends on: T200, T201, T193, T196
+Done when: the flow passes in hosted mode and every earlier flow passes in local mode.
+
+### T203: Milestone 11 review
+Suites, coverage, the demo, a key-leak sweep in hosted mode (T61 extended to
+request headers), and the readiness of Milestone 12. The review of this
+milestone runs on Opus (accounts, ownership, keys).
+Agent: maintainer
+Depends on: T202
+Done when: the demo passes, the findings are recorded and the blocking items of Milestone 12 are listed.
+
+## Milestone 12 — Hosted release
+
+Goal: the hosted application runs on the project's domain, keeps its data
+across deployments and refreshes its reference database weekly.
+Demo: open the site on its domain, create an account, generate a card with a
+real key, deploy a new version and see the card still there, run the refresh
+and see the new dates on Status; in the local zip, refresh from Status.
+Later: object storage for images if the volume fills.
+
+### T204: Reference database in its own file and refresh
+The catalog in its own database file behind a router, and the refresh of plan
+section 16.6: build aside, swap when complete, the earlier file kept after a
+failure, the free-space check, the refresh as a job in local mode, the
+endpoint that starts it and the last refresh in the status endpoint.
+Covers: RN-03, RN-28, RN-41, RN-68, CA-106
+Agent: backend-dev
+Depends on: T203
+Done when: tests pass for each case of CA-106 with fictional source files, and an upgraded data folder moves its catalog without a rebuild.
+
+### T205: Status screen: refresh
+The refresh action with the download size and its progress in local mode, the
+last refresh and its failure in hosted mode.
+Covers: RN-68, CA-106
+Agent: frontend-dev
+Depends on: T204
+Done when: the screen tests pass with the contract samples in both modes.
+
+### T206: Hosted upgrade and scheduled refresh
+The command that upgrades the stored data before the hosted server starts,
+leaving it unchanged on failure, and the weekly refresh command, which also
+clears expired sign-in counters.
+Covers: RN-68, RN-81, CA-128
+Agent: backend-dev
+Depends on: T204
+Done when: tests pass for CA-128 and for a refresh command run twice.
+
+### T207: Container image and deployment
+The container image, the Fly.io configuration (one machine, São Paulo, a
+volume for the data folder, the weekly schedule), the deployment from a
+tagged release in CI, and the domain and TLS steps (plan section 16.7). The
+base image and any new tool need approval first.
+Covers: RN-29, RN-81
+Agent: release-dev
+Depends on: T206
+Done when: the image builds in CI, a local container run in hosted mode passes a smoke test, and the remaining steps are listed as manual checks.
+
+### T208: Storage backup
+The nightly copy of the databases (through SQLite's online backup), the
+images and the secret key to storage outside the host, and the documented
+restore. The storage service needs approval first.
+Covers: RN-81
+Agent: release-dev
+Depends on: T207
+Done when: the backup command passes its tests against a temporary folder and a restore from its output starts the application with the data.
+
+### T209: Operator guide and hosted user guide
+The operator guide (deployment, environment values, limits, backup, restore,
+refresh) and the user guide for the site, including where keys are kept.
+Covers: RN-46, RN-72, RN-93
+Agent: docs-writer
+Depends on: T207
+Done when: every command and setting in the guides exists in the code, and the gaps are listed.
+
+### T210: Manual checks: hosted site
+The manual checks of the hosted site on its domain: a real-key generation,
+the key absent from the server's logs, password reset by a real email, a
+deployment that keeps the data, the weekly refresh.
+Covers: RN-06, RN-64, RN-68, RN-81
+Agent: docs-writer
+Depends on: T207
+Done when: the checks are in `specs/manual-checks.md` with their CA and expected result.
+
+### T211: Milestone 12 review
+Suites, coverage, the demo on the domain, the security review of the hosted
+configuration, and the operator's limit of generations measured on the
+machine.
+Agent: maintainer
+Depends on: T205, T208, T209, T210
+Done when: the demo passes on the domain and the findings are recorded.
+
+## Milestone 13 — Collection
+
+Goal: the person keeps a collection of printings and custom cards.
+Demo: add two printings and a generated card, change quantities and foil,
+filter by color and availability, sort by price, see the totals and the
+statistics.
+Later: in use and available come from decks (Milestone 14); art changes
+(Milestone 17).
+
+### T182: Previews: Collection, Decks and Deck
+Gallery states for the Collection (list, compact list, grid, filters, empty,
+a printing no longer in the reference database, a custom card), the Decks
+list (tags, covers, search) and the Deck (categories, checks, statistics,
+owned and missing).
+Covers: RN-70, RN-73, RN-74, RN-75, RN-76, RN-78, RN-79, RN-80, RN-95
+Agent: frontend-dev
+Depends on: T180, T211
+Done when: every state has a gallery address, the tests pass, and the screenshots are in the task report.
+
+### T212: Prices and printing data for lists
+The printings import keeps each printing's prices, rarity, artist, release
+date and image addresses, and a selector searches printings by name for lists.
+Covers: RN-33, RN-73, RN-95
+Agent: backend-dev
+Depends on: T188, T17
+Done when: tests with fictional source files pass for the stored fields and the search.
+
+### T213: Collection models, services and endpoints
+Collection entries of printings and custom cards: add (merging equal
+entries), change, delete one or several, list with search, filters, sorting
+and totals, the price with the date of the reference database, and an entry
+whose printing left the reference database.
+Covers: RN-65, RN-68, RN-73, RN-74, RN-95, CA-107, CA-108, CA-109
+Agent: backend-dev
+Depends on: T212
+Done when: tests pass for CA-107, CA-109 and the filter and sort parts of CA-108, and the contract samples exist.
+
+### T214: Statistics selector
+One selector for the statistics of RN-79 over a set of cards, used by the
+collection now and by decks later.
+Covers: RN-79, CA-113
+Agent: backend-dev
+Depends on: T213
+Done when: tests pass for CA-113 over fictional cards.
+
+### T215: Collection screen
+The Collection screen from the preview of T182 wired to T213 and T214, with
+images of printings loaded from the data source's image service and the
+built-file check of CA-126.
+Covers: RN-33, RN-52, RN-70, RN-73, RN-74, RN-79, RN-95, CA-107, CA-108, CA-109, CA-126
+Agent: frontend-dev
+Depends on: T213, T214, T182
+Done when: the screen tests pass with the contract samples and the built-file check allows only the listed image hosts.
+
+### T216: Milestone 13 end-to-end flow test
+Covers: RN-73, RN-74, CA-107
+Agent: qa
+Depends on: T215
+Done when: the demo path passes through the API and the earlier flows keep passing.
+
+### T217: Milestone 13 review
+Agent: maintainer
+Depends on: T216
+Done when: the demo passes and the findings are recorded.
+
+## Milestone 14 — Decks
+
+Goal: decks of existing and custom cards, with Commander checks, statistics
+and what is owned or missing.
+Demo: create a Commander deck, pick two partner commanders, add cards and a
+generated card, see the checks for a banned card and a color outside the
+identity, the statistics, the missing cards, and add them to the collection.
+Later: lists pasted in (Milestone 15), printing (Milestone 16).
+
+### T218: Deck, deck entry and tag API
+Decks with their fields, one entry per copy with a category, tags with their
+rules, the deck list with tag filter and search, duplicate and delete.
+Covers: RN-65, RN-75, RN-80, CA-110, CA-114
+Agent: backend-dev
+Depends on: T217
+Done when: tests pass for the entry part of CA-110 and for CA-114, and the contract samples exist.
+
+### T219: Links to the collection, owned and missing
+The link of a deck entry to a collection entry, in use and available in the
+collection, owned and missing in the deck, the action that adds the missing
+cards, and links dropped when a printing or foil changes or an entry is
+deleted.
+Covers: RN-73, RN-74, RN-75, RN-76, CA-108, CA-110
+Agent: backend-dev
+Depends on: T218
+Done when: tests pass for CA-110 and the in-use part of CA-108.
+
+### T220: Commander pair rule and deck checks
+Pure functions for the pairs of RN-77 and the checks of RN-78, and their
+results in the deck endpoint.
+Covers: RN-77, RN-78, CA-111, CA-112
+Agent: backend-dev
+Depends on: T218
+Done when: tests pass for each case of CA-111 and CA-112 over fictional cards.
+
+### T221: Custom cards in the collection and decks
+Custom cards as collection and deck entries shown with their current
+version, the custom mark, and the deletion of a custom card in use.
+Covers: RN-26, RN-70, RN-73, RN-75, RN-78, CA-125, CA-129
+Agent: backend-dev
+Depends on: T219
+Done when: tests pass for CA-129, for a rejected generated card listed in the checks and for the mark in the list responses.
+
+### T222: Decks screen
+Covers: RN-52, RN-70, RN-80, CA-114
+Agent: frontend-dev
+Depends on: T218, T182
+Done when: the screen tests pass with the contract samples.
+
+### T223: Deck screen
+The Deck screen: entries by category, adding cards, the checks, the
+statistics, owned and missing.
+Covers: RN-52, RN-70, RN-75, RN-76, RN-77, RN-78, RN-79, CA-110, CA-111, CA-112, CA-113, CA-125
+Agent: frontend-dev
+Depends on: T219, T220, T221, T222
+Done when: the screen tests pass with the contract samples.
+
+### T224: Library and Result: add to collection and deck
+Covers: RN-26, RN-73, RN-75, CA-129
+Agent: frontend-dev
+Depends on: T221
+Done when: the screen tests pass, including the confirmation that names the decks before a card in use is deleted.
+
+### T225: Milestone 14 end-to-end flow test
+Covers: RN-75, RN-76, RN-78, CA-110, CA-112
+Agent: qa
+Depends on: T223, T224
+Done when: the demo path passes through the API and the earlier flows keep passing.
+
+### T226: Milestone 14 review
+Agent: maintainer
+Depends on: T225
+Done when: the demo passes and the findings are recorded.
+
+## Milestone 15 — Import, export and backup
+
+Goal: lists move in and out of the application, and a person can take all
+their data away and bring it back.
+Demo: paste a deck list with a foil line, a comment and an unknown card,
+read the report, confirm; export the deck and import it into a new deck;
+export its picture; download a backup, restore it with merge and with
+replace.
+
+### T183: Previews: Print, Extras, Import and export, art selection
+Gallery states for Print (queue, options, presets, the hosted notice of
+RN-88), Extras, Import and export (the import report, backup, restore) and
+the art selection. This task proposes the values still marked [DECIDE] in
+RN-87, RN-89 and RN-90 (presets and option values, markers, printing
+filters) for the maintainer to settle through /spec-change.
+Covers: RN-82, RN-85, RN-86, RN-87, RN-88, RN-89, RN-90, RN-91, RN-96
+Agent: frontend-dev
+Depends on: T180, T226
+Done when: every state has a gallery address, the tests pass, the screenshots are in the task report, and the proposed values are listed for the maintainer.
+
+### T227: List import: parser, lookup and report
+The parser of RN-82 as a pure function, the lookup in the reference database,
+the report, and the save on confirmation, into the collection, a new deck or
+an existing deck.
+Covers: RN-82, CA-115
+Agent: backend-dev
+Depends on: T226
+Done when: tests pass for each case of CA-115 and for a list of 2,001 lines.
+
+### T228: List exports
+The text forms, CSV and JSON of RN-83 for a deck and for the collection.
+Covers: RN-83, CA-116
+Agent: backend-dev
+Depends on: T227
+Done when: tests pass for CA-116.
+
+### T229: Backup and restore
+The backup file and the restore of RN-85 (plan section 16.8), with the
+limits of hosted mode.
+TODO: the largest backup file is [DECIDE] in RN-85.
+Covers: RN-43, RN-66, RN-67, RN-85, CA-117
+Agent: backend-dev
+Depends on: T226
+Done when: tests pass for CA-117, for a restore that fails midway and leaves no row or file, and for a search of the backup for a key.
+
+### T230: Import and export screen
+Covers: RN-52, RN-82, RN-83, RN-85, CA-115, CA-116, CA-117
+Agent: frontend-dev
+Depends on: T227, T228, T229, T183
+Done when: the screen tests pass with the contract samples.
+
+### T231: Deck picture
+The picture of a deck drawn in the browser with the choices of RN-84 and the
+frame for an image that cannot be read.
+Covers: RN-70, RN-84, CA-130
+Agent: frontend-dev
+Depends on: T223
+Done when: tests pass for the layout of CA-130 computed for a fictional deck; the file types are a manual check.
+
+### T232: Milestone 15 end-to-end flow test
+Covers: RN-82, RN-83, RN-85, CA-116, CA-117
+Agent: qa
+Depends on: T230, T231
+Done when: the demo path passes through the API and the earlier flows keep passing.
+
+### T233: Milestone 15 review
+Agent: maintainer
+Depends on: T232
+Done when: the demo passes and the findings are recorded.
+
+## Milestone 16 — Print and extras
+
+Goal: cards printed at their real size, and tokens and other extras at hand.
+Demo: queue a generated card, a deck and a token in local mode, choose a
+preset, print and download the PDF, measure a printed card; in hosted mode
+see that only custom cards can be queued.
+
+### T234: Extras in the reference database
+The build imports the extras by kind, and selectors list and search them;
+extras stay out of the base card search, the comparables and the import.
+Covers: RN-36, RN-89, CA-122
+Agent: backend-dev
+Depends on: T233
+Done when: tests with fictional source files pass for CA-122 and for an import line that names a token.
+
+### T235: Print queue API
+The queue of RN-86 with its sources, the two items of a two-faced card, and
+the refusal of existing printings, extras and community art in hosted mode.
+Covers: RN-65, RN-86, RN-88, CA-118, CA-120
+Agent: backend-dev
+Depends on: T234
+Done when: tests pass for CA-118 and for CA-120 in both modes.
+
+### T236: Extras screen
+TODO: the list of markers is [DECIDE] in RN-89 (proposed by T183).
+Covers: RN-52, RN-89, CA-122
+Agent: frontend-dev
+Depends on: T234, T183
+Done when: the screen tests pass with the contract samples.
+
+### T237: Print screen and print sheets
+The queue, the options and presets, the sheets at physical size for the
+browser's print dialog, the line of RN-96, the frame for an unreadable
+image, and the hosted notice.
+TODO: the presets and option values are [DECIDE] in RN-87 (proposed by T183).
+Covers: RN-52, RN-70, RN-86, RN-87, RN-88, RN-96, CA-119, CA-121
+Agent: frontend-dev
+Depends on: T235, T183
+Done when: tests pass for the page split and the card sizes of CA-119 computed from the sheet layout, and for CA-121.
+
+### T238: PDF download
+The PDF of the sheets made in the browser (plan section 16.8). A PDF writer
+is a new dependency: this task starts with its approval, and without it the
+download is the browser's own "save as PDF" with instructions.
+Covers: RN-87, CA-119
+Agent: frontend-dev
+Depends on: T237
+Done when: the card areas of the produced file measure 63 × 88 mm in a test, or the instructions are shown when no writer is approved.
+
+### T239: Manual checks: printed sheets
+Covers: RN-87, CA-119
+Agent: docs-writer
+Depends on: T237
+Done when: the measuring check at 100% scale is in `specs/manual-checks.md`.
+
+### T240: Milestone 16 end-to-end flow test
+Covers: RN-86, RN-88, CA-118, CA-120
+Agent: qa
+Depends on: T236, T237
+Done when: the demo path passes through the API in both modes and the earlier flows keep passing.
+
+### T241: Milestone 16 review
+Agent: maintainer
+Depends on: T238, T239, T240
+Done when: the demo passes, a printed sheet was measured and the findings are recorded.
+
+## Milestone 17 — Art selection and community art
+
+Goal: an entry shows the printing, the own art or the community art the
+person chose.
+Demo: change one copy of a card in a deck to another printing, upload own art
+on a collection entry, import a community order file, paste a community image
+link, and see each marked as custom art where it applies.
+Later: the community art search, when the open question of RN-91 is answered.
+
+### T242: Art choice API and own art
+The printings of a card with their sorting and filters, the choice of a
+printing per entry and per face, and own art uploaded under the checks of
+RN-43, stored and served like card images.
+TODO: the printing filters are [DECIDE] in RN-90 (proposed by T183).
+Covers: RN-33, RN-43, RN-67, RN-90, CA-123
+Agent: backend-dev
+Depends on: T241
+Done when: tests pass for each case of CA-123.
+
+### T243: Art selection screen
+Covers: RN-70, RN-90, CA-123
+Agent: frontend-dev
+Depends on: T242, T183
+Done when: the screen tests pass with the contract samples.
+
+### T244: Community order file and pasted link
+The order file parsed in the backend with its cards matched by name, its
+destinations per mode, the reference of a pasted link accepted only for the
+listed hosts, and the references stored without the images.
+Covers: RN-29, RN-88, RN-91, CA-124
+Agent: backend-dev
+Depends on: T242
+Done when: tests pass for CA-124 with a fictional order file, including a file with an entity declaration, which is refused.
+
+### T245: Community art in the screens
+The order file import, the pasted link and the notice of RN-91 in the art
+selection and on the Import and export screen; the built-file check allows
+the community image hosts. The search is not built.
+Covers: RN-33, RN-91, CA-124, CA-126
+Agent: frontend-dev
+Depends on: T243, T244
+Done when: the screen tests pass with the contract samples.
+
+### T246: Milestone 17 end-to-end flow test
+Covers: RN-90, RN-91, CA-123, CA-124
+Agent: qa
+Depends on: T245
+Done when: the demo path passes through the API and the earlier flows keep passing.
+
+### T247: Milestone 17 review
+The definition of done v2 of the spec applies in full here.
+Agent: maintainer
+Depends on: T246
+Done when: the demo passes, every RN and CA is covered or recorded as a manual check, and the findings are recorded.
+
 ## Reserved
 
 Interface quality tasks (the generation wait experience, screen review passes,
@@ -2472,21 +3287,21 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 |---|---|
 | RN-01 | T14, T15, T16, T21, T22, T64, T116, T18 |
 | RN-02 | T2, T75 |
-| RN-03 | T13, T14, T15, T21, T116, T134 |
+| RN-03 | T13, T14, T15, T21, T116, T134, T204 |
 | RN-04 | T14, T16, T23, T26 |
-| RN-05 | T4, T36, T90 |
-| RN-06 | T4, T5, T6, T126, T87, T128, T39, T36, T61 |
-| RN-07 | T4, T35, T40, T36, T41, T42, T118, T93, T90, T115, T58, T101, T98 |
-| RN-08 | T4, T6, T9, T127, T128, T129, T40, T36, T49, T41, T42, T45, T92, T90, T91, T101 |
-| RN-09 | T38, T48, T67, T52, T50, T51, T68 |
-| RN-10 | T13, T35, T39, T40, T48, T117, T133, T41, T42 |
+| RN-05 | T4, T36, T90, T195, T184, T185, T186 |
+| RN-06 | T4, T5, T6, T126, T87, T128, T39, T36, T61, T194, T195, T200, T210, T186 |
+| RN-07 | T4, T35, T40, T36, T41, T42, T118, T93, T90, T115, T58, T101, T98, T195 |
+| RN-08 | T4, T6, T9, T127, T128, T129, T40, T36, T49, T41, T42, T45, T92, T90, T91, T101, T194, T184, T186 |
+| RN-09 | T38, T48, T67, T52, T50, T51, T68, T177, T178, T179 |
+| RN-10 | T13, T35, T39, T40, T48, T117, T133, T41, T42, T177 |
 | RN-11 | T49, T65, T117, T115, T33, T140, T146, T149 |
-| RN-12 | T20, T23, T26, T46, T47a, T47b, T67, T24, T95, T103 |
+| RN-12 | T20, T23, T26, T46, T47a, T47b, T67, T24, T95, T103, T176 |
 | RN-13 | T46, T47b, T67 |
 | RN-14 | T37, T48, T67, T117, T95 |
-| RN-15 | T48, T67, T117, T95, T120, T141 |
+| RN-15 | T48, T67, T117, T95, T120, T141, T176 |
 | RN-16 | T29 |
-| RN-17 | T28 |
+| RN-17 | T28, T175, T176 |
 | RN-18 | T18, T24, T30, T120, T107, T33 |
 | RN-19 | T18, T24, T31, T95, T120, T107 |
 | RN-20 | T32 |
@@ -2494,33 +3309,33 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | RN-23 | T55, T52, T69, T121, T68 |
 | RN-24 | T52, T57, T69, T121 |
 | RN-25 | T37, T54, T55, T56, T69, T121, T50 |
-| RN-26 | T37, T54, T70, T121, T100 |
+| RN-26 | T37, T54, T70, T121, T100, T221, T224, T188 |
 | RN-27 | T4, T10, T75, T111, T78, T79, T83 |
-| RN-28 | T15, T21, T22, T62, T63, T116, T133, T134, T135, T136 |
-| RN-29 | T1, T3, T7, T85, T74, T15, T39, T61, T60, T76, T83 |
+| RN-28 | T15, T21, T22, T62, T63, T116, T133, T134, T135, T136, T198, T204 |
+| RN-29 | T1, T3, T7, T85, T74, T15, T39, T61, T60, T76, T83, T189, T191, T207, T244 |
 | RN-30 | T9, T19, T107, T33, T108, T109, T124 |
 | RN-31 | T43, T44, T51, T58, T113, T122 |
 | RN-32 | T43, T44, T50, T51, T58, T68, T122 |
-| RN-33 | T10, T50, T58, T99, T100, T122, T139 |
+| RN-33 | T10, T50, T58, T99, T100, T122, T139, T192, T212, T215, T242, T245 |
 | RN-34 | T50, T68, T100, T122 |
 | RN-35 | T98, T68 |
-| RN-36 | T17, T25, T60, T66, T123 |
+| RN-36 | T17, T25, T60, T66, T123, T234 |
 | RN-37 | T103, T105, T123 |
 | RN-38 | T17, T104, T105, T114, T123 |
 | RN-39 | T60, T104, T66, T123 |
 | RN-40 | T6, T9, T129, T7, T73, T74, T62, T132, T83 |
-| RN-41 | T8, T11, T74, T131, T13, T21, T93, T132, T83 |
+| RN-41 | T8, T11, T74, T131, T13, T21, T93, T132, T83, T204 |
 | RN-42 | T72, T74, T131, T21, T22, T63, T125, T79, T132, T121 |
-| RN-43 | T50, T115, T59, T98, T68, T100, T122 |
+| RN-43 | T50, T115, T59, T98, T68, T100, T122, T229, T242 |
 | RN-44 | T43, T44, T51, T58, T59, T99, T68 |
 | RN-45 | T111, T76, T77, T78, T79, T112, T83 |
-| RN-46 | T79 |
+| RN-46 | T79, T209 |
 | RN-47 | T4, T7, T8, T74, T131, T83 |
 | RN-48 | T67, T51 |
-| RN-49 | T167–T173, T146, T152, T9, T62, T63, T64, T65, T67, T92, T69, T70, T101, T98, T99, T68, T100, T66, T105, T109, T112 |
-| RN-50 | T13, T49 |
+| RN-49 | T167–T173, T146, T152, T9, T62, T63, T64, T65, T67, T92, T69, T70, T101, T98, T99, T68, T100, T66, T105, T109, T112, T180 |
+| RN-50 | T13, T49, T196 |
 | RN-51 | T138, T161, T147, T163 |
-| RN-52 | T139 |
+| RN-52 | T139, T199, T201, T215, T222, T223, T230, T236, T237, T181, T187 |
 | RN-53 | T140, T141, T146, T147 |
 | RN-54 | T149, T151, T152 |
 | RN-55 | T142, T141, T146, T147 |
@@ -2530,12 +3345,46 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | RN-60 | T163, T164, T166, T123 |
 | RN-61 | T164, T114, T123 |
 | RN-62 | T165, T166, T114, T123 |
+| RN-63 | T189, T202, T188 |
+| RN-64 | T190, T191, T199, T210, T181 |
+| RN-65 | T192, T193, T202, T213, T218, T235 |
+| RN-66 | T197, T199, T229, T181 |
+| RN-67 | T197, T199, T229, T242, T181 |
+| RN-68 | T204, T205, T206, T210, T213 |
+| RN-69 | T201, T181 |
+| RN-70 | T215, T221, T222, T223, T231, T237, T243, T182 |
+| RN-71 | T200, T181, T186, T187, T248 |
+| RN-72 | T194, T200, T202, T209, T181, T186, T187, T248 |
+| RN-73 | T212, T213, T215, T216, T219, T221, T224, T182 |
+| RN-74 | T213, T215, T216, T219, T182 |
+| RN-75 | T218, T219, T221, T223, T224, T225, T182 |
+| RN-76 | T219, T223, T225, T182 |
+| RN-77 | T220, T223 |
+| RN-78 | T220, T221, T223, T225, T182 |
+| RN-79 | T214, T215, T223, T182 |
+| RN-80 | T218, T222, T182 |
+| RN-81 | T206, T207, T208, T210 |
+| RN-82 | T227, T230, T232, T183 |
+| RN-83 | T228, T230, T232 |
+| RN-84 | T231 |
+| RN-85 | T229, T230, T232, T183 |
+| RN-86 | T235, T237, T240, T183 |
+| RN-87 | T237, T238, T239, T183 |
+| RN-88 | T235, T237, T240, T244, T183 |
+| RN-89 | T234, T236, T183 |
+| RN-90 | T242, T243, T246, T183 |
+| RN-91 | T244, T245, T246, T183 |
+| RN-92 | T193, T198, T199 |
+| RN-93 | T201, T209, T181 |
+| RN-94 | T200, T181, T187 |
+| RN-95 | T212, T213, T215, T182 |
+| RN-96 | T237, T183 |
 | CA-01 | T29 |
-| CA-02 | T28 |
+| CA-02 | T28, T175, T176 |
 | CA-03 | T30, T120 |
 | CA-04 | T31, T120 |
 | CA-05 | T4, T49 |
-| CA-06 | T5, T6, T126, T87, T128, T129, T40, T61, T41, T42 |
+| CA-06 | T5, T6, T126, T87, T128, T129, T40, T61, T41, T42, T194 |
 | CA-07 | T21, T116 |
 | CA-08 | T21, T22, T64, T116 |
 | CA-10 | T48, T117 |
@@ -2584,7 +3433,7 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | CA-53 | T74, T82, T131, T83 |
 | CA-54 | T33, T109, T124 |
 | CA-55 | T55, T52, T69 |
-| CA-56 | T47b |
+| CA-56 | T47b, T176 |
 | CA-57 | T29 |
 | CA-58 | T67, T51 |
 | CA-59 | T62, T112 |
@@ -2621,3 +3470,43 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | CA-92 | T163, T166, T123 |
 | CA-93 | T164, T114, T123 |
 | CA-94 | T162, T165, T166, T147, T123 |
+| CA-95 | T200, T186, T187 |
+| CA-96 | T186, T248 |
+| CA-97 | T194, T200, T202 |
+| CA-98 | T186, T187 |
+| CA-99 | T194, T200, T187 |
+| CA-100 | T190, T199 |
+| CA-101 | T192, T193, T202 |
+| CA-102 | T197, T199 |
+| CA-103 | T198, T199 |
+| CA-104 | T197, T199 |
+| CA-105 | T189, T202, T188 |
+| CA-106 | T204, T205 |
+| CA-107 | T213, T215, T216 |
+| CA-108 | T213, T215, T219 |
+| CA-109 | T213, T215 |
+| CA-110 | T218, T219, T223, T225 |
+| CA-111 | T220, T223 |
+| CA-112 | T220, T223, T225 |
+| CA-113 | T214, T223 |
+| CA-114 | T218, T222 |
+| CA-115 | T227, T230 |
+| CA-116 | T228, T230, T232 |
+| CA-117 | T229, T230, T232 |
+| CA-118 | T235, T240 |
+| CA-119 | T237, T238, T239 |
+| CA-120 | T235, T240 |
+| CA-121 | T237 |
+| CA-122 | T234, T236 |
+| CA-123 | T242, T243, T246 |
+| CA-124 | T244, T245, T246 |
+| CA-125 | T201, T221, T223 |
+| CA-126 | T215, T245 |
+| CA-127 | T196 |
+| CA-128 | T206 |
+| CA-129 | T221, T224 |
+| CA-130 | T231 |
+| CA-131 | T198, T201 |
+| CA-132 | T190, T191 |
+| CA-133 | T185 |
+| CA-134 | T178, T179 |

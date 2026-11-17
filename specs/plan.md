@@ -7,6 +7,10 @@ ones (CLAUDE.md); anything else needs approval before a task adds it.
 
 ## 1. Context
 
+Sections 2 to 15 describe the local application. Section 16 extends them for
+hosted mode, the Settings screen, the collection, decks, import, printing and
+art selection (RN-63 to RN-96).
+
 The repository holds only the specification, the standards and an empty
 `backend/` and `frontend/`. This plan defines the Django apps, models, services,
 selectors, endpoints, the data directory, the distribution, and the folders each
@@ -577,8 +581,35 @@ search by part of a name (RN-36) uses a case-insensitive `LIKE`, not FTS.
 Direct HTTP fits the small surface (one text endpoint and one or two image
 endpoints per provider) and the install weight goal. Timeouts are named
 constants: connect 10 s, text read 180 s, image read 300 s; one retry on 5xx and
-network errors. While a provider call runs, the job reports "waiting for the
+on a connection that fails before the request is sent. A read timeout is not
+retried: the provider may have worked and billed, and a second wait doubles
+the worst case. While a provider call runs, the job reports "waiting for the
 provider" with the elapsed time.
+
+**Cost and latency of text calls (from M3b on).**
+- Reasoning effort per step. `complete_json` takes an `effort` hint (`low`,
+  `default`); the design intent, the revision and quick adjustments ask for
+  `low`, the draft for `default`. Each adapter maps the hint to its provider's
+  parameter and omits it for a model that does not accept one.
+- One system prompt for the draft, the revision and quick adjustments, so the
+  later calls of a card repeat the prefix of the first and the provider's
+  prompt cache can serve it. What differs per call (the causes, the
+  adjustment) goes last in the user message. Prompts are ordered stable part
+  first, volatile part last, and hold no timestamp or random value. The
+  Anthropic adapter marks the system prompt and the end of the candidates as
+  cache breakpoints.
+- Candidates are sent with a short alias (`c1` … `c40`) mapped back to the
+  card by the pipeline, without reminder text, and with the status as one
+  word; the comparables output carries the alias only.
+- The mana value is not in the output schema; the application computes it
+  (RN-17).
+- The fast text model (RN-05, `LLM_MODEL_FAST`) serves the design intent step
+  and quick adjustments when set.
+- `Usage` carries the seconds of the call (RN-09) and, when the provider
+  reports them, the cached input tokens and the reasoning tokens; the two
+  last are written to the application log only.
+- An output token limit per step is set with room for reasoning; reaching it
+  is an `InvalidResponse`.
 
 ### 9.3 Configuration, secret and status
 Covered in section 8.
@@ -844,10 +875,15 @@ task names exactly one agent.
 **Models and cost.** Each agent runs on the model its work needs: Opus for
 architect, spec-reviewer, llm-engineer (prompts and the generation flow) and
 frontend-dev (interface design); Sonnet for backend-dev, release-dev,
-reviewer and docs-writer; Haiku for qa. A task that touches keys or another security rule
-gets its review on Opus. When several tasks run in a row:
-- each task starts a fresh agent with a brief that names the files to read;
-  agents are not resumed across tasks once their context has grown;
+reviewer and docs-writer; Sonnet for qa when the task has rules to protect
+(validators, pipelines, endpoints, accounts and ownership), since its tests
+define what correct means, and Haiku for qa on mechanical tasks. A task that
+touches keys, accounts, ownership or another security rule gets its review on
+Opus. When several tasks run in a row:
+- each task starts a fresh agent with a brief that names the files to read
+  and quotes the task, the RN and CA it covers and the plan section it needs;
+  agents search `specs/` for those IDs instead of reading the three files
+  whole, and are not resumed across tasks once their context has grown;
 - agents run the tests of their task, and the full suites run once per commit
   batch, on a clean checkout of the batch's commits;
 - reports stay short (files, results, open questions);
@@ -906,6 +942,23 @@ sources.
 | M8 Base card | a chosen printing guides the design and is the art template; custom art versions of existing cards; the Card Factory set symbol on every generated image | printings import, base card search, base image cache, template, custom art version request and image, set symbol, screen updates |
 | M9 Portuguese cards | cards in Portuguese with every validation | Portuguese terms and lexicon, card language |
 | M10 Public release | release zip and clone start for the public | release assets, clone start file, CI release, README, license, community files |
+| M10b Settings screen | providers, models and keys set on a screen that writes the configuration file | settings endpoints, configuration file writer, Settings screen |
+| M11 Accounts and hosted mode | the same application started in hosted mode: accounts, each person's data apart, the key sent from the browser with each generation | mode setting, accounts, ownership, per-request provider configuration, limits, visitor gate, account and legal screens |
+| M12 Hosted release | the site runs on the project's domain and refreshes its reference database weekly | reference refresh, hosted upgrade, container image and deployment, storage backup, operator guide |
+| M13 Collection | the person keeps a collection of printings and custom cards | prices and printings in the catalog, collection models, API and screen, statistics |
+| M14 Decks | decks of existing and custom cards with Commander checks and statistics | deck, entry and tag models, links to the collection, checks, deck screens |
+| M15 Import, export and backup | lists pasted in and exported, a deck picture, backup and restore | import parser and report, exports, backup service, screen |
+| M16 Print and extras | print sheets and PDF at card size; tokens and other extras | extras in the catalog, print queue, Print and Extras screens |
+| M17 Art selection and community art | another printing, own art or community art on an entry | art choice API and screen, MPCFill order file and link |
+
+The card generator is the main delivery: Milestones 0 to 10 end with its
+public release, and Milestones 10b to 17 start only after it. Before the
+release, the new phase adds only what the generator itself uses: the cost
+and latency changes of section 9.2 and the fast text model (Milestones 3b
+and 4), the design direction of section 16.9 (Milestone 3c) and the owner
+of saved data (Milestone 6), which costs one task before the first release
+and a data migration after it. The previews of the new screens are the
+first task of the milestone that first wires them (T181, T182, T183).
 
 **Screen previews.** M3c is the one milestone that is not a vertical slice
 (`specs/tasks.md`, Delivery method): it builds the visual screens ahead of
@@ -984,3 +1037,191 @@ public release, the migrations are replaced by one initial migration per app
   Milestone 1 on): on a Windows computer with no Python or Node for Milestones
   1 and 10, on the development machine for the others.
 - T26 counts recorded in the Milestone 3 review (T94), with the first generated cards.
+
+## 16. Hosted mode, settings, collection and decks
+
+This section extends sections 2 to 15 for the rules RN-63 to RN-96. Where it
+differs from an earlier section, this section applies from the milestone that
+delivers the rule; until then the earlier text describes the code.
+
+### 16.1 Two modes, one code base
+
+- `CARDFACTORY_MODE` is `local` (default) or `hosted`, read from the process
+  environment by `core.config`. It is not in `.env.example`: the zip and a
+  clone are always local. Code asks `core.mode.is_hosted()`; no other test of
+  the mode exists.
+- Local mode keeps section 8: bind to `127.0.0.1`, the origin check, the
+  launcher and the watchdog. Hosted mode binds to the address the platform
+  gives, takes `ALLOWED_HOSTS` and the site origin from the environment, turns
+  on secure cookies, HSTS and Django's CSRF protection, and has no launcher,
+  watchdog, Setup screen or port setting.
+- *Alternative:* a separate hosted application that shares packages with the
+  local one. Rejected: two deployables to keep in step for a small team.
+
+### 16.2 Owner of saved data (Milestone 6)
+
+- Every saved model (card, version, usage record, and later collection entry,
+  deck, deck tag, print queue item) has a required `owner`, a foreign key to
+  Django's own user model (`django.contrib.auth`, part of Django: no new
+  dependency).
+- Local mode has exactly one user, created by the upgrade service, and every
+  request acts as that user; hosted mode uses the signed-in user. Services and
+  selectors take the owner as their first argument, so both modes run the
+  same queries, and a selector that forgets the owner fails its tests in
+  local mode too.
+- A request for another owner's row gets the same 404 as a missing row
+  (RN-65). A sweep test enumerates the URL configuration and calls every
+  endpoint that takes an identifier with a second account.
+- The owner is added before the library endpoints (Milestone 6) so no later
+  migration has to assign owners to existing rows.
+- *Alternative:* a nullable owner used only in hosted mode. Rejected: two
+  query paths, and the hosted path would be the less tested one.
+
+### 16.3 Accounts (Milestone 11)
+
+- Django sessions and password hashing; the email is the user name. No email
+  confirmation until the open question of RN-64 is answered.
+- Sign-in lockout (RN-64) and the limit of new accounts per address are
+  counters in the database with an expiry, cleared by the weekly job.
+- Password reset uses Django's token generator with a one-hour lifetime; a
+  password change rotates the session hash, which ends the other sessions.
+- Email goes through Django's email framework: the console backend in
+  development and tests, SMTP settings from the environment in hosted mode.
+  The provider of the SMTP service is chosen in Milestone 12.
+- `data/secret_key` now signs sessions: in hosted mode a missing or replaced
+  key signs everybody out, so it lives on the persistent volume and is part
+  of the storage backup.
+
+### 16.4 Settings (Milestone 10b local, Milestone 11 hosted)
+
+- `GET /api/settings` returns the values without keys (a boolean per key);
+  `PUT /api/settings` takes the changed fields. Keys are write-only.
+- Local store: `core.config_writer` rewrites `.env` line by line, replacing
+  the value of a known name, appending a missing one, keeping every other
+  line and the file's encoding, and writes through a temporary file and a
+  rename. Values with a line break or control character are refused before
+  the write. The origin check of section 8 covers the endpoint (RN-72).
+- Hosted store: the browser. The frontend keeps the values in
+  `sessionStorage`, or in `localStorage` when the person chooses to remember
+  them, and sends them in request headers (`X-CF-*`) only to the endpoints
+  that start a provider call. The backend builds a per-request `Config` from
+  the headers, runs the same checks, hands it to the job, and drops it when
+  the job ends. Header values join the log redaction set (section 8), the
+  access log records no header, and no error report includes request headers.
+- `providers.factory` takes a `Config` argument instead of calling
+  `get_config()` itself, so both stores use one factory.
+- The hosted pages send a Content-Security-Policy that allows scripts and
+  styles only from the site, images from the site, the data source's image
+  host and the community art hosts, and connections only to the site: a key
+  in the browser is exposed to any script that runs on the page.
+- *Alternatives:* keys encrypted per account on the server (works across
+  devices, but a leak of the database and its master key exposes every
+  person's key); the browser calling the providers directly (the server
+  never sees a key, but the provider layer and the pipeline would be
+  rewritten in TypeScript). Both rejected for now.
+
+### 16.5 Jobs in hosted mode
+
+- The in-process runner of section 5 stays. One job at a time per owner; a
+  counter of running generation jobs is compared with
+  `CARDFACTORY_MAX_GENERATIONS` (RN-50). The job row belongs to its owner,
+  so the step shows after a reload.
+- Clients poll the job; no request waits for a provider, so a proxy's read
+  timeout in front of the site does not apply.
+- A restart loses the running jobs and their keys; on start, jobs left
+  running are marked failed (RN-06, RN-10).
+
+### 16.6 Reference database as its own file (Milestone 12)
+
+- The catalog moves to `data/reference.sqlite3`, reached through a second
+  Django database alias and a router that sends the `catalog` app there.
+  Saved data stays in the main database and refers to catalog rows by the
+  data source's identifier, never by a foreign key across files.
+- A refresh builds `reference.next.sqlite3` with the existing all-or-nothing
+  build, checks it, then renames it over the current file and closes the
+  connections to the old one. A job that started before the swap keeps the
+  rows it already read (RN-68).
+- Hosted mode runs the refresh from a weekly scheduled command
+  (`manage.py refresh_reference`); local mode runs it as a job from the
+  Status screen, after the free-space check.
+- The data source asks for a `User-Agent` that names the application and for
+  bulk files instead of repeated searches; the downloader already does both.
+- Entries keep the printing's identifier and name, so a printing that
+  disappears stays listed (RN-68).
+
+### 16.7 Hosting (Milestone 12)
+
+- Chosen: Fly.io, one machine in the São Paulo region, 512 MB, one process
+  (waitress), a persistent volume for `data/` (both databases, images, the
+  secret key, logs). Cloudflare for DNS. Cost is a few dollars a month, which
+  Fly.io currently does not charge below its minimum invoice; that is their
+  policy, not a guarantee.
+- *Alternative:* an Oracle Cloud Always Free virtual machine (no charge, more
+  memory and disk, but a server to administer, idle instances reclaimed and
+  free limits already reduced once). Kept as the fallback.
+- Rejected: hosts with no persistent disk (the catalog and the saved data are
+  SQLite files) and a managed Postgres (the full-text search of section 9.1
+  is SQLite FTS5).
+- Custom card images stay as files on the volume, within the per-account
+  limits of RN-67. Object storage is the step to take if the volume fills.
+- The volume is copied nightly to object storage outside the host (database
+  backup through SQLite's online backup, never a copy of a live file).
+- Deployment: a container image built by CI from a tagged release; the
+  upgrade service of section 7 runs before the server starts (RN-81).
+- New items that need approval when their task starts: the container base
+  image, the object storage for backups and the email service.
+
+### 16.8 Collection, decks, import, print and art (Milestones 13 to 17)
+
+- These features are written from the spec, in this stack and under
+  `specs/code-standards.md`: Django services and selectors, the SQLite
+  databases, React views and containers, English interface text, tests
+  first. Another project may inspire a feature; none of its code, assets
+  or data is copied, and a later feature enters the same way, through
+  /spec-change.
+- New Django apps: `collection` (entries), `decks` (decks, entries, tags,
+  checks, statistics), `printing` (queue) and `exchange` (import, export,
+  backup). Each follows section 5: services for writes, selectors for reads.
+- The catalog gains, from the printings source (section 14, Milestone 8), the
+  prices and the image addresses of each printing and, in Milestone 16, the
+  extras. Prices are those of the build (RN-95).
+- Images of existing printings are `<img>` elements pointing at the data
+  source's image host (RN-33); the application neither proxies nor stores
+  them. The built-file check of CA-126 allows that host and the community art
+  hosts and nothing else.
+- Deck checks (RN-78) and the commander pair rule (RN-77) are pure functions
+  over catalog rows, like the card validators.
+- The import (RN-82) is a pure parser plus a lookup selector; the endpoint
+  returns the report, and a second call with the report's token saves it.
+- Backup (RN-85) is a ZIP with one JSON document and the image files, written
+  and read with the standard library; restore runs in one transaction and
+  writes images only after it commits, removing them if it fails.
+- Print sheets (RN-87) are HTML and CSS at physical sizes with `@page`, so
+  the browser's print dialog produces them with no dependency. The PDF
+  download and the deck picture (RN-84) are drawn in the browser on a canvas;
+  images are requested with cross-origin access, and one that the host does
+  not allow to be read is drawn as a frame with the card name. A PDF writer
+  for the browser is a new dependency and needs approval in its task; without
+  it, the PDF option is the browser's "save as PDF".
+- Hosted mode refuses queue items of existing printings, extras and
+  community art in the service, not only in the interface (RN-88).
+- Community art (RN-91): the order file is parsed in the backend (standard
+  library XML with entity expansion off); a pasted link is accepted only for
+  the listed hosts; the search waits for the open question and is not built.
+
+### 16.9 Interface: design direction and visual checks
+
+- `frontend/DESIGN.md` states the design direction once: the character of
+  the product, the type families and scale, spacing rhythm, density, the use
+  of the accent, the shape of lists, tables and card displays, and the
+  motion rules. `tokens.css` carries its values. Screen tasks follow it, and
+  a change of direction changes this file first.
+- The interface may bundle its own font files with the build (served by the
+  application, RN-33); each family is a dependency approved in the task that
+  adds it.
+- A screen task ends with screenshots of its states from the preview gallery
+  at 360, 768 and 1280 px, attached to the task report, so the review looks
+  at the screen and not only at its code.
+- The hosted Home, Privacy and Terms pages are public web pages: the search
+  and sharing concerns that `specs/code-standards.md` set aside for a local
+  tool apply to them.

@@ -1,6 +1,6 @@
 // Preview gallery of the development server: every screen and named state with fictional fixtures.
 // Details: specs/plan.md, sections 2 and 14 ("Screen previews"); spec RN-49.
-import { useEffect, useId, useState } from "react";
+import { Fragment, useEffect, useId, useState } from "react";
 
 import { previewScreens } from "./registry";
 import styles from "./PreviewGallery.module.css";
@@ -88,7 +88,8 @@ export function PreviewGallery({ screens = previewScreens }: { screens?: Preview
             data-width={width}
             data-reduced-motion={reducedMotion ? "true" : "false"}
           >
-            {address.state.render()}
+            {/* Keyed by address, so a state never inherits the fields typed into the one before it. */}
+            <Fragment key={`${address.screen.id}/${address.state.id}`}>{address.state.render()}</Fragment>
           </section>
         </>
       )}

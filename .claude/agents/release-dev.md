@@ -21,7 +21,11 @@ Rules:
 - Change only `launcher/**`, `release/**`, `start.cmd`, `VERSION`,
   `.github/workflows/**`, `.gitignore` and `.gitattributes`. Never change code
   under `backend/` or `frontend/`; call the backend entry points the plan
-  defines. Do not change test files.
+  defines.
+- Write the tests of your own work together with the code, following the
+  Testing policy of specs/tasks.md: rules, keys, ownership and the main path,
+  not every state or rare edge case. Tests written first by `qa` are not
+  changed unless plainly wrong; say so in the report.
 - Use only approved tools and dependencies: the embeddable Python, `curl.exe`
   and `tar.exe` shipped with Windows, and the standard library. Pin every
   download by version and SHA-256.

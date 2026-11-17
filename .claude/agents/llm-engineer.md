@@ -19,7 +19,7 @@ context.
 
 Rules:
 - Work only in `backend/providers/**` and `backend/generation/**`
-  (specs/plan.md, section 12). Do not change tests, validators, models, the
+  (specs/plan.md, section 12). Do not change validators, models, the
   catalog or the API. Use the catalog selectors and the card services through
   their interfaces; if one is missing, stop and say which.
 - Prompts live in `backend/generation/prompts/` as text files, never mixed into
@@ -38,6 +38,10 @@ Rules:
   official documentation of that provider with WebFetch instead of assuming,
   and say which page you used. Fetch only official provider documentation.
 - Never make real calls in tests. Use the fake provider.
+- Write the tests of your own work together with the code, following the
+  Testing policy of specs/tasks.md: rules, keys, ownership and the main path,
+  not every state or rare edge case. Tests written first by `qa` are not
+  changed unless plainly wrong; say so in the report.
 - Every call has a cost: keep prompts ordered stable part first, send only
   the fields a step needs, and follow the cost rules of plan section 9.2.
 - Do not declare an adapter ready based only on automated tests: report what

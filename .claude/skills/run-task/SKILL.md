@@ -1,61 +1,41 @@
 ---
 name: run-task
-description: Run the full implementation cycle for one task from specs/tasks.md (tests, implementation, review) with the project agents, stopping for the maintainer at checkpoints. Use only when the maintainer asks to run a task, or when /next-task starts the next task.
+description: Implement one task or feature from specs/tasks.md (code and its tests together), run the suites and report. Use only when the maintainer asks to run a task, or when /next-task starts the next task.
 disable-model-invocation: true
-argument-hint: [task id, e.g. T29] [auto]
+argument-hint: [task id or ids, e.g. T29 or T140,T146]
 ---
 
-Run the implementation cycle for the task in $ARGUMENTS (for example `T29`).
-If the second word is `auto`, skip checkpoint A. Checkpoint B is never skipped.
+Implement the task (or the group of related tasks) in $ARGUMENTS, following
+specs/tasks.md ("Delivery method", "Testing policy", "Process").
 
 ## 0. Pre-flight
-1. Read specs/tasks.md and find the task. If it does not exist or is ambiguous,
-   stop and ask.
-2. Run `git status` and show the current branch. Tasks have no branches of
-   their own: the work happens on the branch of the task's milestone
-   (`milestone/<id>-<name>`, specs/git-standards.md, section 2). Stop and ask
-   if the working tree is dirty or if the current branch is not that milestone
-   branch. Do not create or switch branches here; if the milestone branch does
-   not exist, offer /new-branch.
-3. Read the RN and CA the task cites in specs/spec.md. If any is marked
-   [DECIDE], or the task has a TODO line that is still open, stop and ask.
-   Read the milestone's goal and demo (specs/tasks.md, "Delivery method"):
-   the task builds only its part of that slice, and every agent prompt below
-   names the milestone and the parts the task leaves to later tasks.
-4. Use the implementing agent named in the task's `Agent:` field. If it is
-   `maintainer`, stop: the task is not run by this skill; a milestone review
-   runs with /milestone-review. If it is `qa`, step 1
-   is the whole implementation: skip step 2 and go to review. If the agent file
-   does not exist in `.claude/agents/`, stop and say so.
+1. `git status` and the current branch: it must be the milestone branch with
+   a clean working tree. Stop and ask otherwise.
+2. Read the task text and the RN it cites (search by ID). A [DECIDE] mark
+   stops the run with the question; anything else unclear is decided by the
+   simplest reading and listed in the report.
 
-## 1. Tests first
-Use the qa agent to write the tests for the task. Show the maintainer the list of
-tests, which RN or CA each protects, and why they fail now.
-Checkpoint A: wait for the maintainer to approve or request changes.
+## 1. Implementation
+- Small change (a few files, no key, account or ownership rule): do it
+  directly, without a subagent.
+- Otherwise: one fresh agent, the one named in `Agent:`, with a brief that
+  quotes the task and the RN, names the files to read, and asks for a report
+  of at most 10 lines. The agent writes the code and its tests together,
+  following the Testing policy.
+- Validators, security or ownership work: a `qa` agent writes the tests first.
 
-## 2. Implementation
-Use the chosen agent to implement the task, then run the whole suite. If tests
-fail, give the agent the failing output and retry, at most 3 rounds. If they
-still fail, stop and report. Never change tests to make them pass.
+## 2. Check
+Run the suites the change touches (`pytest -q` in `backend/`, `npm run test`
+and `npx tsc -b` in `frontend/`, `pytest launcher release`). Fix failures,
+at most 3 rounds. Never weaken a test to make it pass. Work that touches keys,
+accounts or ownership gets a `reviewer` pass now; anything else waits for the
+milestone review.
 
-## 3. Review
-Use the reviewer agent on the uncommitted changes. High and medium findings go
-back to the implementing agent (at most 2 rounds). Low findings are listed for
-the maintainer.
-
-## 4. Report
-Summarize: task, files changed, test results, review findings fixed and still
-open, doubts, which parts of the diff to read first (the riskiest), and what
-still needs manual testing.
-Checkpoint B: stop. Do not commit, push, merge or switch branches. Offer
-/explain-diff for the riskiest parts, and suggest `/next-task <task id>` after
-the maintainer has read the diff: it commits on the milestone branch, pushes it
-and starts the next task (`/commit` only commits). If the task is the milestone review, remind that the
-milestone branch merges into `main` only after the review passes. If the next
-task of the milestone is its review, suggest /milestone-review.
+## 3. Report
+In the maintainer's language, short: what changed, test results, decisions
+taken, what to look at in the running application. Do not commit; suggest
+`/next-task <id>` (commit, push and next task).
 
 ## Rules
-- One task per run.
-- Never edit specs/spec.md during the cycle. If the spec is wrong, stop and say
-  which rule.
-- Never ask an agent to edit files outside its ownership.
+- Nothing outside the task. Never edit files outside an agent's ownership
+  (specs/plan.md, section 12).

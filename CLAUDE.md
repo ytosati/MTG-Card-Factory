@@ -74,7 +74,11 @@ Development commands. End users start the application with the launcher
 - Milestones are vertical slices: each ends with a capability demonstrated in
   the running application, across frontend, backend and database, and builds
   only what its demo needs (specs/tasks.md, "Delivery method").
-- One task at a time, from specs/tasks.md. Nothing outside the current task.
+- Work from specs/tasks.md one milestone at a time, a feature at a time;
+  related tasks are done together. Nothing outside the milestone.
+- Keep the process light (specs/tasks.md, "Testing policy" and "Process"):
+  small changes are made directly, tests cover rules, keys, ownership and the
+  main path, and there is one review per milestone.
 - Tests never touch the network or a real provider. They use the fake provider
   and fictional cards written by hand.
 

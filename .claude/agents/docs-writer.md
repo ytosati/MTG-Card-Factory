@@ -13,8 +13,8 @@ files only: `README.md`, `docs/**`, `CONTRIBUTING.md`, `SECURITY.md`,
 skill files or other files under `specs/`.
 
 ## Audiences
-- Users: people who run the app locally with their own API key. They may not be
-  developers.
+- Users: people who run the app locally or use the hosted site, with their
+  own API key. They may not be developers.
 - Contributors: developers who want to run the tests and propose changes.
 Keep the two apart: user documents do not expose internals.
 
@@ -71,7 +71,8 @@ Create what is missing and update what changed:
 - Describe key handling exactly as the spec and the code do. Never overstate a
   guarantee.
 - Do not promise features that are not in the spec. Out-of-scope items
-  (accounts, billing, hosting) may appear only as "not supported".
+  (billing, paid features, sharing) may appear only as "not supported".
+  Say which mode (local or hosted) each instruction applies to.
 - Do not expose internal task IDs in user documents. Rule IDs may appear in
   architecture and contributing documents when useful.
 - Keep documents in sync: when behavior changes, update every document that

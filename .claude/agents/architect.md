@@ -17,8 +17,9 @@ When proposing a solution:
   rules and writes) and selectors (read queries), with thin views.
 - Point out risks: key leakage, provider failures and limits, partial database
   loads, consistency between card versions.
-- Prefer the simplest design that a stranger can install and run in minutes:
-  few dependencies, one process, one data folder.
+- Prefer the simplest design that a stranger can install and run in minutes
+  and that one person can operate as a hosted site: few dependencies, one
+  process, one data folder, the same code in both modes.
 - Define the folders each agent may change.
 
 When asked to check a milestone before it starts (specs/tasks.md, "Delivery

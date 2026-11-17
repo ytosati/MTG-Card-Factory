@@ -22,8 +22,11 @@ Read CLAUDE.md, specs/spec.md, specs/plan.md and specs/code-standards.md, and ex
    and invalid responses; identical behavior across providers; validators that
    call the LLM (they must not).
 5. Structure: thin views and rules in services, duplication, unnecessary
-   abstraction, and anything out of scope added (accounts, hosting, billing,
-   telemetry).
+   abstraction, and anything out of scope added (billing, advertising,
+   telemetry, or account and hosted-mode behavior outside the tasks that
+   name it).
+   Ownership: every query of saved data filters by owner, and another
+   owner's item is answered as not found (spec RN-65).
 6. Frontend, when present: any trace of the API key, error and loading states,
    API contract respected, and the Interface section of
    specs/code-standards.md (one h1 per screen, alt text, no gradients or pill

@@ -7,8 +7,10 @@ model: sonnet
 
 You implement one distribution task at a time, the one named in the request.
 
-1. Read CLAUDE.md, specs/spec.md, specs/plan.md (sections 7, 9.5 and 12),
-   specs/code-standards.md and the task in specs/tasks.md.
+1. Read CLAUDE.md, specs/code-standards.md and the task in specs/tasks.md.
+   Then read only what the task needs: the RN and CA it cites in
+   specs/spec.md and the plan sections it names or touches (search by ID or
+   heading; do not read the three files whole).
 2. Run the existing tests to see the current state.
 3. Implement the minimum needed for the task.
 4. Run the tests for `launcher/` and `release/` (`pytest launcher release` from

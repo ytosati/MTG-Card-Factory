@@ -202,12 +202,12 @@ merged into `main`.
 
 - [x] T167: Preview gallery, fixtures and shared card components
 - [ ] T168: Request screen preview: generation fields
+- [ ] T180: Design direction and tokens
 - [ ] T169: Request screen preview: base card, art and custom art version
 - [ ] T170: Result screen preview
 - [ ] T171: Library screen preview
 - [ ] T172: Adjustments and versions screen preview
 - [ ] T173: Status screen preview: art and connection test
-- [ ] T180: Design direction and tokens
 - [ ] T174: Milestone 3c review
 
 Design changes (added when the maintainer asks, Milestone 3c rules):
@@ -1406,6 +1406,19 @@ Agent: frontend-dev
 Depends on: T167
 Done when: Vitest tests render each named state with a label for every field and a single `h1`; `npx tsc -b` passes.
 
+### T180: Design direction and tokens
+Write `frontend/DESIGN.md` (plan section 16.9): the character of the product
+now that it holds a generator, a collection and decks; type families and
+scale; spacing rhythm and density; the use of the purple accent; the shape of
+lists, tables and card displays; motion. Update `tokens.css` to carry it, and
+show the direction on two gallery states (one form screen, one list screen)
+for the maintainer to accept before the other previews follow it. A bundled
+font family is proposed here and added only when approved.
+Covers: RN-49
+Agent: frontend-dev
+Depends on: T167, T168
+Done when: the maintainer accepts the direction in the gallery, the existing tests and `npx tsc -b` pass, and screenshots of the two states at 360, 768 and 1280 px are in the task report.
+
 ### T169: Request screen preview: base card, art and custom art version
 The base card picker (search by part of a name, printing, face of a
 two-faced card, download failure), the art option (generated with an art
@@ -1416,7 +1429,7 @@ art version, which shows only the card search among cards with one face, the
 printing and the art.
 Covers: RN-35, RN-36, RN-39, RN-43, RN-49, RN-59 (visual part)
 Agent: frontend-dev
-Depends on: T168
+Depends on: T168, T180
 Done when: Vitest tests render each named state, including the custom art version with only its fields; `npx tsc -b` passes.
 
 ### T170: Result screen preview
@@ -1433,7 +1446,7 @@ art version shows its mark with the base card and rarity and none of the
 design sections, validation result, editing or quick adjustments.
 Covers: RN-13, RN-15, RN-22, RN-32, RN-34, RN-44, RN-48, RN-49, RN-53, RN-60 (visual part)
 Agent: frontend-dev
-Depends on: T167
+Depends on: T167, T180
 Done when: Vitest tests render each named state, including the custom art version and the card with no image; `npx tsc -b` passes.
 
 ### T171: Library screen preview
@@ -1441,7 +1454,7 @@ Saved cards with an image thumbnail when present, custom art versions marked,
 favorites, deletion with its confirmation, and the empty library.
 Covers: RN-26, RN-49 (visual part)
 Agent: frontend-dev
-Depends on: T167
+Depends on: T167, T180
 Done when: Vitest tests render each named state; `npx tsc -b` passes.
 
 ### T172: Adjustments and versions screen preview
@@ -1452,7 +1465,7 @@ or uploaded art, and a custom art version where only art, restore, favorite
 and delete are offered.
 Covers: RN-23, RN-24, RN-25, RN-34, RN-49, RN-60 (visual part)
 Agent: frontend-dev
-Depends on: T167
+Depends on: T167, T180
 Done when: Vitest tests render each named state; `npx tsc -b` passes.
 
 ### T173: Status screen preview: art and connection test
@@ -1462,21 +1475,8 @@ port-changed notice, and the connection test (running, passed, each failure
 cause with the setting to fix).
 Covers: RN-07, RN-08, RN-49 (visual part)
 Agent: frontend-dev
-Depends on: T167
+Depends on: T167, T180
 Done when: Vitest tests render each named state; the current Status screen behavior and its tests are unchanged; `npx tsc -b` passes.
-
-### T180: Design direction and tokens
-Write `frontend/DESIGN.md` (plan section 16.9): the character of the product
-now that it holds a generator, a collection and decks; type families and
-scale; spacing rhythm and density; the use of the purple accent; the shape of
-lists, tables and card displays; motion. Update `tokens.css` to carry it, and
-show the direction on two gallery states (one form screen, one list screen)
-for the maintainer to accept before the other previews follow it. A bundled
-font family is proposed here and added only when approved.
-Covers: RN-49
-Agent: frontend-dev
-Depends on: T167
-Done when: the maintainer accepts the direction in the gallery, the existing tests and `npx tsc -b` pass, and screenshots of the two states at 360, 768 and 1280 px are in the task report.
 
 ### T174: Milestone 3c review
 Run every test suite, walk the gallery against the spec's Screens section and

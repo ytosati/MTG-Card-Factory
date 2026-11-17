@@ -67,11 +67,13 @@ when new documents appear (for example `docs/ARCHITECTURE.md`).
 
 ## Interface
 
-Card Factory is a local tool served on 127.0.0.1, not a public website. Search
-engine and marketing concerns (sitemap, robots, canonical URLs, meta
-descriptions, structured data, Open Graph, HTTPS, custom domain, search
-consoles, `llms.txt`) do not apply. The rules below aim at an interface that
-looks made for this tool, not assembled from a generic template.
+Card Factory is a tool first: its screens are work surfaces, in local and in
+hosted mode. Search engine and marketing concerns (sitemap, robots, canonical
+URLs, meta descriptions, Open Graph) apply only to the public pages of the
+hosted site (Home, Privacy, Terms). The design direction lives in
+`frontend/DESIGN.md` (plan section 16.9); the rules below are its limits.
+Together they aim at an interface that looks made for this tool, not
+assembled from a generic template.
 
 **Document structure**
 
@@ -97,9 +99,11 @@ looks made for this tool, not assembled from a generic template.
   decorative blurs. A gradient is allowed only when it draws information
   (for example the quarter marks on a progress bar).
 - Interface fonts and icons are either installed on the computer (system font
-  stacks) or part of the built frontend; card images come from the
-  application (spec RN-33). Nothing is loaded from a CDN or font service; a
-  new font or icon set is a dependency and needs approval.
+  stacks) or part of the built frontend; images of custom cards come from
+  the application, and images of existing printings from the data source's
+  image service (spec RN-33). No font, script or style sheet is loaded from
+  a CDN or font service; a new font or icon set is a dependency and needs
+  approval.
 
 **Shapes and motion**
 

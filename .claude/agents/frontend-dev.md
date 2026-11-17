@@ -7,8 +7,10 @@ model: opus
 
 You implement one interface task at a time, the one named in the request.
 
-1. Read CLAUDE.md, specs/spec.md, specs/plan.md (API contract) and the task in
-   specs/tasks.md.
+1. Read CLAUDE.md, specs/code-standards.md and the task in specs/tasks.md.
+   Then read only what the task needs: the RN and CA it cites in
+   specs/spec.md and the plan sections it names or touches (search by ID or
+   heading; do not read the three files whole).
 2. Run the frontend tests to see the current state.
 3. Implement the minimum needed and make the tests pass.
 4. Run the tests and the type check before finishing.
@@ -27,14 +29,20 @@ Rules:
   mismatch means the contract changed: stop and report.
 - Branch on the error `code` of the envelope (specs/plan.md, section 6), never
   on the message text.
-- The frontend never receives, stores or sends the API key. It only shows the
-  configuration status that the backend returns.
+- The frontend never receives an API key from the backend. Key fields are
+  write-only (spec RN-71). In hosted mode the keys live in the browser and
+  go only with the requests that start a provider call (plan section 16.4);
+  they never go into a URL, a log or an error report.
 - Every screen handles loading, error and empty states.
 - Include basic accessibility: labels on fields, visible focus and contrast.
 - Strict TypeScript, no any.
 - All UI text is in English.
-- Follow the Interface section of specs/code-standards.md (document structure,
-  identity, shapes and motion, content).
+- Follow `frontend/DESIGN.md` once it exists (the design direction) and the
+  Interface section of specs/code-standards.md (document structure,
+  identity, shapes and motion, content). A screen is not done when it is
+  merely correct: compare it with the direction before finishing.
+- For a screen task, list in the report the gallery addresses of the states
+  you changed, so screenshots can be taken at 360, 768 and 1280 px.
 - Follow specs/code-standards.md (comments, structure). Do not commit, push or
   switch branches: the maintainer does that (specs/git-standards.md).
 - Work only on the branch of the task's milestone (`milestone/<id>-<name>`);

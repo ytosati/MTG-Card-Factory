@@ -1,4 +1,5 @@
-/* Design tokens: the single source of colors, type, spacing and focus styles. */
+/* Design tokens: the single source of colors, type, spacing, shapes, layers, motion and focus styles.
+   Details: specs/plan.md, section 14 (frontend structure for frequent visual changes). */
 :root {
   --color-background: #f7f6f2;
   --color-surface: #ffffff;
@@ -59,4 +60,30 @@
   --radius: 6px;
   --radius-small: 2px;
   --content-width: 48rem;
+  /* The card-shaped image area: the proportions of a card (63 × 88 mm) and its widest size. */
+  --card-aspect-ratio: 63 / 88;
+  --card-image-width: 20rem;
+
+  --shadow-none: none;
+  --shadow-raised: 0 1px 2px rgb(28 27 25 / 0.08), 0 2px 8px rgb(28 27 25 / 0.06);
+
+  --z-base: 0;
+  --z-raised: 1;
+  --z-sticky: 10;
+  --z-overlay: 100;
+
+  --motion-duration-fast: 120ms;
+  --motion-duration-medium: 240ms;
+  --motion-easing-out: ease-out;
+  /* How far a pressed button moves down. */
+  --motion-press-offset: 1px;
+}
+
+/* The one reduced-motion rule (spec RN-49): every transition and movement reads these tokens. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-fast: 0ms;
+    --motion-duration-medium: 0ms;
+    --motion-press-offset: 0px;
+  }
 }

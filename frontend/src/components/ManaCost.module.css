@@ -1,0 +1,85 @@
+/* Mana symbols drawn as text in colored circles. */
+.cost {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.plain {
+  font-family: var(--font-mono);
+}
+
+/* The rules-format text is kept once, hidden; the drawn symbols are left out of copied text. */
+.symbols {
+  display: contents;
+  user-select: none;
+}
+
+.symbol {
+  --mana-a: var(--color-mana-generic);
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.625rem;
+  height: 1.625rem;
+  padding: 0 2px;
+  color: var(--color-mana-text);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  border: 1px solid var(--color-mana-edge);
+  border-radius: 50%;
+  /* The two halves draw a hybrid symbol; a single color fills both. */
+  background: linear-gradient(135deg, var(--mana-a) 50%, var(--mana-b, var(--mana-a)) 50%);
+}
+
+.split {
+  font-size: 0.6875rem;
+  letter-spacing: -0.02em;
+}
+
+.mana-w {
+  --mana-a: var(--color-mana-w);
+}
+
+.mana-u {
+  --mana-a: var(--color-mana-u);
+}
+
+.mana-b {
+  --mana-a: var(--color-mana-b);
+}
+
+.mana-r {
+  --mana-a: var(--color-mana-r);
+}
+
+.mana-g {
+  --mana-a: var(--color-mana-g);
+}
+
+.hybrid-generic,
+.hybrid-c {
+  --mana-b: var(--color-mana-generic);
+}
+
+.hybrid-w {
+  --mana-b: var(--color-mana-w);
+}
+
+.hybrid-u {
+  --mana-b: var(--color-mana-u);
+}
+
+.hybrid-b {
+  --mana-b: var(--color-mana-b);
+}
+
+.hybrid-r {
+  --mana-b: var(--color-mana-r);
+}
+
+.hybrid-g {
+  --mana-b: var(--color-mana-g);
+}

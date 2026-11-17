@@ -1,0 +1,33 @@
+/* A message box in one of three tones; the icon repeats the tone the words carry. */
+.box {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid;
+  border-radius: var(--radius);
+}
+
+.danger {
+  background: var(--color-danger-surface);
+  color: var(--color-danger-text);
+  border-color: var(--color-danger-border);
+}
+
+.notice {
+  background: var(--color-notice-surface);
+  color: var(--color-notice-text);
+  border-color: var(--color-notice-border);
+}
+
+.success {
+  background: var(--color-success-surface);
+  color: var(--color-success-text);
+  border-color: var(--color-success-border);
+}
+
+.title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.body > :global(p) {
+  margin: 0;
+}

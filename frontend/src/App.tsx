@@ -1,12 +1,15 @@
 // Application shell: a small hash-based screen switch (no router library) behind the readiness gate.
 // Details: specs/plan.md, section 13; spec RN-28, RN-40, RN-49.
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { getStatus } from "./api/client";
+import styles from "./App.module.css";
 import { BrandMark } from "./components/BrandMark";
-import { StatusIcon } from "./components/StatusIcon";
+import { cx } from "./components/classNames";
+import { StatusIcon, toneStyles } from "./components/StatusIcon";
 import type { GenerationResult, RevisionFailure, StatusResponse } from "./api/types";
+import { Screen } from "./components/Screen";
 import { useHeartbeat } from "./hooks/useHeartbeat";
 import { RequestScreen } from "./screens/RequestScreen";
 import { ResultScreen } from "./screens/ResultScreen";
@@ -96,11 +99,11 @@ function gate(readiness: Readiness): { screens: ScreenEntry[]; fallback: ScreenE
 /** The banner shown while the application is not answering heartbeats (spec RN-41). */
 function StoppedNotice() {
   return (
-    <div className="stopped-notice" role="alert">
-      <div className="app-bar-inner tone">
-        <StatusIcon tone="danger" />
+    <div className={styles.stoppedNotice} role="alert">
+      <div className={cx(styles.barInner, toneStyles.tone)}>
+        <StatusIcon tone="danger" className={styles.stoppedIcon} />
         <div>
-          <p className="stopped-notice-title">Card Factory has stopped.</p>
+          <p className={styles.stoppedTitle}>Card Factory has stopped.</p>
           <p>To start it again, double-click the start file in its folder and use the new tab it opens.</p>
         </div>
       </div>
@@ -110,11 +113,11 @@ function StoppedNotice() {
 
 function ReadinessNotice({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="shell-notice" role="alert">
-      <div className="app-bar-inner tone">
-        <StatusIcon tone="notice" />
+    <div className={styles.shellNotice} role="alert">
+      <div className={cx(styles.barInner, toneStyles.tone, styles.shellTone)}>
+        <StatusIcon tone="notice" className={styles.shellIcon} />
         <p>Card Factory could not tell whether the card database is ready, so only Status is shown.</p>
-        <button type="button" className="button-quiet" onClick={onRetry}>
+        <button type="button" className={styles.buttonQuiet} onClick={onRetry}>
           Try again
         </button>
       </div>
@@ -122,8 +125,45 @@ function ReadinessNotice({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-/** The application: a header with the screens on offer and the screen named by the location hash. */
+// The gallery and its fixtures are imported only in the development server, so the production build
+// leaves them out (plan section 14, "Screen previews"). The mode is checked too because a production
+// build started under NODE_ENV=test (as the built-file check does) still reports DEV.
+const PREVIEW_ENABLED = import.meta.env.DEV && import.meta.env.MODE !== "production";
+
+const PreviewGallery = PREVIEW_ENABLED
+  ? lazy(() => import("./preview/PreviewGallery").then((module) => ({ default: module.PreviewGallery })))
+  : null;
+
+function isPreviewAddress(hash: string): boolean {
+  return PREVIEW_ENABLED && (hash === "#/preview" || hash.startsWith("#/preview/"));
+}
+
+/** The location hash, followed as it changes. */
+function useHash(): string {
+  const [hash, setHash] = useState(() => window.location.hash);
+  useEffect(() => {
+    const onHashChange = () => setHash(window.location.hash);
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+  return hash;
+}
+
+/** The application; in the development server, the preview gallery at its own address. */
 export function App() {
+  const hash = useHash();
+  if (PreviewGallery !== null && isPreviewAddress(hash)) {
+    return (
+      <Suspense fallback={<p role="status">Loading…</p>}>
+        <PreviewGallery />
+      </Suspense>
+    );
+  }
+  return <Shell />;
+}
+
+/** The shell: a header with the screens on offer and the screen named by the location hash. */
+function Shell() {
   const [hash, setHash] = useState(() => window.location.hash);
   const [readiness, setReadiness] = useState<Readiness>({ kind: "loading" });
   const [reads, setReads] = useState(0);
@@ -209,15 +249,15 @@ export function App() {
   }, [current]);
 
   return (
-    <div className="app">
+    <div className={styles.app}>
       {stopped && <StoppedNotice />}
-      <header className="app-header">
-        <div className="app-bar-inner app-header-inner">
-          <span className="app-name">
+      <header className={styles.header}>
+        <div className={cx(styles.barInner, styles.headerInner)}>
+          <span className={styles.name}>
             <BrandMark />
             Card Factory
           </span>
-          <nav aria-label="Screens" className="app-nav">
+          <nav aria-label="Screens" className={styles.nav}>
             {screens.map((entry) => (
               <a key={entry.route} href={entry.route} aria-current={entry === current ? "page" : undefined}>
                 {entry.label}
@@ -228,9 +268,9 @@ export function App() {
       </header>
       {readiness.kind === "unknown" && <ReadinessNotice onRetry={retry} />}
       {current === null ? (
-        <main className="screen">
+        <Screen>
           <p role="status">Checking the card database…</p>
-        </main>
+        </Screen>
       ) : (
         <Fragment key={current.route}>{current.render({ onReady: readAgain, onGenerated, revisionFailureOf })}</Fragment>
       )}

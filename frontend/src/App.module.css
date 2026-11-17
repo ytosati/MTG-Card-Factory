@@ -1,0 +1,109 @@
+/* The application shell: header, navigation and the bars shown above every screen. */
+
+/* Screens adapt to the width of the application, so the preview gallery can show any width. */
+.app {
+  container-type: inline-size;
+}
+
+.header {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Header and notice bars share the content axis of the screens. */
+.barInner {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: var(--space-3) var(--space-6);
+}
+
+.headerInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-6);
+}
+
+.name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.nav {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.nav a {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-easing-out),
+    color var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+.nav a:hover {
+  color: var(--color-text);
+  background: var(--color-accent-surface);
+}
+
+.nav a[aria-current="page"] {
+  color: var(--color-accent);
+  font-weight: 700;
+  background: var(--color-accent-surface);
+  box-shadow: inset 0 calc(-1 * var(--nav-indicator-width)) 0 var(--color-accent);
+}
+
+.shellNotice {
+  background: var(--color-notice-surface);
+  color: var(--color-notice-text);
+  border-bottom: 1px solid var(--color-notice-border);
+}
+
+.shellNotice .shellTone {
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+}
+
+.shellNotice .shellIcon {
+  margin-top: 0;
+}
+
+.shellNotice p {
+  margin: 0;
+}
+
+.buttonQuiet {
+  padding: var(--space-1) var(--space-3);
+  background: transparent;
+  color: var(--color-accent);
+}
+
+.buttonQuiet:hover {
+  background: var(--color-accent-surface);
+  color: var(--color-accent-hover);
+}
+
+.stoppedNotice {
+  background: var(--color-danger-surface);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-danger-border);
+}
+
+.stoppedNotice p {
+  margin: 0;
+}
+
+.stoppedNotice .stoppedIcon,
+.stoppedNotice .stoppedTitle {
+  color: var(--color-danger-text);
+}
+
+.stoppedNotice .stoppedTitle {
+  font-weight: 700;
+}

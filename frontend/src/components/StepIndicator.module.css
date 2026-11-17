@@ -1,0 +1,47 @@
+/* The steps of a running job, one per line, with a marker for done, current and waiting. */
+.steps {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-text-muted);
+  transition: color var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+.marker {
+  width: 0.75rem;
+  height: 0.75rem;
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-easing-out),
+    border-color var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+.done {
+  color: var(--color-text);
+}
+
+.done .marker {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.current {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.current .marker {
+  border-color: var(--color-accent);
+  background: var(--color-accent-surface);
+}

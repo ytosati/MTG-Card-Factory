@@ -1,0 +1,50 @@
+/* The frame every screen shares: content width, the summary under the heading, hints and error panels. */
+.screen {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: var(--space-6);
+}
+
+.screen h1 + :not(.summary):not(.summaryRow) {
+  margin-top: var(--space-6);
+}
+
+.summary {
+  margin: 0 0 var(--space-6);
+  color: var(--color-text-muted);
+}
+
+.summaryRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-4);
+  margin: 0 0 var(--space-6);
+}
+
+.summaryRow .summary {
+  margin: 0;
+}
+
+.hint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+.actions {
+  margin: var(--space-4) 0;
+}
+
+.errorPanel [role="alert"] {
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  background: var(--color-danger-surface);
+  color: var(--color-danger-text);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius);
+}
+
+.errorPanel [role="alert"] p {
+  margin: 0;
+}

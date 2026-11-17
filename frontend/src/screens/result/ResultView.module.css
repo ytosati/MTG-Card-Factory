@@ -1,0 +1,174 @@
+/* Result screen: revision notice, verdict, power reading, design notes, comparables and usage. */
+.revisionFailure {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-notice-surface);
+  color: var(--color-notice-text);
+  border: 1px solid var(--color-notice-border);
+  border-radius: var(--radius);
+}
+
+.revisionFailure p {
+  margin: 0;
+}
+
+.revisionFailureTitle {
+  font-weight: 700;
+}
+
+.verdict {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-small);
+  border: 1px solid;
+  border-radius: var(--radius);
+}
+
+.verdict p {
+  margin: 0;
+}
+
+.approved {
+  background: var(--color-success-surface);
+  color: var(--color-success-text);
+  border-color: var(--color-success-border);
+}
+
+.rejected {
+  background: var(--color-danger-surface);
+  color: var(--color-danger-text);
+  border-color: var(--color-danger-border);
+}
+
+.causes {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-6);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.powerReading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-2);
+}
+
+.powerScale {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.powerStep {
+  width: 1.5rem;
+  height: 0.5rem;
+  background: var(--color-accent-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+}
+
+.powerStepCurrent {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.prose {
+  margin: 0 0 var(--space-3);
+  max-width: 65ch;
+  overflow-wrap: anywhere;
+}
+
+.subheading {
+  margin: var(--space-4) 0 var(--space-1);
+  font-size: var(--font-size-body);
+}
+
+h2 + .subheading {
+  margin-top: 0;
+}
+
+.comparables {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.comparables li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  overflow-wrap: anywhere;
+}
+
+.comparables li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.comparableName {
+  font-weight: 600;
+}
+
+.comparableRole {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+.usageFrame {
+  overflow-x: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.usageTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-small);
+}
+
+.usageTable th,
+.usageTable td {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.usageTable thead th {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.usageTable tbody tr:last-child th,
+.usageTable tbody tr:last-child td,
+.usageTable tfoot th,
+.usageTable tfoot td {
+  border-bottom: 0;
+}
+
+.usageTable tfoot th,
+.usageTable tfoot td {
+  font-weight: 700;
+  border-top: 1px solid var(--color-border);
+}
+
+.usageTable .number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.usageModel {
+  overflow-wrap: anywhere;
+}
+
+.usageFailed {
+  color: var(--color-danger-text);
+  font-weight: 700;
+}

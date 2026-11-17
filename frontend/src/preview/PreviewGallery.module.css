@@ -1,0 +1,88 @@
+/* The preview gallery: an index of screens and states, and one state in a frame of a chosen width. */
+.gallery {
+  padding: var(--space-6);
+}
+
+.index {
+  max-width: var(--content-width);
+  margin: 0 auto;
+}
+
+.screenList {
+  margin: 0;
+  padding-left: var(--space-6);
+}
+
+.empty {
+  color: var(--color-text-muted);
+}
+
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-6);
+  margin: calc(-1 * var(--space-6)) calc(-1 * var(--space-6)) var(--space-6);
+  padding: var(--space-3) var(--space-6);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.stateName {
+  margin: 0;
+  font-weight: 700;
+}
+
+.switch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.switch legend {
+  float: left;
+  margin-right: var(--space-2);
+  padding: 0;
+  font-weight: 600;
+}
+
+.option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* The frame is the query container of the screens, so they lay out for the chosen width. */
+.frame {
+  container-type: inline-size;
+  margin: 0 auto;
+  background: var(--color-background);
+  border: 1px dashed var(--color-border);
+  box-shadow: var(--shadow-raised);
+}
+
+.frame[data-width="360"] {
+  width: 360px;
+}
+
+.frame[data-width="768"] {
+  width: 768px;
+}
+
+.frame[data-width="1280"] {
+  width: 1280px;
+}
+
+/* The reduced-motion switch turns the motion tokens off inside the frame, as the system setting does. */
+.frame[data-reduced-motion="true"] {
+  --motion-duration-fast: 0ms;
+  --motion-duration-medium: 0ms;
+  --motion-press-offset: 0px;
+}

@@ -200,7 +200,7 @@ merged into `main`.
 
 ### Milestone 3c — Screen previews
 
-- [ ] T167: Preview gallery, fixtures and shared card components
+- [x] T167: Preview gallery, fixtures and shared card components
 - [ ] T168: Request screen preview: generation fields
 - [ ] T169: Request screen preview: base card, art and custom art version
 - [ ] T170: Result screen preview

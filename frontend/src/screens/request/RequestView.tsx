@@ -5,6 +5,8 @@ import type { FormEvent, ReactNode, RefObject } from "react";
 
 import type { ColorLetter, JobResponse, PowerLevel } from "../../api/types";
 import { cx } from "../../components/classNames";
+import { EmptyCard } from "../../components/EmptyCard";
+import { ManaSymbol } from "../../components/ManaCost";
 import { ProgressBar, progressOf, progressStyles } from "../../components/ProgressBar";
 import { Screen, screenStyles } from "../../components/Screen";
 import { StatusIcon, toneStyles } from "../../components/StatusIcon";
@@ -118,6 +120,7 @@ export function RequestView(props: RequestViewProps) {
               rows={4}
               value={idea}
               disabled={busy}
+              aria-required="true"
               aria-invalid={errors.idea !== undefined || undefined}
               aria-describedby={describedBy("idea", `${fieldId("idea")}-count`)}
               // No maxLength: the browser counts UTF-16 units, so it would cut ideas the backend accepts.
@@ -151,18 +154,20 @@ export function RequestView(props: RequestViewProps) {
                     checked={colors.includes(color.letter)}
                     onChange={() => props.onToggleColor(color.letter)}
                   />
-                  <span className={cx(styles.swatch, styles[`swatch-${color.letter.toLowerCase()}`])} aria-hidden="true" />
+                  <ManaSymbol symbol={color.letter} drawn />
                   {color.name}
                 </label>
               ))}
-              <span className={styles.or} aria-hidden="true">
-                {copy.or}
+              <span className={styles.orGroup}>
+                <span className={styles.or} aria-hidden="true">
+                  {copy.or}
+                </span>
+                <label className={styles.choice}>
+                  <input type="checkbox" checked={colorless} onChange={props.onToggleColorless} />
+                  <ManaSymbol symbol="C" drawn />
+                  {copy.colorless}
+                </label>
               </span>
-              <label className={styles.choice}>
-                <input type="checkbox" checked={colorless} onChange={props.onToggleColorless} />
-                <span className={cx(styles.swatch, styles["swatch-c"])} aria-hidden="true" />
-                {copy.colorless}
-              </label>
             </div>
             <FieldError id={`${fieldId("color_identity")}-error`} message={errors.color_identity} />
           </fieldset>
@@ -462,19 +467,28 @@ function TextField({ label, hint, value, onChange, number, className }: TextFiel
   );
 }
 
-/** The steps of a running generation, the running one marked; art is listed only when it was requested (RN-55). */
-export function GenerationSteps({ step, withArt }: { step: GenerationStep; withArt: boolean }) {
+interface GenerationStepsProps {
+  step: GenerationStep;
+  withArt: boolean;
+  /** The requested colors, which tint the card that is coming; an empty list is colorless. */
+  colors: ColorLetter[];
+}
+
+/** The card being made, with the running step under it, and every step in order; art is listed only when it was
+    requested (RN-55). */
+export function GenerationSteps({ step, withArt, colors }: GenerationStepsProps) {
   const steps = copy.steps.filter((entry) => withArt || entry.value !== "art");
+  const current = steps.findIndex((entry) => entry.value === step);
   return (
-    <div className={styles.progress}>
-      <p role="status" className={styles.stepsHead}>
-        {copy.generating}
-      </p>
-      <StepIndicator
-        label={copy.stepsLabel}
-        steps={steps.map((entry) => entry.name)}
-        current={steps.findIndex((entry) => entry.value === step)}
-      />
+    <div className={cx(styles.progress, styles.making)}>
+      <div className={styles.coming}>
+        <EmptyCard colors={colors} className={styles.comingCard} />
+        <p role="status" className={styles.stepsHead}>
+          {copy.generating}{" "}
+          <span className={styles.stepNow}>{copy.stepOf(current + 1, steps.length, steps[current]?.name ?? "")}</span>
+        </p>
+      </div>
+      <StepIndicator label={copy.stepsLabel} steps={steps.map((entry) => entry.name)} current={current} />
     </div>
   );
 }

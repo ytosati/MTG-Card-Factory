@@ -61,7 +61,9 @@ function RequestPreview({ initial }: { initial: RequestFixture }) {
   const [state, setState] = useState(initial);
   const update = (next: Partial<RequestFixture>) => setState((previous) => ({ ...previous, ...next }));
   const progress: ReactNode =
-    state.running !== null ? <GenerationSteps step={state.running.step} withArt={state.running.withArt} /> : null;
+    state.running !== null ? (
+      <GenerationSteps step={state.running.step} withArt={state.running.withArt} colors={state.colors} />
+    ) : null;
 
   return (
     <RequestView

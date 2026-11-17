@@ -16,7 +16,9 @@ const COUNT_FORMAT = new Intl.NumberFormat("en-US");
 
 export const requestCopy = {
   title: "Request",
-  summary: "Describe the card, choose its color identity and power level, then generate it.",
+  summary:
+    "Describe the card, choose its color identity and power level, then generate it. These three are required; " +
+    "everything else is optional.",
   fieldLabels: {
     idea: "Idea or theme",
     color_identity: "Color identity",
@@ -66,6 +68,7 @@ export const requestCopy = {
   loyaltyLabel: "Starting loyalty",
   loyaltyHint: "A whole number from 1 to 99, for a planeswalker.",
   stepsLabel: "Generation steps",
+  stepOf: (number: number, total: number, name: string): string => `Step ${number} of ${total}: ${name}`,
   steps: [
     { value: "design", name: "Design intent" },
     { value: "search", name: "Search for related cards" },

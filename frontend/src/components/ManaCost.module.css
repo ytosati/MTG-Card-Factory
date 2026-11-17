@@ -1,8 +1,10 @@
-/* Mana symbols drawn as text in colored circles. */
+/* Mana symbols drawn as the figure or letter of the symbol, in the card serif, on a colored circle with the
+   small ink offset of a printed cost. */
 .cost {
   display: inline-flex;
-  flex-wrap: wrap;
-  gap: 3px;
+  /* A tight table cell keeps the cost on one line by setting this to nowrap. */
+  flex-wrap: var(--mana-cost-wrap, wrap);
+  gap: var(--mana-symbol-gap);
 }
 
 .plain {
@@ -19,24 +21,41 @@
   --mana-a: var(--color-mana-generic);
   position: relative;
   display: inline-grid;
+  flex: none;
   place-items: center;
-  min-width: 1.625rem;
-  height: 1.625rem;
-  padding: 0 2px;
+  min-width: var(--mana-symbol-size);
+  height: var(--mana-symbol-size);
+  padding: 0 var(--mana-symbol-padding);
   color: var(--color-mana-text);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-family: var(--font-card);
+  font-size: var(--mana-symbol-text);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: lining-nums;
   line-height: 1;
-  border: 1px solid var(--color-mana-edge);
   border-radius: 50%;
+  box-shadow: var(--mana-symbol-offset);
   /* The two halves draw a hybrid symbol; a single color fills both. */
   background: linear-gradient(135deg, var(--mana-a) 50%, var(--mana-b, var(--mana-a)) 50%);
 }
 
+/* White and generic are close to the paper, so they keep an edge; colored symbols stand on their fill. */
+.mana-w,
+.mana-generic,
+.mana-c {
+  box-shadow:
+    inset 0 0 0 1px var(--color-mana-edge),
+    var(--mana-symbol-offset);
+}
+
+/* A symbol drawn beside a choice: the letter comes from the stylesheet, so the label's text stays the name. */
+.drawn::before {
+  content: attr(data-symbol);
+  content: attr(data-symbol) / "";
+}
+
 .split {
-  font-size: 0.6875rem;
-  letter-spacing: -0.02em;
+  font-size: var(--mana-symbol-text-split);
+  letter-spacing: var(--letter-spacing-tight);
 }
 
 .mana-w {

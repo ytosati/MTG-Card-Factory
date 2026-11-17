@@ -34,6 +34,7 @@ describe("production build excludes the preview (T167)", () => {
     async () => {
       const sentinels = [
         "Preview gallery",
+        "List and table sample",
         approvedCard.current_version.name,
         rejectedCard.current_version.name,
         planeswalkerCard.current_version.name,

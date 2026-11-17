@@ -33,7 +33,7 @@
 
 .stateName {
   margin: 0;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .switch {
@@ -50,7 +50,7 @@
   float: left;
   margin-right: var(--space-2);
   padding: 0;
-  font-weight: 600;
+  font-weight: var(--font-weight-strong);
 }
 
 .option {
@@ -85,4 +85,5 @@
   --motion-duration-fast: 0ms;
   --motion-duration-medium: 0ms;
   --motion-press-offset: 0px;
+  --motion-enter-offset: 0px;
 }

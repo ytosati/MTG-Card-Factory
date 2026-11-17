@@ -1,8 +1,16 @@
 /* A message box in one of three tones; the icon repeats the tone the words carry. */
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--motion-enter-offset));
+  }
+}
+
 .box {
   padding: var(--space-3) var(--space-4);
   border: 1px solid;
-  border-radius: var(--radius);
+  border-radius: var(--radius-small);
+  animation: enter var(--motion-duration-medium) var(--motion-easing-out);
 }
 
 .danger {
@@ -25,7 +33,7 @@
 
 .title {
   margin: 0;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .body > :global(p) {

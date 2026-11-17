@@ -202,7 +202,7 @@ merged into `main`.
 
 - [x] T167: Preview gallery, fixtures and shared card components
 - [x] T168: Request screen preview: generation fields
-- [ ] T180: Design direction and tokens
+- [x] T180: Design direction and tokens
 - [ ] T169: Request screen preview: base card, art and custom art version
 - [ ] T170: Result screen preview
 - [ ] T171: Library screen preview

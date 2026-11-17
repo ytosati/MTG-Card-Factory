@@ -51,7 +51,8 @@ export function ManaCost({ cost }: { cost: string }) {
   );
 }
 
-function ManaSymbol({ symbol }: { symbol: string }) {
+/** One symbol of a cost, or, when `drawn`, a mark beside a choice that adds no text to its label. */
+export function ManaSymbol({ symbol, drawn = false }: { symbol: string; drawn?: boolean }) {
   const parts = symbol.toUpperCase().split("/");
   // The P of a Phyrexian symbol is a mark, not a half: {G/P} is filled green.
   const fills = parts.filter((part) => parts.length === 1 || part !== "P").map(fillOf);
@@ -64,9 +65,12 @@ function ManaSymbol({ symbol }: { symbol: string }) {
         styles[`mana-${first}`],
         second !== undefined && second !== first && styles[`hybrid-${second}`],
         parts.length > 1 && styles.split,
+        drawn && styles.drawn,
       )}
+      data-symbol={drawn ? symbol : undefined}
+      aria-hidden={drawn || undefined}
     >
-      {symbol}
+      {drawn ? null : symbol}
     </span>
   );
 }

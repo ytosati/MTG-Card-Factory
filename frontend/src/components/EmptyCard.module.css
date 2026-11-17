@@ -1,0 +1,48 @@
+/* An empty card-shaped area: flat and outlined, so it does not pretend to be a card, and tinted with the card's
+   colors, with the inner line of an art box. Details: frontend/DESIGN.md, "Shape and depth". */
+.card {
+  --card-tint: var(--color-sunken);
+  position: relative;
+  display: block;
+  aspect-ratio: var(--card-aspect-ratio);
+  background: var(--card-tint);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-none);
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: var(--card-inner-inset);
+  border: 1px solid var(--color-card-inner-line);
+  border-radius: var(--radius-small);
+}
+
+.tint-w {
+  --card-tint: var(--color-mana-w);
+}
+
+.tint-u {
+  --card-tint: var(--color-mana-u);
+}
+
+.tint-b {
+  --card-tint: var(--color-mana-b);
+}
+
+.tint-r {
+  --card-tint: var(--color-mana-r);
+}
+
+.tint-g {
+  --card-tint: var(--color-mana-g);
+}
+
+.multi {
+  --card-tint: var(--color-mana-multi);
+}
+
+.colorless {
+  --card-tint: var(--color-mana-generic);
+}

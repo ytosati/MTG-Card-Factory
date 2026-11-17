@@ -1,8 +1,8 @@
-/* Request screen: the request fields, the generate action and its progress. */
+/* Request screen: a ruled form (label column beside the controls on a wide screen), the generate action and
+   its progress. Details: frontend/DESIGN.md, "Forms". */
 .panel {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
+  max-width: var(--measure-wide);
+  border-top: 1px solid var(--color-rule-strong);
 }
 
 .fields {
@@ -15,7 +15,7 @@
 .section {
   min-width: 0;
   margin: 0;
-  padding: var(--space-4) var(--space-6) var(--space-6);
+  padding: var(--space-6) 0;
   border: 0;
 }
 
@@ -27,11 +27,8 @@
   color: var(--color-danger-text);
 }
 
-.sectionInvalid .choice {
-  border-color: var(--color-danger-border);
-}
-
-/* Legends float so a fieldset spaces its content like the labelled idea section. */
+/* Legends float so a fieldset spaces its content like the labelled idea section. The label of a row is one
+   step above the names of its options, so the row reads from its label down. */
 .label {
   display: block;
   float: left;
@@ -39,28 +36,34 @@
   margin-bottom: var(--space-2);
   padding: 0;
   color: var(--color-text);
-  font-weight: 600;
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-snug);
 }
 
 .label + * {
   clear: both;
 }
 
+/* Inside the advanced options the labels name single fields, at the size of the controls. */
+.advancedPanel .label {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-strong);
+}
+
 .idea {
   display: block;
   width: 100%;
-  min-height: 7rem;
-  padding: var(--space-3);
+  min-height: var(--textarea-min-height);
+  padding: var(--space-3) var(--space-4);
   font: inherit;
+  line-height: var(--line-height-body);
   color: var(--color-text);
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-control);
   border-radius: var(--radius);
   resize: vertical;
-}
-
-.idea:hover {
-  border-color: var(--color-text-muted);
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-out);
 }
 
 .idea[aria-invalid="true"] {
@@ -84,199 +87,181 @@
 
 .countOver {
   color: var(--color-danger-text);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .fieldError {
   margin: var(--space-2) 0 0;
   color: var(--color-danger-text);
   font-size: var(--font-size-small);
-  font-weight: 600;
+  font-weight: var(--font-weight-strong);
 }
 
 .fieldFoot .fieldError {
   margin: 0;
 }
 
-.choiceRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
+.hint {
+  margin: 0 0 var(--space-3);
+  max-width: var(--measure-prose);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
 }
 
+/* Every choice is its native control and its name, on the paper; the whole label is the target. */
 .choice {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
   cursor: pointer;
-  transition:
-    background-color var(--motion-duration-fast) var(--motion-easing-out),
-    border-color var(--motion-duration-fast) var(--motion-easing-out);
 }
 
 .choice input {
+  flex: none;
+  width: var(--native-control-size);
+  height: var(--native-control-size);
   margin: 0;
   accent-color: var(--color-accent);
 }
 
-.choice:hover {
-  border-color: var(--color-accent);
-}
-
-.choice:has(input:checked) {
-  color: var(--color-accent);
-  font-weight: 600;
-  background: var(--color-accent-surface);
-  border-color: var(--color-accent);
-}
-
-.fields:disabled .choice {
-  color: var(--color-text-muted);
-  cursor: not-allowed;
-}
-
-/* While the card is generated, the chosen options stay marked, in a quieter accent. */
-.fields:disabled .choice:has(input:checked) {
-  font-weight: 600;
-  background: var(--color-accent-surface);
-  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-surface));
-}
-
-.swatch {
-  flex: none;
-  width: 0.875rem;
-  height: 0.875rem;
-  border: 1px solid var(--color-mana-edge);
-  border-radius: 50%;
-}
-
-.swatch-w {
-  background: var(--color-mana-w);
-}
-
-.swatch-u {
-  background: var(--color-mana-u);
-}
-
-.swatch-b {
-  background: var(--color-mana-b);
-}
-
-.swatch-r {
-  background: var(--color-mana-r);
-}
-
-.swatch-g {
-  background: var(--color-mana-g);
-}
-
-.swatch-c {
-  background: var(--color-mana-generic);
-}
-
-.or {
-  padding: 0 var(--space-1);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-small);
-}
-
-.action {
-  padding: var(--space-4) var(--space-6) var(--space-6);
-  border-top: 1px solid var(--color-border);
-}
-
-.start {
+/* Choices in a row (colors, language, types): no box; the row pulls left so the first control lines up with
+   the field above, and each choice keeps room for its hover tint and focus ring. */
+.choiceRow {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-3) var(--space-4);
+  gap: var(--space-1) var(--space-3);
+  margin-left: calc(-1 * var(--space-2));
 }
 
-.start p {
-  margin: 0;
-}
-
-.start button[aria-disabled="true"] {
-  background: var(--color-code-surface);
-  border-color: var(--color-border);
-  color: var(--color-text-muted);
-  cursor: progress;
-}
-
-.progress {
-  flex: 1 1 14rem;
-  min-width: 0;
-}
-
-/* The label row keeps its space above the bar, unlike the other texts of the action row. */
-.progress > p {
-  margin: 0 0 var(--space-2);
-}
-
-.problem {
-  margin-top: var(--space-4);
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-danger-surface);
-  color: var(--color-danger-text);
-  border: 1px solid var(--color-danger-border);
+.choiceRow .choice {
+  min-height: var(--control-height);
+  padding: 0 var(--space-2);
   border-radius: var(--radius);
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-easing-out),
+    color var(--motion-duration-fast) var(--motion-easing-out);
 }
 
-.problem p {
-  margin: 0;
+.choiceRow .choice:has(input:checked) {
+  color: var(--color-accent);
 }
 
-.problem a {
-  color: inherit;
-  font-weight: 700;
+/* A chosen color is ringed in the accent, a second sign beside the check mark. */
+.choice [data-symbol] {
+  transition: outline-color var(--motion-duration-fast) var(--motion-easing-out);
+  outline: var(--selection-ring-width) solid transparent;
+  outline-offset: var(--selection-ring-offset);
 }
 
-@container (max-width: 32rem) {
-  .section,
-  .action {
-    padding-left: var(--space-4);
-    padding-right: var(--space-4);
-  }
+.choice:has(input:checked) [data-symbol] {
+  outline-color: var(--color-accent);
 }
 
-.hint {
-  margin: 0 0 var(--space-3);
+/* "or Colorless" stays together when the row wraps. */
+.orGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* The start padding matches a choice's, so a wrapped "or" lines up with the choices above it. */
+.or {
+  padding: 0 var(--space-1) 0 var(--space-2);
   color: var(--color-text-muted);
   font-size: var(--font-size-small);
+  font-style: italic;
 }
 
-/* A choice with its one-line meaning under it (power level, generation effort). */
+/* Choices with a meaning (power level, generation effort): ruled rows, the name in a column and its meaning
+   beside it. The row pulls out by its padding, so the radio lines up with the field above. */
 .optionGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-  gap: var(--space-3);
+  margin: 0 calc(-1 * var(--space-2));
 }
 
 .option {
+  position: relative;
   display: grid;
-  align-content: start;
-  gap: var(--space-1);
+  grid-template-columns: var(--option-name-width) minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: var(--space-4);
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius);
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+/* The hairline between options runs from the first radio to the end of the controls. */
+.option + .option::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: var(--space-2);
+  right: var(--space-2);
+  border-top: 1px solid var(--color-border);
 }
 
 .option .choice {
   justify-self: start;
+  font-weight: var(--font-weight-strong);
+}
+
+/* The label covers the row, so a click on the meaning chooses the option too. */
+.option .choice::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.option:has(input:checked) .choice {
+  color: var(--color-accent);
 }
 
 .meaning {
   margin: 0;
-  padding: 0 var(--space-1);
   color: var(--color-text-muted);
   font-size: var(--font-size-small);
+  line-height: var(--line-height-snug);
+}
+
+/* Keyboard focus rings the whole choice or row the person acts on, not the small native control in it. */
+@supports selector(:has(*)) {
+  .choiceRow .choice:has(input:focus-visible),
+  .option:has(input:focus-visible) {
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  .choiceRow .choice input:focus-visible,
+  .option input:focus-visible {
+    outline: none;
+  }
+}
+
+/* While the card is generated, the choices stay readable and the chosen ones stay marked, in a quieter accent. */
+.fields:disabled .choice,
+.advancedPanel:disabled .choice {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.fields:disabled .choice:has(input:checked),
+.fields:disabled .option:has(input:checked) .choice {
+  color: color-mix(in srgb, var(--color-accent) 70%, var(--color-text-muted));
+}
+
+.fields:disabled .choice:has(input:checked) [data-symbol] {
+  outline-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-background));
+}
+
+.fields:disabled .option .choice::after {
+  cursor: not-allowed;
 }
 
 /* Advanced options: a quiet disclosure under the main fields, its panel shown only when opened. */
 .advanced {
-  padding: var(--space-4) var(--space-6);
+  padding: var(--space-5) 0;
   border-top: 1px solid var(--color-border);
 }
 
@@ -284,25 +269,20 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  min-height: var(--control-height);
+  padding: var(--space-1) var(--space-3);
   margin-left: calc(-1 * var(--space-3));
   background: transparent;
   border-color: transparent;
   color: var(--color-accent);
-  font-weight: 600;
-  transition: background-color var(--motion-duration-fast) var(--motion-easing-out);
-}
-
-.disclosure:hover {
-  background: var(--color-accent-surface);
-  border-color: transparent;
+  font-weight: var(--font-weight-strong);
 }
 
 .chevron {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
+  width: var(--chevron-size);
+  height: var(--chevron-size);
+  border-right: var(--chevron-stroke) solid currentColor;
+  border-bottom: var(--chevron-stroke) solid currentColor;
   transform: rotate(-45deg);
   transition: transform var(--motion-duration-medium) var(--motion-easing-out);
 }
@@ -313,22 +293,22 @@
 
 .advancedPanel {
   min-width: 0;
-  margin: var(--space-3) 0 var(--space-2);
+  margin: var(--space-4) 0 0;
   padding: 0;
   border: 0;
 }
 
 .subsection {
   min-width: 0;
-  margin: 0 0 var(--space-4);
+  margin: 0 0 var(--space-5);
   padding: 0;
   border: 0;
 }
 
 .inputGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(var(--input-min-width), 1fr));
+  gap: var(--space-4) var(--space-5);
 }
 
 .wide {
@@ -346,43 +326,215 @@
 .input {
   display: block;
   width: 100%;
+  min-height: var(--control-height);
   padding: var(--space-2) var(--space-3);
   font: inherit;
   color: var(--color-text);
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-control);
   border-radius: var(--radius);
-}
-
-.input:hover:not(:disabled) {
-  border-color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-out);
 }
 
 .input:disabled,
 .idea:disabled {
   color: var(--color-text-muted);
-  background: var(--color-code-surface);
+  background: var(--color-sunken);
+  border-color: var(--color-border);
   cursor: not-allowed;
 }
 
-.advancedPanel:disabled .choice {
+/* Hover only where a pointer can hover, so a tap does not leave a tint behind. */
+@media (hover: hover) and (pointer: fine) {
+  .idea:hover:not(:disabled),
+  .input:hover:not(:disabled) {
+    border-color: var(--color-text-muted);
+  }
+
+  .choiceRow .choice:has(input:enabled):hover,
+  .option:has(input:enabled):hover {
+    background: var(--color-row-hover);
+  }
+
+  .disclosure:hover {
+    background: var(--color-accent-surface);
+    border-color: transparent;
+  }
+}
+
+/* The action closes the form: the generate button, then the running step or what went wrong. */
+.action {
+  padding: var(--space-6) 0 0;
+  border-top: 1px solid var(--color-rule-strong);
+}
+
+.start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-4) var(--space-8);
+}
+
+.start p {
+  margin: 0;
+}
+
+.start > button {
+  min-height: var(--touch-target);
+  padding-left: var(--space-6);
+  padding-right: var(--space-6);
+}
+
+.start > [role="status"] {
+  align-self: center;
+}
+
+.start button[aria-disabled="true"] {
+  background: var(--color-sunken);
+  border-color: var(--color-border-control);
   color: var(--color-text-muted);
-  cursor: not-allowed;
+  cursor: progress;
 }
 
-/* The running step: the status line above the list of steps. */
-.progress > .stepsHead {
-  margin: 0 0 var(--space-3);
-  font-weight: 600;
+.progress {
+  flex: 1 1 var(--progress-min-width);
+  min-width: 0;
+}
+
+/* The label row keeps its space above the bar, unlike the other texts of the action row. */
+.progress > p {
+  margin: 0 0 var(--space-2);
+}
+
+/* A generation being followed step by step: the card that is coming, its running step under it, and the
+   list of steps beside it. */
+.making {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-4) var(--space-6);
+}
+
+.coming {
+  flex: none;
+  width: var(--card-placeholder-width);
+}
+
+.comingCard {
+  width: 100%;
+}
+
+.start .stepsHead {
+  margin: var(--space-3) 0 0;
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-strong);
+  line-height: var(--line-height-snug);
+}
+
+.stepNow {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--color-accent);
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--motion-enter-offset));
+  }
+}
+
+.problem {
+  margin-top: var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-danger-surface);
+  color: var(--color-danger-text);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-small);
+  animation: enter var(--motion-duration-medium) var(--motion-easing-out);
+}
+
+.problem p {
+  margin: 0;
+}
+
+.problem a {
+  color: inherit;
+  font-weight: var(--font-weight-bold);
 }
 
 .inlineAction {
   margin-top: var(--space-2);
 }
 
+/* On a narrow screen a finger is the pointer: choices and the disclosure grow to a touch target. */
+@container (max-width: 40rem) {
+  .choiceRow .choice,
+  .disclosure {
+    min-height: var(--touch-target);
+  }
+}
+
+/* On a phone the meaning of an option folds under its name. */
 @container (max-width: 32rem) {
-  .advanced {
-    padding-left: var(--space-4);
-    padding-right: var(--space-4);
+  .option {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--space-1);
+  }
+
+  .meaning {
+    padding-left: calc(var(--native-control-size) + var(--space-2));
+  }
+}
+
+/* On a wide screen each row of the form reads like a printed form: the label and its hint in a column on the
+   left, the controls beside them. The floated legends become grid items, so they take the first column. */
+@container (min-width: 56rem) {
+  .section,
+  .advanced,
+  .action {
+    display: grid;
+    grid-template-columns: var(--form-label-width) minmax(0, var(--form-controls-width));
+    column-gap: var(--space-8);
+    align-items: start;
+  }
+
+  /* The label lines up with the text inside the first control beside it. */
+  .section > .label {
+    grid-column: 1;
+    grid-row: 1;
+    margin-bottom: var(--space-1);
+    padding-top: var(--space-2);
+  }
+
+  .section > .hint {
+    grid-column: 1;
+    grid-row: 2;
+    margin: 0;
+  }
+
+  .section > :not(.label, .hint) {
+    grid-column: 2;
+  }
+
+  .section > .label + :not(.hint),
+  .section > .hint + * {
+    grid-row: 1 / span 2;
+  }
+
+  .advanced > .disclosure {
+    grid-column: 1;
+    justify-self: start;
+  }
+
+  .advanced > .advancedPanel {
+    grid-column: 2;
+    grid-row: 1;
+    margin-top: 0;
+  }
+
+  .action > * {
+    grid-column: 2;
   }
 }

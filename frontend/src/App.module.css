@@ -1,12 +1,14 @@
-/* The application shell: header, navigation and the bars shown above every screen. */
+/* The application shell: the masthead, its navigation and the bars shown above every screen. */
 
 /* Screens adapt to the width of the application, so the preview gallery can show any width. */
 .app {
   container-type: inline-size;
+  min-height: 100vh;
 }
 
+/* The masthead sits on the paper, closed by one rule; the current screen is marked on that rule. */
 .header {
-  background: var(--color-surface);
+  background: var(--color-background);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -20,43 +22,49 @@
 .headerInner {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2) var(--space-6);
+  align-items: stretch;
+  gap: 0 var(--space-8);
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 .name {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  min-height: var(--header-height);
+  font-family: var(--font-display);
+  font-size: var(--font-size-wordmark);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-display);
 }
 
 .nav {
   display: flex;
-  gap: var(--space-2);
+  flex-wrap: wrap;
+  gap: 0 var(--space-1);
 }
 
 .nav a {
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--header-height);
+  padding: 0 var(--space-3);
   color: var(--color-text-muted);
+  font-weight: var(--font-weight-strong);
   text-decoration: none;
   transition:
-    background-color var(--motion-duration-fast) var(--motion-easing-out),
-    color var(--motion-duration-fast) var(--motion-easing-out);
-}
-
-.nav a:hover {
-  color: var(--color-text);
-  background: var(--color-accent-surface);
+    color var(--motion-duration-fast) var(--motion-easing-out),
+    box-shadow var(--motion-duration-fast) var(--motion-easing-out);
 }
 
 .nav a[aria-current="page"] {
-  color: var(--color-accent);
-  font-weight: 700;
-  background: var(--color-accent-surface);
+  color: var(--color-text);
   box-shadow: inset 0 calc(-1 * var(--nav-indicator-width)) 0 var(--color-accent);
+}
+
+.nav a:focus-visible {
+  outline-offset: calc(-1 * var(--focus-ring-width));
 }
 
 .shellNotice {
@@ -79,14 +87,27 @@
 }
 
 .buttonQuiet {
+  min-height: var(--control-height-compact);
   padding: var(--space-1) var(--space-3);
   background: transparent;
   color: var(--color-accent);
 }
 
-.buttonQuiet:hover {
-  background: var(--color-accent-surface);
-  color: var(--color-accent-hover);
+/* Hover only where a pointer can hover, so a tap does not leave a mark behind. */
+@media (hover: hover) and (pointer: fine) {
+  .nav a:hover {
+    color: var(--color-text);
+    box-shadow: inset 0 calc(-1 * var(--nav-indicator-width)) 0 var(--color-border-control);
+  }
+
+  .nav a[aria-current="page"]:hover {
+    box-shadow: inset 0 calc(-1 * var(--nav-indicator-width)) 0 var(--color-accent);
+  }
+
+  .buttonQuiet:hover {
+    background: var(--color-accent-surface);
+    color: var(--color-accent-hover);
+  }
 }
 
 .stoppedNotice {
@@ -105,5 +126,25 @@
 }
 
 .stoppedNotice .stoppedTitle {
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
+}
+
+@container (max-width: 32rem) {
+  .barInner {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
+
+  .headerInner {
+    gap: 0 var(--space-4);
+  }
+
+  .name,
+  .nav a {
+    min-height: var(--header-height-narrow);
+  }
+
+  .nav {
+    margin-left: calc(-1 * var(--space-3));
+  }
 }

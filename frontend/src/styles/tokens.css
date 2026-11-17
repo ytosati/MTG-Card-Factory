@@ -1,16 +1,26 @@
 /* Design tokens: the single source of colors, type, spacing, shapes, layers, motion and focus styles.
-   Details: specs/plan.md, section 14 (frontend structure for frequent visual changes). */
+   Details: frontend/DESIGN.md (the direction) and specs/plan.md, section 14 (frontend structure). */
 :root {
-  --color-background: #f7f6f2;
-  --color-surface: #ffffff;
-  --color-text: #1c1b19;
-  --color-text-muted: #4f4c45;
-  --color-border: #c9c5bb;
+  /* Paper and ink: one light scheme (frontend/DESIGN.md, "Light, on purpose"). */
+  --color-background: #f4f1ea;
+  --color-surface: #fffdf8;
+  --color-sunken: #ece8df;
+  --color-row-hover: #efebe3;
+  --color-text: #1f1b16;
+  --color-text-muted: #57514a;
+  /* Hairline rules between rows and sections: decoration, never the only sign of a control. */
+  --color-border: #ddd7cc;
+  /* Edges of fields, choices and other controls: at least 3:1 against paper and surface. */
+  --color-border-control: #8b8478;
+  /* The heavy rule that opens a form, a table or the header. */
+  --color-rule-strong: #1f1b16;
+
+  /* The one accent: actions, focus, the current step and selection. Never decoration. */
   --color-accent: #5b2a86;
-  --color-accent-hover: #44206a;
+  --color-accent-hover: #46206a;
   --color-accent-text: #ffffff;
-  --color-accent-surface: #f1eaf8;
-  --color-code-surface: #eeece6;
+  --color-accent-surface: #efe7f6;
+
   --color-danger-surface: #fbeaea;
   --color-danger-text: #8a1c1c;
   --color-danger-border: #b42318;
@@ -21,51 +31,151 @@
   --color-success-text: #1d5b33;
   --color-success-border: #5c9a72;
 
-  /* Mana symbol fills: light enough for the dark symbol text to keep at least 4.5:1. */
+  /* Mana fills, close to the printed symbols and light enough for the dark symbol text to keep at least 7:1.
+     The edge is drawn only where a fill is too close to the paper: white and generic. */
   --color-mana-text: #1c1b19;
   --color-mana-edge: #8a857a;
-  --color-mana-w: #f4efd2;
-  --color-mana-u: #b9d7ee;
-  --color-mana-b: #cbc2bf;
-  --color-mana-r: #f2b9a3;
-  --color-mana-g: #a8d4b2;
-  --color-mana-generic: #dcd8cf;
+  --color-mana-w: #f6f0cf;
+  --color-mana-u: #a9cdea;
+  --color-mana-b: #bcb2ad;
+  --color-mana-r: #eba584;
+  --color-mana-g: #9ccaa3;
+  --color-mana-generic: #d6d1c6;
+  /* The gold of a multicolored card's frame: an empty thumbnail of a card with two or more colors. */
+  --color-mana-multi: #e3cf8f;
+  /* The inner line of an empty card-shaped area tinted with its colors, like the edge of a card's art box. */
+  --color-card-inner-line: rgb(31 27 22 / 0.28);
 
-  /* A violet from the accent: about 4:1 against the page and 4.3:1 against a surface. The offset keeps
+  /* Rarity marks, as on a set symbol; the rarity is also written in words. Each keeps 3:1 on paper. */
+  --color-rarity-common: #1f1b16;
+  --color-rarity-uncommon: #6f7b86;
+  --color-rarity-rare: #9a7420;
+  --color-rarity-mythic: #c2501f;
+
+  /* A violet from the accent: about 3.8:1 against the page and 4.2:1 against a surface. The offset keeps
      the ring on the page, apart from the accent button. */
   --focus-ring-color: #9256f5;
   --focus-ring-width: 3px;
   --focus-ring-offset: 2px;
+  /* The ring around a chosen mana symbol: a sign of the choice that does not depend on color. */
+  --selection-ring-width: 2px;
+  --selection-ring-offset: 2px;
 
-  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
-  /* The card's own text: an installed serif, as on printed cards. */
-  --font-card: Georgia, "Iowan Old Style", serif;
-  --font-size-body: 1rem;
+  /* Installed fonts only, until a bundled family is approved (frontend/DESIGN.md, "Pending decision"). */
+  --font-ui: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Roboto,
+    "Noto Sans", "Liberation Sans", Arial, sans-serif;
+  /* The card's voice: card names, rules text and the titles of the screens. */
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", "URW Palladio L", P052, Georgia,
+    serif;
+  --font-card: var(--font-display);
+  --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Liberation Mono", monospace;
+
+  --font-size-caption: 0.75rem;
   --font-size-small: 0.875rem;
-  --font-size-h1: 1.75rem;
-  --font-size-h2: 1.25rem;
+  --font-size-body: 1rem;
+  --font-size-lead: 1.0625rem;
+  --font-size-h3: 1.0625rem;
+  --font-size-h2: 1.5rem;
+  --font-size-h1: 2.25rem;
   --font-size-card-name: 1.5rem;
+  --font-size-card-text: 1.0625rem;
+  --font-size-figure: 1.75rem;
+  /* The label of a form row: one step above the names of its options. */
+  --font-size-label: 1.0625rem;
+  /* The name of the application in the header. */
+  --font-size-wordmark: 1.1875rem;
+  --font-weight-regular: 400;
+  --font-weight-strong: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.15;
+  --line-height-snug: 1.35;
   --line-height-body: 1.5;
+  /* Rubrics: the small capitals that name a column or a group, as on a printed list. */
+  --letter-spacing-rubric: 0.08em;
+  --letter-spacing-display: -0.01em;
+  /* Tags in caption size open up a little; split mana symbols close up to fit two halves. */
+  --letter-spacing-tag: 0.02em;
+  --letter-spacing-tight: -0.02em;
 
+  /* A 4px rhythm. */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
+  --space-5: 1.25rem;
   --space-6: 1.5rem;
   --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* Widths: the axis shared by the header and every screen, a reading column, and the ruled form. */
+  --content-width: 72rem;
+  --measure-column: 48rem;
+  /* Lists, tables and the ruled form: as wide as the label column, its gap and the controls. */
+  --measure-wide: 62rem;
+  --measure-prose: 65ch;
+  --form-label-width: 14rem;
+  --form-controls-width: 46rem;
+  /* The height of a control and of a row in a list or table; a quiet button in a bar is shorter. */
+  --control-height: 2.5rem;
+  --control-height-compact: 2rem;
+  --row-height: 2.75rem;
+  /* The smallest target for a finger: choices and quiet buttons on a narrow screen, the primary action. */
+  --touch-target: 2.75rem;
+  /* The header bar, and on a narrow screen. */
+  --header-height: 3.5rem;
+  --header-height-narrow: 3rem;
+  /* Form parts: the text area of an idea, the column of option names beside their meaning, the native box. */
+  --textarea-min-height: 7.5rem;
+  --option-name-width: 7rem;
+  --native-control-size: 1rem;
+  --input-min-width: 9rem;
+  --progress-min-width: 14rem;
+  --chevron-size: 0.5rem;
+  --chevron-stroke: 2px;
+
+  /* The ruled list of cards: the name column stops so the cost stays beside the name, as on a title bar. */
+  --card-list-identity-width: 26rem;
+  --card-list-cost-width: 7.5rem;
+  --card-list-rarity-width: 7rem;
+  --card-list-marks-width: 9rem;
+  --rarity-mark-size: 0.625rem;
+  /* The printed table: count and cost columns, and the narrow count. */
+  --table-count-width: 4rem;
+  --table-count-width-narrow: 1.75rem;
+  --table-cost-width: 8rem;
 
   --icon-size: 1.125rem;
   --nav-indicator-width: 2px;
-  --radius: 6px;
+  --radius: 4px;
   --radius-small: 2px;
-  --content-width: 48rem;
-  /* The card-shaped image area: the proportions of a card (63 × 88 mm) and its widest size. */
+  /* The corner of a printed card (3 mm on 63 × 88 mm), so a card-shaped area is round like a card at any size. */
+  --radius-card: 4.76% / 3.41%;
+  /* The card-shaped image area: the proportions of a card and its widest size; a thumbnail in a list. */
   --card-aspect-ratio: 63 / 88;
   --card-image-width: 20rem;
+  --card-thumb-width: 3rem;
+  --card-thumb-width-narrow: 2.75rem;
+  /* The empty card that waits for a generation to finish. */
+  --card-placeholder-width: 9.5rem;
+  /* Where the inner line of an empty card sits: the border of a card in proportion, at any size. */
+  --card-inner-inset: 7% 8%;
+  /* Mana symbols: the circle, its serif figure, and the room between symbols of one cost. */
+  --mana-symbol-size: 1.625rem;
+  --mana-symbol-text: 0.9375rem;
+  --mana-symbol-size-compact: 1.3125rem;
+  --mana-symbol-text-compact: 0.75rem;
+  --mana-symbol-text-split: 0.6875rem;
+  --mana-symbol-gap: 0.1875rem;
+  --mana-symbol-padding: 0.125rem;
+  /* The small ink offset under a printed mana symbol, down and to the left. */
+  --mana-symbol-offset: -1px 1px 0 var(--color-mana-text);
 
+  /* Only cards cast a shadow: they are the one physical object on the paper. */
   --shadow-none: none;
-  --shadow-raised: 0 1px 2px rgb(28 27 25 / 0.08), 0 2px 8px rgb(28 27 25 / 0.06);
+  --shadow-card: 0 1px 1px rgb(31 27 22 / 0.14), 0 2px 6px rgb(31 27 22 / 0.1);
+  --shadow-raised: 0 1px 2px rgb(31 27 22 / 0.08), 0 4px 12px rgb(31 27 22 / 0.08);
 
   --z-base: 0;
   --z-raised: 1;
@@ -73,10 +183,13 @@
   --z-overlay: 100;
 
   --motion-duration-fast: 120ms;
-  --motion-duration-medium: 240ms;
-  --motion-easing-out: ease-out;
-  /* How far a pressed button moves down. */
+  --motion-duration-medium: 200ms;
+  /* Decelerates into place with no overshoot. */
+  --motion-easing-out: cubic-bezier(0.2, 0, 0, 1);
+  --motion-easing-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  /* How far a pressed button moves down, and how far an appearing message rises into place. */
   --motion-press-offset: 1px;
+  --motion-enter-offset: 0.25rem;
 }
 
 /* The one reduced-motion rule (spec RN-49): every transition and movement reads these tokens. */
@@ -85,5 +198,6 @@
     --motion-duration-fast: 0ms;
     --motion-duration-medium: 0ms;
     --motion-press-offset: 0px;
+    --motion-enter-offset: 0px;
   }
 }

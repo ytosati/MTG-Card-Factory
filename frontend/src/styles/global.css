@@ -9,9 +9,16 @@ body {
   margin: 0;
   background: var(--color-background);
   color: var(--color-text);
-  font-family: var(--font-body);
+  font-family: var(--font-ui);
   font-size: var(--font-size-body);
   line-height: var(--line-height-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-accent-surface);
+  color: var(--color-text);
 }
 
 :focus-visible {
@@ -19,12 +26,18 @@ body {
   outline-offset: var(--focus-ring-offset);
 }
 
+h1,
+h2 {
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-display);
+  overflow-wrap: anywhere;
+}
+
 h1 {
   font-size: var(--font-size-h1);
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-  margin: 0 0 var(--space-2);
+  margin: 0 0 var(--space-3);
 }
 
 /* A screen heading takes focus after a screen change; only keyboard focus draws the ring. */
@@ -38,33 +51,63 @@ h1:focus-visible {
 
 h2 {
   font-size: var(--font-size-h2);
-  margin: var(--space-8) 0 var(--space-3);
+  margin: var(--space-10) 0 var(--space-4);
+}
+
+h3 {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-strong);
+  line-height: var(--line-height-snug);
 }
 
 a {
   color: var(--color-accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  a:hover {
+    color: var(--color-accent-hover);
+    text-decoration-thickness: 2px;
+  }
 }
 
 code {
   font-family: var(--font-mono);
+  font-size: 0.9375em;
   padding: 0 var(--space-1);
-  background: var(--color-code-surface);
-  border-radius: var(--radius);
+  background: var(--color-sunken);
+  border-radius: var(--radius-small);
+}
+
+input,
+textarea,
+select {
+  font: inherit;
 }
 
 button {
   font: inherit;
-  padding: var(--space-2) var(--space-4);
+  font-weight: var(--font-weight-strong);
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-5);
   border: 1px solid var(--color-accent);
   border-radius: var(--radius);
   background: var(--color-accent);
   color: var(--color-accent-text);
   cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-easing-out),
+    border-color var(--motion-duration-fast) var(--motion-easing-out),
+    transform var(--motion-duration-fast) var(--motion-easing-out);
 }
 
-button:hover {
-  background: var(--color-accent-hover);
-  border-color: var(--color-accent-hover);
+@media (hover: hover) and (pointer: fine) {
+  button:hover {
+    background: var(--color-accent-hover);
+    border-color: var(--color-accent-hover);
+  }
 }
 
 button:active:not(:disabled) {
@@ -73,8 +116,8 @@ button:active:not(:disabled) {
 
 button:disabled,
 button:disabled:hover {
-  background: var(--color-code-surface);
-  border-color: var(--color-border);
+  background: var(--color-sunken);
+  border-color: var(--color-border-control);
   color: var(--color-text-muted);
   cursor: not-allowed;
 }

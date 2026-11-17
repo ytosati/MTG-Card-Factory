@@ -281,7 +281,10 @@ repository stays the download page, the user guide and the source code.
   and art shown separately. Calls not linked to a card (a failed generation,
   the connection test) are recorded but not shown. Each record also holds the
   seconds the call took, from sending the request to the end of the answer or
-  of the failure, shown with the usage of the card.
+  of the failure, shown with the usage of the card with one decimal. Each
+  attempt sent to a provider is one record, including a repeated attempt
+  and an attempt that fails with no usage reported, which is recorded with
+  zero tokens or images.
 - RN-10: Provider failures (outage, usage limit, invalid response) become clear
   messages and never leave a card half-created.
 
@@ -439,7 +442,8 @@ repository stays the download page, the user guide and the source code.
   lists, decks, the collection and the print queue, are loaded by the browser
   from the data source's image service, and community art from the community
   art source's image hosts; the application copies neither into its storage,
-  except the base card image of RN-39. The browser loads no font, script or
+  except the base card image of RN-39. In v1 the browser loads images only
+  from the application. The browser loads no font, script or
   style sheet from outside the application; fonts installed on the
   computer may be used, and links the person follows are not loads.
   Deleting a card deletes the images of all its versions.
@@ -1378,7 +1382,8 @@ file, the zip, the start file or the port apply to local mode.
 - CA-126 (RN-33): The built interface references no outside address for
   fonts, scripts or style sheets (a small icon inlined in the page counts as
   local), and images come only from the application, the data source's
-  image service and the community art source's image hosts.
+  image service and the community art source's image hosts. In v1, images
+  come only from the application.
 - CA-127 (RN-50): In hosted mode two accounts can each run one generation at
   the same time; a second generation of one account is refused; with the
   operator's limit reached, a new one is refused with the busy message.
@@ -1401,8 +1406,10 @@ file, the zip, the start file or the port apply to local mode.
 - CA-133 (RN-05): With a fast text model set, the design intent call and a
   quick adjustment use it and the draft and the revision use the main model;
   with none set, every call uses the main model.
-- CA-134 (RN-09): The usage of a card shows the seconds of each call, and a
-  failed call records its seconds too.
+- CA-134 (RN-09): The usage of a card shows the seconds of each call with
+  one decimal. A call that fails with no usage reported is recorded with
+  zero tokens and its seconds, and a call repeated after a refused
+  connection yields two records.
 ## Screens
 - First-run setup: the expected download size and free disk space needed, the
   action that starts the build, the build with progress, the cause of a failure with a retry, a notice and a link
@@ -1474,7 +1481,8 @@ the rules up to RN-62, with the settings in the configuration file. In v1,
 the sentences of those rules about hosted mode, the Settings screen, the
 collection, decks, the print queue, extras, community art or the reference
 refresh are not delivered, and the parts of criteria that test them belong
-to v2.
+to v2. The fan content notice and the link to the source code in the footer
+of every screen (RN-69) are part of v1.
 
 ## Definition of done (v2)
 v2 comes after v1 and is done when the Settings screen, hosted mode, the
@@ -1503,14 +1511,6 @@ remains.
 - Is printing custom art versions of existing cards on the hosted site within
   the fan content policy? (RN-88)
 - Does the name "Card Factory" still fit the wider scope?
-- Usage records (RN-09): is each attempt sent to a provider its own record,
-  including a retry and a call that fails with no reported usage, and with
-  what precision are the seconds shown? To answer before Milestone 3b.
-- Does v1 ship the fan content notice and the link to the source code
-  (RN-69), which are otherwise delivered in v2?
-- In v1, does any screen show printing images loaded by the browser from the
-  data source (the base card picker, RN-36), or only images from the
-  application (RN-33, CA-126)?
 - In v2 local mode, does a missing configuration file still stop the start
   (RN-40), or does the application open Settings (RN-72)?
 - Does the connection test also try the fast text model (RN-05, RN-08)?

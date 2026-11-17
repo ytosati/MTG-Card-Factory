@@ -339,6 +339,7 @@ Design changes (added when the maintainer asks, Milestone 3c rules):
 - [ ] T112: Manual checks: clone and contrast
 - [ ] T132: Startup integration test and hardening
 - [ ] T83: Clean-machine installation test
+- [ ] T250: Footer: fan content notice and source link
 - [ ] T84: Milestone 10 review
 
 ### Milestone 10b — Settings screen
@@ -1649,14 +1650,17 @@ Done when: tests pass for the hint reaching the OpenAI request only for a model 
 
 ### T178: Seconds of each call in the usage
 The usage record stores the seconds of its call and the usage endpoint
-returns them.
+returns them. Each attempt sent to a provider is one record, including a
+repeated attempt and an attempt that fails with no usage reported (zero
+tokens).
 Covers: RN-09, CA-134
 Agent: backend-dev
 Depends on: T177
-Done when: tests pass for the seconds of a draft, of a revision and of a failed call, and the contract sample of the usage endpoint has the field.
+Done when: tests pass for the seconds of a draft, of a revision and of a failed call, for a record with zero tokens after a read timeout, for two records after a refused connection and its repeat, and the contract sample of the usage endpoint has the field.
 
 ### T179: Result screen: seconds of each call
-The usage on the Result screen shows the seconds of each call.
+The usage on the Result screen shows the seconds of each call with one
+decimal.
 Covers: RN-09, CA-134
 Agent: frontend-dev
 Depends on: T178, T146
@@ -2639,6 +2643,15 @@ Agent: maintainer
 Depends on: T78, T79, T81, T112
 Done when: every check in the checklist is recorded as passed, or failures are recorded as new tasks.
 
+### T250: Footer: fan content notice and source link
+Every screen shows a footer with the fan content notice and a link to the
+source code. The links to Privacy and Terms come with hosted mode (T201).
+TODO: the exact fan content notice is delivered by the maintainer (spec, Open questions).
+Covers: RN-69, CA-125
+Agent: frontend-dev
+Depends on: T80
+Done when: a test over every screen finds the notice with the delivered text and the link, and the built-file check still passes.
+
 ### T84: Milestone 10 review
 Run every test suite and the repository content check. Repeat CA-48 with a data
 folder that holds cards, versions and images, made by the release candidate and
@@ -2647,7 +2660,7 @@ or a recorded manual check, and that the definition of done of the spec holds.
 Record the findings.
 Covers: none (review)
 Agent: maintainer
-Depends on: T76–T83, T111, T112, T125, T132
+Depends on: T76–T83, T111, T112, T125, T132, T250
 Done when: every suite and the content check pass, and the coverage table has no open entry.
 
 ## Milestone 10b — Settings screen
@@ -3351,7 +3364,7 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | RN-66 | T197, T199, T229, T181 |
 | RN-67 | T197, T199, T229, T242, T181 |
 | RN-68 | T204, T205, T206, T210, T213 |
-| RN-69 | T201, T181 |
+| RN-69 | T250, T201, T181 |
 | RN-70 | T215, T221, T222, T223, T231, T237, T243, T182 |
 | RN-71 | T200, T181, T186, T187, T248 |
 | RN-72 | T194, T200, T202, T209, T181, T186, T187, T248 |
@@ -3500,7 +3513,7 @@ horizontal milestones A to D, replaced by the review tasks of Milestones 2 to
 | CA-122 | T234, T236 |
 | CA-123 | T242, T243, T246 |
 | CA-124 | T244, T245, T246 |
-| CA-125 | T201, T221, T223 |
+| CA-125 | T250, T201, T221, T223 |
 | CA-126 | T215, T245 |
 | CA-127 | T196 |
 | CA-128 | T206 |

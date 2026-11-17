@@ -33,7 +33,8 @@ milestone review.
 
 ## 3. Report
 In the maintainer's language, short: what changed, test results, decisions
-taken, what to look at in the running application. Do not commit; suggest
+taken. When a screen changed, check it in the browser pane first (Design bar
+of specs/tasks.md) and give the steps to see it. Do not commit; suggest
 `/next-task <id>` (commit, push and next task).
 
 ## Rules

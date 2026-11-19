@@ -12,7 +12,7 @@ export type Place = "Request" | "Library" | "Status";
 const PLACES: Place[] = ["Request", "Library", "Status"];
 
 /** The page: the field of stars behind, the header with the wordmark and places, the work and the footer (RN-69). */
-export function Shell({ current, speed = "rest", children }: { current: Place; speed?: StarfieldSpeed; children: ReactNode }) {
+export function Shell({ current, speed = "rest", children }: { current?: Place; speed?: StarfieldSpeed; children: ReactNode }) {
   return (
     <div className={`${tokens.tokens} ${styles.root}`}>
       <div className={styles.sky} aria-hidden="true">
@@ -25,18 +25,21 @@ export function Shell({ current, speed = "rest", children }: { current: Place; s
           </span>
           Card Factory
         </span>
-        <nav aria-label="Main">
-          <ul className={styles.nav}>
-            {PLACES.map((place) => (
-              <li key={place}>
-                <span className={styles.place} aria-current={place === current ? "page" : undefined}>
-                  <StarGlyph size={7} className={styles.placeStar} />
-                  {place}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        {/* Setup opens before the other places exist, so it shows none. */}
+        {current ? (
+          <nav aria-label="Main">
+            <ul className={styles.nav}>
+              {PLACES.map((place) => (
+                <li key={place}>
+                  <span className={styles.place} aria-current={place === current ? "page" : undefined}>
+                    <StarGlyph size={7} className={styles.placeStar} />
+                    {place}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ) : null}
       </header>
       <main className={styles.main}>{children}</main>
       <footer className={styles.footer}>

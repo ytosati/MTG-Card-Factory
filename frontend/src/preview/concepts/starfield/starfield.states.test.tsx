@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 // Smoke test of concept E "Starfield" (tasks.md T251): each state renders one level-1 heading, the footer notice
-// (RN-69) and a decorative starfield; Colorless excludes the colors; a custom art version asks only for card and art.
+// (RN-69) and a decorative starfield; Colorless excludes the colors; a custom art version asks only for card and art;
+// generation announces its step; the reveal turns into the way to the result; the build shows its progress.
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -49,5 +50,34 @@ describe("Starfield concept (T251)", () => {
     expect(screen.queryByRole("group", { name: "Color identity" })).toBeNull();
     expect(screen.getByLabelText("Printing")).toBeTruthy();
     expect(screen.queryByRole("radio", { name: "No art" })).toBeNull();
+  });
+
+  it("announces the running generation step", () => {
+    renderState("generating");
+    expect(screen.getByRole("status").textContent).toBe("Step 1 of 6: Design intent");
+    expect(screen.getByRole("listitem", { current: "step" }).textContent).toMatch(/Design intent/);
+  });
+
+  it("reveals the card on demand, then leads to the result", () => {
+    renderState("ready-strong");
+    fireEvent.click(screen.getByRole("button", { name: "Reveal card" }));
+    expect(screen.getByRole("link", { name: "See result" }).getAttribute("href")).toBe("#/preview/concept-starfield/result");
+    expect(screen.getByRole("status").textContent).toBe("Revealed: Ilvara, Keeper of Tides.");
+  });
+
+  it("shows a rejected card's causes and an approved card's art with its text alternative", () => {
+    renderState("result-rejected");
+    expect(screen.getByText("Rejected.")).toBeTruthy();
+    expect(screen.getByText(/does not match the cost/)).toBeTruthy();
+    cleanup();
+    renderState("result");
+    expect(screen.getByRole("img", { name: "Lanternhollow Sentry, card art" })).toBeTruthy();
+  });
+
+  it("starts the database build and shows its progress", () => {
+    renderState("setup");
+    expect(screen.queryByRole("navigation")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Start the build" }));
+    expect(screen.getByRole("progressbar", { name: "Building the card database" })).toBeTruthy();
   });
 });

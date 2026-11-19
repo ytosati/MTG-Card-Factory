@@ -20,7 +20,7 @@ const STARLIGHT_RUNES = ["#140a26", "#2b1252", "#481c88", "#8b3dff", "#b07cff", 
  * The frame's line in the chosen colors: one color tints it whole, several split it into equal hard bands in
  * W U B R G order, so the frame reads as the identity rather than as a decoration.
  */
-function frameOf(colors: readonly ManaColor[]): string {
+export function frameOf(colors: readonly ManaColor[]): string {
   const chosen = ORDER.filter((color) => colors.includes(color));
   if (chosen.length === 0) return "var(--sf-rule-strong)";
   const tint = (color: ManaColor) => `var(--sf-tint-${color.toLowerCase()})`;

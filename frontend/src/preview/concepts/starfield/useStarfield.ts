@@ -7,7 +7,7 @@ import { useMotionOff } from "../forge/screens/motion";
 export type StarfieldSpeed = "rest" | "generating";
 
 /** Depth units per second; a star crosses the whole depth in about 45 s at rest. */
-const SPEEDS: Record<StarfieldSpeed, number> = { rest: 0.022, generating: 0.11 };
+const SPEEDS: Record<StarfieldSpeed, number> = { rest: 0.022, generating: 0.07 };
 
 /** How quickly the travel speed follows a change, per second; it eases instead of jumping. */
 const EASE = 1.6;
@@ -70,7 +70,7 @@ export function useStarfield(speed: StarfieldSpeed) {
       const cy = height * 0.36;
       const reach = Math.max(width, height) * 0.3;
       // A resting field shows points; trails appear only as the travel speeds up, and stay short.
-      const trail = Math.max(0, velocity - SPEEDS.rest) * 0.35;
+      const trail = Math.max(0, velocity - SPEEDS.rest) * 0.2;
       context.lineCap = "round";
       for (const star of stars) {
         const near = 1 - star.z;
@@ -90,6 +90,8 @@ export function useStarfield(speed: StarfieldSpeed) {
           context.arc(x, y, size * 0.6, 0, Math.PI * 2);
           context.fill();
         } else {
+          // Streaks stay quieter than points, so text over the field keeps reading cleanly.
+          context.globalAlpha *= 0.55;
           context.strokeStyle = color;
           context.lineWidth = size;
           context.beginPath();

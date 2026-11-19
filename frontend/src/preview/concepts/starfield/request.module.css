@@ -22,7 +22,7 @@
 }
 
 .summary {
-  max-width: 54ch;
+  max-width: none;
   margin: 20px 0 0;
   color: var(--sf-ink-muted);
 }
@@ -131,11 +131,10 @@
   display: block;
   width: 100%;
   margin: 0;
-  padding: 8px 0;
+  padding: 8px 12px;
   background: var(--sf-ground);
-  border: 0;
-  border-bottom: 1px solid var(--sf-rule-strong);
-  border-radius: 0;
+  border: 1px solid var(--sf-rule-strong);
+  border-radius: 8px;
   font: inherit;
   color: var(--sf-ink);
   cursor: pointer;
@@ -578,4 +577,33 @@
 
 .tokenMeter span[data-on="true"] {
   background: #8b3dff;
+}
+
+/* Text fields show focus on their own line, not with a box: the line turns violet and thickens. */
+.input:focus-visible,
+.idea:focus-visible {
+  outline: none;
+  border-bottom-color: var(--sf-violet);
+  box-shadow: 0 1px 0 var(--sf-violet);
+}
+
+/* The summary stays on one line where the page is wide enough. */
+@media (min-width: 900px) {
+  .summary {
+    white-space: nowrap;
+  }
+}
+
+.reference {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.referenceLabel {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sf-ink-muted);
 }

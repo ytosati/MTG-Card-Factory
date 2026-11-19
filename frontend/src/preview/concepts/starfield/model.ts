@@ -31,6 +31,8 @@ export interface RequestDraft {
   art: ArtChoice;
   artDescription: string;
   uploadName: string | null;
+  /** A reference image for generated art: elements of it are used in the art. */
+  referenceName: string | null;
 }
 
 export const EMPTY_DRAFT: RequestDraft = {
@@ -55,6 +57,7 @@ export const EMPTY_DRAFT: RequestDraft = {
   art: "none",
   artDescription: "",
   uploadName: null,
+  referenceName: null,
 };
 
 export const IDEA_MAX = 1000;
@@ -88,10 +91,12 @@ export const starfieldCopy = {
     { value: "generated", name: "Generated" },
     { value: "uploaded", name: "Uploaded" },
   ] as { value: ArtChoice; name: string }[],
-  artDescriptionLabel: "Art description",
+  artDescriptionLabel: "Additional instructions",
   artDescriptionHint:
-    "Optional. Left empty, the image follows the finished card: its name, type, rules text, colors and design intent.",
-  noArtHint: "The card is text only. Art can be generated or uploaded later.",
+    "Optional. Added to your idea. Left empty, the art follows what the idea describes.",
+  referenceLabel: "Reference image",
+  referenceHint: "Optional. Elements of this image are used in the art, for example your face on the character.",
+  noArtHint: "No art: the card is text only.",
   summary: "Describe the card, choose its color identity and power level, then generate it.",
   tokens: {
     low: "Uses the fewest tokens.",
@@ -100,7 +105,9 @@ export const starfieldCopy = {
   },
   billing: "Art is billed by the image provider, separately from the text.",
   uploadAction: "Choose an image",
-  uploadHint: "Your image is used as is, as the whole art of the card. PNG, JPEG or WebP, up to 10 MB. Checked when chosen.",
+  uploadHint:
+    "Your image is the art. Card Factory makes only the card's frame and text around it. " +
+    "PNG, JPEG or WebP, up to 10 MB. Checked when chosen.",
   uploadNone: "No file chosen",
   outlineLabel: "Card outline",
   untitled: "Name comes with the card",

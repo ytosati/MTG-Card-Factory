@@ -140,13 +140,38 @@ function BaseCardPicker({ draft, patch }: { draft: RequestDraft; patch: Patch })
   );
 }
 
+/** A file chosen through a styled label; only its name is kept, since nothing is sent. */
+function FilePick({ label, name, hint, onPick }: { label: string; name: string | null; hint: string; onPick: (name: string | null) => void }) {
+  const fileId = useId();
+  const hintId = useId();
+  return (
+    <div className={`${styles.reveal} ${styles.upload}`}>
+      <input
+        id={fileId}
+        type="file"
+        className={`${parts.srOnly} ${styles.fileInput}`}
+        accept="image/png,image/jpeg,image/webp"
+        aria-describedby={hintId}
+        onChange={(event) => onPick(event.target.files?.[0]?.name ?? null)}
+      />
+      <label htmlFor={fileId} className={styles.fileButton}>
+        {label}
+      </label>
+      <span className={styles.fileName} data-empty={name ? "false" : "true"}>
+        {name ?? copy.uploadNone}
+      </span>
+      <p id={hintId} className={styles.fileHint}>
+        {hint}
+      </p>
+    </div>
+  );
+}
+
 /** The art: none, generated with an optional description and the billing notice, or an uploaded image. */
 function ArtPicker({ draft, patch, labelledBy }: { draft: RequestDraft; patch: Patch; labelledBy: string }) {
   const descriptionId = useId();
   const countId = useId();
   const hintId = useId();
-  const fileId = useId();
-  const fileHintId = useId();
   const choices = draft.kind === "custom-art" ? copy.arts.filter((art) => art.value !== "none") : copy.arts;
   const length = lengthOf(draft.artDescription);
 
@@ -173,28 +198,24 @@ function ArtPicker({ draft, patch, labelledBy }: { draft: RequestDraft; patch: P
             <StarGlyph size={8} className={styles.billingStar} />
             {copy.billing}
           </p>
+          <div className={styles.reference}>
+            <p className={styles.referenceLabel}>{copy.referenceLabel}</p>
+            <FilePick
+              label={copy.uploadAction}
+              name={draft.referenceName}
+              hint={copy.referenceHint}
+              onPick={(referenceName) => patch({ referenceName })}
+            />
+          </div>
         </div>
       ) : null}
       {draft.art === "uploaded" ? (
-        <div className={`${styles.reveal} ${styles.upload}`}>
-          <input
-            id={fileId}
-            type="file"
-            className={`${parts.srOnly} ${styles.fileInput}`}
-            accept="image/png,image/jpeg,image/webp"
-            aria-describedby={fileHintId}
-            onChange={(event) => patch({ uploadName: event.target.files?.[0]?.name ?? null })}
-          />
-          <label htmlFor={fileId} className={styles.fileButton}>
-            {copy.uploadAction}
-          </label>
-          <span className={styles.fileName} data-empty={draft.uploadName ? "false" : "true"}>
-            {draft.uploadName ?? copy.uploadNone}
-          </span>
-          <p id={fileHintId} className={styles.fileHint}>
-            {copy.uploadHint}
-          </p>
-        </div>
+        <FilePick
+          label={copy.uploadAction}
+          name={draft.uploadName}
+          hint={copy.uploadHint}
+          onPick={(uploadName) => patch({ uploadName })}
+        />
       ) : null}
     </div>
   );

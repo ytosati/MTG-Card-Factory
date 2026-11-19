@@ -14,7 +14,7 @@ type Width = (typeof WIDTHS)[number];
 
 type Address =
   | { kind: "index" }
-  | { kind: "state"; screen: PreviewScreen; state: PreviewState }
+  | { kind: "state"; screen: PreviewScreen; state: PreviewState; full: boolean }
   | { kind: "unknown" };
 
 function addressOf(state: { screenId: string; stateId: string }): string {
@@ -34,11 +34,13 @@ function resolve(hash: string, screens: PreviewScreen[]): Address {
   if (hash === INDEX || hash === `${INDEX}/`) return { kind: "index" };
   if (!hash.startsWith(`${INDEX}/`)) return { kind: "unknown" };
   const parts = hash.slice(INDEX.length + 1).split("/").map(decoded);
-  if (parts.length !== 2) return { kind: "unknown" };
+  // A trailing "full" shows the state alone at the window's own size, as the application would.
+  const full = parts.length === 3 && parts[2] === "full";
+  if (parts.length !== 2 && !full) return { kind: "unknown" };
   const [screenId, stateId] = parts;
   const screen = screens.find((entry) => entry.id === screenId);
   const state = screen?.states.find((entry) => entry.id === stateId);
-  return screen !== undefined && state !== undefined ? { kind: "state", screen, state } : { kind: "unknown" };
+  return screen !== undefined && state !== undefined ? { kind: "state", screen, state, full } : { kind: "unknown" };
 }
 
 function useHash(): string {
@@ -61,6 +63,15 @@ export function PreviewGallery({ screens = previewScreens }: { screens?: Preview
     document.title = "Preview gallery · Card Factory";
   }, []);
 
+  if (address.kind === "state" && address.full) {
+    return (
+      <div className={styles.full}>
+        <Fragment key={`${address.screen.id}/${address.state.id}`}>{address.state.render()}</Fragment>
+        <FullNavigator screens={screens} screen={address.screen} state={address.state} />
+      </div>
+    );
+  }
+
   return (
     <div className={styles.gallery}>
       {address.kind === "index" && <Index screens={screens} />}
@@ -70,6 +81,7 @@ export function PreviewGallery({ screens = previewScreens }: { screens?: Preview
           <p role="alert">No such preview exists at this address.</p>
           <p>
             <a href={INDEX}>Back to the index</a>
+      <a href={`${window.location.hash}/full`}>Full window</a>
           </p>
         </main>
       )}
@@ -94,6 +106,60 @@ export function PreviewGallery({ screens = previewScreens }: { screens?: Preview
         </>
       )}
     </div>
+  );
+}
+
+/** Moves between states without leaving the full window: previous, next, a list of every state, and out. */
+function FullNavigator({ screens, screen, state }: { screens: PreviewScreen[]; screen: PreviewScreen; state: PreviewState }) {
+  const [open, setOpen] = useState(true);
+  const all = screens.flatMap((entry) => entry.states.map((item) => ({ screen: entry, state: item })));
+  const index = all.findIndex((entry) => entry.screen.id === screen.id && entry.state.id === state.id);
+  const go = (to: number) => {
+    const target = all[(to + all.length) % all.length];
+    if (target) window.location.hash = `${addressOf({ screenId: target.screen.id, stateId: target.state.id })}/full`;
+  };
+  const exit = addressOf({ screenId: screen.id, stateId: state.id });
+
+  if (!open) {
+    return (
+      <nav className={styles.navigator} aria-label="Preview pages">
+        <button type="button" onClick={() => setOpen(true)} aria-label="Show the page navigator">
+          Pages
+        </button>
+      </nav>
+    );
+  }
+  return (
+    <nav className={styles.navigator} aria-label="Preview pages">
+      <button type="button" onClick={() => go(index - 1)} aria-label="Previous page">
+        ←
+      </button>
+      <select
+        aria-label="Page"
+        value={`${screen.id}/${state.id}`}
+        onChange={(event) => {
+          const [screenId, stateId] = event.target.value.split("/");
+          window.location.hash = `${addressOf({ screenId: screenId ?? "", stateId: stateId ?? "" })}/full`;
+        }}
+      >
+        {screens.map((entry) => (
+          <optgroup key={entry.id} label={entry.name}>
+            {entry.states.map((item) => (
+              <option key={item.id} value={`${entry.id}/${item.id}`}>
+                {item.name}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+      <button type="button" onClick={() => go(index + 1)} aria-label="Next page">
+        →
+      </button>
+      <a href={exit}>Exit</a>
+      <button type="button" onClick={() => setOpen(false)} aria-label="Hide the page navigator">
+        ×
+      </button>
+    </nav>
   );
 }
 

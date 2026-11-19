@@ -1,0 +1,304 @@
+/* Concept D "Forge" (tasks.md T251): the Result screen; the lit stage, the card text in ruled rows, the dial. */
+
+.grid {
+  display: grid;
+  gap: 2.4rem;
+  align-items: start;
+}
+
+@container (min-width: 900px) {
+  .grid {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+    gap: 3.5rem;
+  }
+
+  .stage {
+    position: sticky;
+    top: 1.5rem;
+  }
+}
+
+/* The stage: warm light falls on the card from above; a brass pipe runs along the top edge. */
+.stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 4.2rem clamp(1rem, 4cqi, 3rem) 3.4rem;
+  border-radius: 12px;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 6%, rgb(255 222 160 / 0.16), transparent 72%),
+    radial-gradient(ellipse 70% 30% at 50% 100%, rgb(139 61 255 / 0.16), transparent 70%),
+    linear-gradient(180deg, #0c0911 0%, #17101f 70%, #0e0a14 100%);
+  box-shadow:
+    0 0 0 1px rgb(232 179 58 / 0.22),
+    inset 0 1px 0 rgb(232 179 58 / 0.2);
+  perspective: 1400px;
+}
+
+.pipe {
+  position: absolute;
+  top: 1.1rem;
+  right: 3.4rem;
+  left: -1px;
+  height: 14px;
+  background: #c99428;
+  box-shadow:
+    inset 0 3px 0 var(--forge-gold-light),
+    inset 0 -4px 0 var(--forge-gold-deep),
+    0 0 0 1px var(--forge-gold-dark),
+    0 6px 10px -4px rgb(0 0 0 / 0.8);
+}
+
+.collar {
+  position: absolute;
+  top: -5px;
+  width: 9px;
+  height: 24px;
+  border-radius: 2px;
+  background: var(--forge-gold-deep);
+  box-shadow: 0 0 0 1px var(--forge-gold-dark), inset 1px 0 0 var(--forge-gold-light);
+}
+
+.collar[data-at="1"] {
+  left: 22%;
+}
+
+.collar[data-at="2"] {
+  left: 64%;
+}
+
+.gauge {
+  position: absolute;
+  top: -15px;
+  right: -40px;
+  width: 44px;
+  height: 44px;
+  filter: drop-shadow(0 3px 4px rgb(0 0 0 / 0.7));
+}
+
+.cardWrap {
+  position: relative;
+  width: min(100%, 26rem);
+  animation: land 620ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.tilt {
+  position: relative;
+  transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes land {
+  from {
+    opacity: 0;
+    transform: translateY(-24px) scale(1.03);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.shadow {
+  position: absolute;
+  right: 8%;
+  bottom: -4%;
+  left: 8%;
+  height: 10%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgb(0 0 0 / 0.85), rgb(0 0 0 / 0) 70%);
+}
+
+/* The text of the card, as rows under fine gold rules. */
+.side {
+  min-width: 0;
+}
+
+.oracle {
+  margin-bottom: 2.2rem;
+  border-top: 1px solid var(--forge-gold);
+  border-bottom: 1px solid var(--forge-gold);
+}
+
+.row {
+  margin: 0;
+  padding: 0.85rem 0.1rem;
+  border-bottom: 1px solid var(--forge-hairline);
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.row[data-kind="name"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding-block: 1rem 0.9rem;
+}
+
+.name {
+  margin: 0;
+  font-family: var(--forge-display);
+  font-size: clamp(1.9rem, 4.2cqi, 2.6rem);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+}
+
+.row[data-kind="type"] {
+  font-size: 1.02rem;
+  font-weight: 600;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.1em;
+  color: var(--forge-gold-light);
+}
+
+.row[data-kind="text"] {
+  font-family: var(--forge-display);
+  font-size: 1.22rem;
+  line-height: 1.5;
+}
+
+.row[data-kind="text"] p {
+  margin: 0 0 0.45rem;
+}
+
+.row[data-kind="text"] p:last-child {
+  margin: 0;
+}
+
+.row[data-kind="body"] {
+  font-family: var(--forge-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.row[data-kind="meta"] {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.9rem;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.14em;
+  color: var(--forge-muted);
+}
+
+.section {
+  margin-bottom: 2rem;
+}
+
+.verdict {
+  margin: 0 0 0.6rem;
+}
+
+.approved {
+  font-weight: 700;
+  color: var(--forge-gold-light);
+}
+
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checks li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.check {
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0.15rem;
+  border-radius: 50%;
+  background: var(--forge-gold);
+  color: #1d1206;
+}
+
+/* Power: the dial and its three engraved bands, then the reason. */
+.power {
+  display: grid;
+  gap: 1rem 1.6rem;
+  align-items: center;
+}
+
+@container (min-width: 520px) {
+  .power {
+    grid-template-columns: 12.5rem 1fr;
+  }
+}
+
+.dial {
+  margin: 0;
+  justify-self: center;
+  width: 12.5rem;
+}
+
+.gaugeArt {
+  display: block;
+  width: 100%;
+}
+
+.scale {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0.3rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.08em;
+  text-align: center;
+  color: var(--forge-muted);
+}
+
+.scale li[aria-current="true"] {
+  color: var(--forge-gold-light);
+}
+
+.powerText {
+  margin: 0;
+  font-family: var(--forge-display);
+  font-size: 1.1rem;
+  line-height: 1.45;
+}
+
+.usage {
+  display: grid;
+  margin: 0;
+}
+
+.usage div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px dotted rgb(232 179 58 / 0.25);
+}
+
+.usage dt {
+  color: var(--forge-muted);
+}
+
+.usage dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}

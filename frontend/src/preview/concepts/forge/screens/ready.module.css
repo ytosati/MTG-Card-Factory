@@ -1,0 +1,376 @@
+/* Concept D "Forge" (tasks.md T251): the card face down in the forge, and its reveal by power level. */
+
+.head {
+  margin-bottom: 1.6rem;
+  text-align: center;
+}
+
+.plate {
+  max-width: 64rem;
+  margin-inline: auto;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.8rem;
+}
+
+/* The card: two faces on one leaf that turns over. */
+.flipper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 63 / 88;
+  transform-style: preserve-3d;
+}
+
+.back,
+.front {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+
+.front {
+  transform: rotateY(180deg);
+}
+
+.back {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 7%/5%;
+  background: none;
+  cursor: pointer;
+  animation: invite 2600ms ease-in-out infinite;
+  transition: transform 220ms var(--forge-ease);
+}
+
+.backArt {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.7));
+}
+
+/* The invitation: a slow violet breath around the card back, and a small lift under the pointer. */
+@keyframes invite {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(139 61 255 / 0);
+  }
+  50% {
+    box-shadow: 0 0 22px 4px rgb(139 61 255 / 0.55);
+  }
+}
+
+@media (hover: hover) {
+  .back:hover {
+    transform: translateY(-3%);
+  }
+}
+
+.back:focus-visible {
+  outline: 3px solid var(--forge-violet-bright);
+  outline-offset: 4px;
+}
+
+.flipper[data-revealed="true"] {
+  transform: rotateY(180deg);
+}
+
+.flipper[data-revealed="true"] .back {
+  animation: none;
+  cursor: default;
+}
+
+.flipper[data-revealed="true"][data-tier="casual"] {
+  animation: flip-casual 720ms cubic-bezier(0.3, 0.7, 0.2, 1) both;
+}
+
+.flipper[data-revealed="true"][data-tier="medium"] {
+  animation: flip-medium 860ms cubic-bezier(0.3, 0.7, 0.2, 1) both;
+}
+
+.flipper[data-revealed="true"][data-tier="strong"] {
+  animation: flip-strong 1200ms cubic-bezier(0.45, 0, 0.2, 1) both;
+}
+
+@keyframes flip-casual {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(180deg);
+  }
+}
+
+@keyframes flip-medium {
+  0% {
+    transform: rotateY(0deg) scale(1);
+  }
+  55% {
+    transform: rotateY(120deg) scale(1.08);
+  }
+  100% {
+    transform: rotateY(180deg) scale(1);
+  }
+}
+
+@keyframes flip-strong {
+  0% {
+    transform: translateY(0) scale(1) rotateY(0deg);
+  }
+  28% {
+    transform: translateY(-12%) scale(1.26) rotateY(-14deg);
+  }
+  72% {
+    transform: translateY(-12%) scale(1.26) rotateY(196deg);
+  }
+  90% {
+    transform: translateY(1%) scale(0.99) rotateY(180deg);
+  }
+  100% {
+    transform: translateY(0) scale(1) rotateY(180deg);
+  }
+}
+
+/* The strong reveal lands with a single jolt of the whole stage. */
+.plate > div[data-tier="strong"][data-revealed="true"] {
+  animation: jolt 34ms steps(1, end) 1080ms 1;
+}
+
+@keyframes jolt {
+  from {
+    transform: translate(5px, -4px);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* Effects over the scene; every length is a share of the stage. */
+.effects {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  container-type: size;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.flare {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(
+    ellipse 34% 56% at 50.2% 45.5%,
+    var(--flare) 0%,
+    color-mix(in srgb, var(--flare) 45%, transparent) 40%,
+    transparent 100%
+  );
+  mix-blend-mode: screen;
+  animation: flare 1500ms ease-out 260ms both;
+}
+
+.effects[data-tier="strong"] .flare {
+  background: radial-gradient(
+    ellipse 52% 80% at 50.2% 45.5%,
+    #ffffff 0%,
+    var(--flare) 22%,
+    color-mix(in srgb, var(--flare) 45%, transparent) 50%,
+    transparent 100%
+  );
+  animation: flare 2000ms ease-out 720ms both;
+}
+
+@keyframes flare {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.ring {
+  position: absolute;
+  top: 45.5%;
+  left: 50.2%;
+  width: 64cqh;
+  height: 64cqh;
+  margin: -32cqh 0 0 -32cqh;
+  color: #d9bdff;
+  opacity: 0;
+  filter: drop-shadow(0 0 2px #b07aff) drop-shadow(0 0 6px #8b3dff);
+  animation: ring 2800ms cubic-bezier(0.2, 0.8, 0.2, 1) 500ms both;
+}
+
+@keyframes ring {
+  0% {
+    opacity: 0;
+    transform: rotate(-60deg) scale(0.6);
+  }
+  25% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(120deg) scale(1.2);
+  }
+}
+
+.puff {
+  position: absolute;
+  top: 22%;
+  left: calc(50.2% + var(--dx));
+  width: 9cqw;
+  height: 9cqw;
+  margin: -4.5cqw 0 0 -4.5cqw;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(236 230 245 / 0.55), rgb(236 230 245 / 0) 68%);
+  opacity: 0;
+  animation: puff 1400ms ease-out both;
+}
+
+@keyframes puff {
+  0% {
+    opacity: 0;
+    transform: translateY(6cqh) scale(0.5);
+  }
+  30% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-14cqh) scale(1.9);
+  }
+}
+
+/* Sparks and embers are square, like the pixels of the forge. */
+.spark,
+.ember {
+  position: absolute;
+  width: 0.7cqw;
+  height: 0.7cqw;
+  min-width: 3px;
+  min-height: 3px;
+  background: #fff3c4;
+}
+
+.spark[data-tone="1"],
+.ember[data-tone="1"] {
+  background: #f3c94a;
+}
+
+.spark[data-tone="2"],
+.ember[data-tone="2"] {
+  background: var(--flare);
+}
+
+.spark {
+  top: 45.5%;
+  left: 50.2%;
+  opacity: 0;
+  animation: spark 900ms cubic-bezier(0.1, 0.7, 0.3, 1) both;
+}
+
+@keyframes spark {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), calc(var(--dy) + 4cqw));
+  }
+}
+
+.ember {
+  top: -2%;
+  opacity: 0;
+  animation-name: ember;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+
+@keyframes ember {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  10% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--drift), 100cqh);
+  }
+}
+
+/* Reduced motion: no turn and no effects; the back fades out as the face fades in. */
+@media (prefers-reduced-motion: reduce) {
+  .flipper .front,
+  .flipper[data-revealed="true"] {
+    transform: none !important;
+  }
+
+  .flipper .front {
+    opacity: 0;
+    transition: opacity 400ms ease-out !important;
+  }
+
+  .flipper .back {
+    transition: opacity 400ms ease-out !important;
+  }
+
+  .flipper[data-revealed="true"] .front {
+    opacity: 1;
+  }
+
+  .flipper[data-revealed="true"] .back {
+    opacity: 0;
+  }
+
+  .effects {
+    display: none;
+  }
+}
+
+:global([data-reduced-motion="true"]) .flipper .front,
+:global([data-reduced-motion="true"]) .flipper[data-revealed="true"] {
+  transform: none !important;
+}
+
+:global([data-reduced-motion="true"]) .flipper .front {
+  opacity: 0;
+  transition: opacity 400ms ease-out !important;
+}
+
+:global([data-reduced-motion="true"]) .flipper .back {
+  transition: opacity 400ms ease-out !important;
+}
+
+:global([data-reduced-motion="true"]) .flipper[data-revealed="true"] .front {
+  opacity: 1;
+}
+
+:global([data-reduced-motion="true"]) .flipper[data-revealed="true"] .back {
+  opacity: 0;
+}
+
+:global([data-reduced-motion="true"]) .effects {
+  display: none;
+}

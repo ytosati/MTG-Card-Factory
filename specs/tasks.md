@@ -111,7 +111,9 @@ looking at them in the running application, not by tests.
   public release; Milestones 10b to 17 follow.
 - Every feature is specified in the spec and built in this stack, under
   these standards and in English, whatever inspired it. No code, asset or
-  data is copied from another project.
+  data is copied from another project, except pixel-art effects from
+  pixelfx (MIT), kept under `frontend/src/vendor/pixelfx/` with their license
+  and notice.
 - No new dependency without approval.
 
 ## Progress

@@ -1,9 +1,8 @@
-/* Concept D "Forge" (tasks.md T251): the color toggle, its lit ring and the burst of each color. */
+/* Concept D "Forge" (tasks.md T251): the color toggle, its lit ring and the place of each color's burst. */
 .pick {
   --pick-size: 56px;
   --glow: #f1ead2;
   --glow-soft: rgba(241, 234, 210, 0.35);
-  --spark: #fff7d1;
   position: relative;
   display: inline-flex;
   flex-direction: column;
@@ -21,12 +20,12 @@
   }
 }
 
-.pick[data-color="W"] { --glow: #f6ecb4; --glow-soft: rgba(246, 236, 180, 0.4); --spark: #fffbe6; }
-.pick[data-color="U"] { --glow: #8cc2f0; --glow-soft: rgba(140, 194, 240, 0.4); --spark: #d4ecff; }
-.pick[data-color="B"] { --glow: #b9a0d6; --glow-soft: rgba(185, 160, 214, 0.4); --spark: #cfc0e2; }
-.pick[data-color="R"] { --glow: #f39062; --glow-soft: rgba(243, 144, 98, 0.42); --spark: #ffd38a; }
-.pick[data-color="G"] { --glow: #95d27e; --glow-soft: rgba(149, 210, 126, 0.4); --spark: #b8e6a2; }
-.pick[data-color="C"] { --glow: #d9d1cc; --glow-soft: rgba(217, 209, 204, 0.38); --spark: #ffffff; }
+.pick[data-color="W"] { --glow: #f6ecb4; --glow-soft: rgba(246, 236, 180, 0.4); }
+.pick[data-color="U"] { --glow: #8cc2f0; --glow-soft: rgba(140, 194, 240, 0.4); }
+.pick[data-color="B"] { --glow: #b9a0d6; --glow-soft: rgba(185, 160, 214, 0.4); }
+.pick[data-color="R"] { --glow: #f39062; --glow-soft: rgba(243, 144, 98, 0.42); }
+.pick[data-color="G"] { --glow: #95d27e; --glow-soft: rgba(149, 210, 126, 0.4); }
+.pick[data-color="C"] { --glow: #d9d1cc; --glow-soft: rgba(217, 209, 204, 0.38); }
 
 .input {
   position: absolute;
@@ -115,164 +114,14 @@
   100% { transform: scale(1); }
 }
 
-/* The burst box is wider than the symbol so particles can leave it; nothing in it catches the pointer. */
+/* The burst is a zero-size point at the symbol's centre; the effect's canvas centres itself on it, behind the symbol. */
 .burst {
-  position: absolute;
-  inset: calc(var(--pick-size) * -0.6);
-  pointer-events: none;
-}
-
-.burst > span {
   position: absolute;
   left: 50%;
   top: 50%;
-  opacity: 0;
-}
-
-/* White: rays of light ring outward behind a soft flash. */
-.flash {
-  width: var(--pick-size);
-  height: var(--pick-size);
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 251, 230, 0.55) 0%, rgba(255, 251, 230, 0) 70%);
-  animation: flash 520ms cubic-bezier(0.16, 0.84, 0.3, 1) both;
-}
-
-@keyframes flash {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
-  30% { opacity: 1; }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.7); }
-}
-
-.ray {
-  width: 3px;
-  height: calc(var(--pick-size) * 0.26);
-  border-radius: 2px;
-  background: linear-gradient(to top, rgba(255, 251, 230, 0), var(--spark));
-  animation: ray 600ms cubic-bezier(0.16, 0.84, 0.3, 1) both;
-}
-
-@keyframes ray {
-  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--a)) translateY(calc(var(--pick-size) * -0.48)) scaleY(0.3); }
-  30% { opacity: 1; }
-  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--a)) translateY(calc(var(--pick-size) * -0.92)) scaleY(1); }
-}
-
-/* Blue: ripple rings like a drop falling on water. */
-.ripple {
-  width: var(--pick-size);
-  height: var(--pick-size);
-  border-radius: 50%;
-  border: 2px solid var(--glow);
-  animation: ripple 620ms cubic-bezier(0.16, 0.84, 0.3, 1) both;
-}
-
-@keyframes ripple {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
-  20% { opacity: 0.85; }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.85); }
-}
-
-/* Black: wisps of smoke curl up. */
-.wisp {
-  width: calc(var(--pick-size) * 0.42);
-  height: calc(var(--pick-size) * 0.42);
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(214, 198, 238, 0.85) 0%, rgba(190, 168, 222, 0.4) 38%, rgba(190, 168, 222, 0) 70%);
-  animation: wisp 700ms ease-out both;
-}
-
-@keyframes wisp {
-  0% {
-    opacity: 0;
-    transform: translate(calc(-50% + var(--x) * var(--pick-size)), calc(-50% + var(--pick-size) * -0.38)) scale(0.5);
-  }
-  30% { opacity: 0.95; }
-  55% {
-    transform: translate(calc(-50% + (var(--x) - var(--drift)) * var(--pick-size)), calc(-50% + var(--pick-size) * -0.7)) scale(1.1) rotate(40deg);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(calc(-50% + (var(--x) + var(--drift)) * var(--pick-size)), calc(-50% + var(--pick-size) * -1.05)) scale(1.6) rotate(110deg);
-  }
-}
-
-/* Red: embers burst upward and fade as they fall back a little. */
-.ember {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--spark);
-  box-shadow: 0 0 6px 1px rgba(255, 122, 46, 0.85);
-  animation: ember 640ms cubic-bezier(0.1, 0.7, 0.4, 1) both;
-}
-
-@keyframes ember {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(1.2); }
-  15% { opacity: 1; }
-  70% {
-    opacity: 0.9;
-    transform: translate(calc(-50% + var(--dx) * var(--pick-size) * 0.85), calc(-50% + var(--dy) * var(--pick-size) * 0.85)) scale(0.9);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(calc(-50% + var(--dx) * var(--pick-size)), calc(-50% + var(--dy) * var(--pick-size) * 0.8)) scale(0.3);
-  }
-}
-
-/* Green: small leaves spiral out. */
-.leaf {
-  width: 11px;
-  height: 6px;
-  border-radius: 0 100% 0 100%;
-  background: var(--spark);
-  animation: leaf 680ms cubic-bezier(0.2, 0.7, 0.4, 1) both;
-}
-
-@keyframes leaf {
-  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--a)) translateX(calc(var(--pick-size) * 0.32)) rotate(0deg); }
-  25% { opacity: 1; }
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -50%) rotate(calc(var(--a) + 100deg)) translateX(calc(var(--pick-size) * 0.95)) rotate(220deg);
-  }
-}
-
-/* Colorless: a crystalline glint sweeps across and small facets twinkle. */
-.burst > .sweepClip {
-  z-index: 2;
-  width: var(--pick-size);
-  height: var(--pick-size);
-  border-radius: 50%;
-  overflow: hidden;
-  opacity: 1;
-  transform: translate(-50%, -50%);
-}
-
-.sweep {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(115deg, transparent 32%, rgba(255, 255, 255, 0.85) 50%, transparent 68%);
-  animation: sweep 560ms cubic-bezier(0.4, 0, 0.2, 1) both;
-}
-
-@keyframes sweep {
-  0% { transform: translateX(-110%); }
-  100% { transform: translateX(110%); }
-}
-
-.glint {
-  width: 8px;
-  height: 8px;
-  background: var(--spark);
-  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
-  animation: glint 420ms cubic-bezier(0.16, 0.84, 0.3, 1) both;
-}
-
-@keyframes glint {
-  0% { opacity: 0; transform: translate(calc(-50% + var(--x) * var(--pick-size) * 1.25), calc(-50% + var(--y) * var(--pick-size) * 1.25)) scale(0) rotate(0deg); }
-  50% { opacity: 1; transform: translate(calc(-50% + var(--x) * var(--pick-size) * 1.25), calc(-50% + var(--y) * var(--pick-size) * 1.25)) scale(1.2) rotate(45deg); }
-  100% { opacity: 0; transform: translate(calc(-50% + var(--x) * var(--pick-size) * 1.25), calc(-50% + var(--y) * var(--pick-size) * 1.25)) scale(0) rotate(90deg); }
+  width: 0;
+  height: 0;
+  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -2,6 +2,8 @@
 import { approvedCard, cardWithImage, customArtVersion, planeswalkerCard } from "../../fixtures";
 import type { PreviewCard } from "../../fixtureTypes";
 import type { PreviewState } from "../../types";
+import { FxBench } from "./FxBench";
+import { GoblinSheet } from "./goblins/GoblinSheet";
 import { MachineBench } from "./MachineBench";
 import { GeneratingScreen } from "./screens/GeneratingScreen";
 import { ReadyScreen } from "./screens/ReadyScreen";
@@ -27,6 +29,8 @@ export const forgeStates: PreviewState[] = [
   { id: "ready-medium", name: "Ready, medium reveal", render: () => <ReadyScreen tier="medium" entry={cardWithImage} /> },
   { id: "ready-strong", name: "Ready, strong reveal", render: () => <ReadyScreen tier="strong" entry={STRONG_CARD} /> },
   { id: "result", name: "Result", render: () => <ResultScreen /> },
+  { id: "fx", name: "Pixel effects", render: () => <FxBench /> },
+  { id: "goblins", name: "The goblin crew", render: () => <GoblinSheet /> },
   { id: "machine", name: "The forge", render: () => <MachineBench /> },
   { id: "symbols", name: "Mana symbols", render: () => <SymbolSheet /> },
 ];

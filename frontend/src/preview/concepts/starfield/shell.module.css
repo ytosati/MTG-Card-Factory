@@ -1,0 +1,158 @@
+/* Concept E "Starfield" (tasks.md T251): the page, its sky, header, places and footer. */
+.root {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow-x: clip;
+  background: var(--sf-ground);
+  color: var(--sf-ink);
+  font-family: var(--sf-sans);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.root *,
+.root *::before,
+.root *::after {
+  box-sizing: border-box;
+}
+
+.root :focus-visible {
+  outline: 2px solid var(--sf-violet-text);
+  outline-offset: 3px;
+}
+
+.root ::selection {
+  background: var(--sf-violet);
+  color: #fff;
+}
+
+/* The sky spans the page; the canvas inside it stays with the window while the page scrolls. */
+.sky {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.stars {
+  position: sticky;
+  top: 0;
+  display: block;
+  width: 100%;
+  height: min(100vh, 100%);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px var(--sf-gutter);
+  border-bottom: 1px solid var(--sf-rule);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--sf-serif);
+  font-size: 1.3125rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.mark {
+  display: grid;
+  color: var(--sf-ink);
+}
+
+.nav {
+  display: flex;
+  gap: 36px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.place {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sf-ink-muted);
+}
+
+.placeStar {
+  color: var(--sf-cyan);
+  opacity: 0;
+  transform: scale(0.4) rotate(-45deg);
+  transition: opacity var(--sf-medium) var(--sf-ease-out), transform var(--sf-medium) var(--sf-ease-out);
+}
+
+.place[aria-current="page"] {
+  color: var(--sf-ink);
+}
+
+.place[aria-current="page"] .placeStar {
+  opacity: 1;
+  transform: none;
+}
+
+.main {
+  flex: 1;
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 32px;
+  margin-top: 96px;
+  padding: 20px var(--sf-gutter) 28px;
+  border-top: 1px solid var(--sf-rule);
+  font-size: 0.8125rem;
+  color: var(--sf-ink-faint);
+}
+
+.notice {
+  margin: 0;
+  max-width: 70ch;
+}
+
+.source {
+  color: var(--sf-ink-muted);
+  text-decoration: underline;
+  text-decoration-color: var(--sf-rule-strong);
+  text-underline-offset: 4px;
+  transition: color var(--sf-fast) var(--sf-ease-out);
+}
+
+.source:hover {
+  color: var(--sf-ink);
+}
+
+@container (max-width: 599px) {
+  .bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    padding-block: 18px;
+  }
+
+  .nav {
+    gap: 24px;
+  }
+
+  .footer {
+    margin-top: 64px;
+  }
+}

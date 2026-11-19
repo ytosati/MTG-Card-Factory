@@ -1,0 +1,131 @@
+/* Concept E "Starfield" (tasks.md T251): the color picks as a small constellation, with orbits instead of glowing rings. */
+.sky {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px 28px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.five {
+  position: relative;
+  display: grid;
+  flex: 0 1 440px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  min-width: 0;
+}
+
+.lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.line {
+  stroke: var(--sf-cyan);
+  stroke-opacity: 0.7;
+  stroke-width: 1;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: draw var(--sf-medium) var(--sf-ease-out) both;
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+.slot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.or {
+  align-self: center;
+  padding-bottom: 22px;
+  font-family: var(--sf-serif);
+  font-style: italic;
+  font-size: 1.0625rem;
+  color: var(--sf-ink-faint);
+}
+
+/* The picks restyled for the night: no glow, the chosen symbol wears a tilted orbit in its own color. */
+.sky label[data-color] {
+  --pick-size: 48px;
+  gap: 12px;
+}
+
+.sky label[data-color] > input + span::after {
+  display: none;
+}
+
+.sky label[data-color] > input + span::before {
+  content: "";
+  position: absolute;
+  inset: 6px -11px;
+  border: 1px solid var(--glow);
+  border-radius: 50%;
+  opacity: 0;
+  transform: rotate(-24deg) scale(0.6);
+  transition: opacity var(--sf-medium) var(--sf-ease-out), transform var(--sf-medium) var(--sf-ease-out);
+}
+
+.sky label[data-color] > input:checked + span::before {
+  opacity: 0.85;
+  transform: rotate(-24deg);
+}
+
+.sky label[data-color] > span:last-child {
+  font-family: var(--sf-sans);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  color: var(--sf-ink-muted);
+}
+
+.sky label[data-color] > input:checked ~ span:last-child {
+  color: var(--glow);
+}
+
+.sky label[data-color] > input:focus-visible + span {
+  outline: 2px solid var(--sf-violet-text);
+  outline-offset: 12px;
+}
+
+.sky label[data-color="W"] { --glow: var(--sf-tint-w); }
+.sky label[data-color="U"] { --glow: var(--sf-tint-u); }
+.sky label[data-color="B"] { --glow: var(--sf-tint-b); }
+.sky label[data-color="R"] { --glow: var(--sf-tint-r); }
+.sky label[data-color="G"] { --glow: var(--sf-tint-g); }
+.sky label[data-color="C"] { --glow: var(--sf-tint-c); }
+
+@container (max-width: 599px) {
+  .sky {
+    flex-wrap: wrap;
+  }
+
+  .five {
+    flex: 1 1 100%;
+  }
+
+  .or {
+    padding: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .line {
+    animation: none;
+  }
+}
+
+:global([data-reduced-motion="true"]) .line {
+  animation: none;
+}

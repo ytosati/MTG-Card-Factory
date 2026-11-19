@@ -1,0 +1,323 @@
+/* Concept E "Starfield" (tasks.md T251): the observatory, a quiet stage with the card outline and the readings. */
+.stage {
+  position: relative;
+  padding: 24px 28px 28px;
+  background: var(--sf-ground);
+  border: 1px solid var(--sf-rule);
+}
+
+/* Viewfinder ticks in the four corners of the stage. */
+.stage::before,
+.stage::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-color: var(--sf-rule-strong);
+  border-style: solid;
+  pointer-events: none;
+}
+
+.stage::before {
+  top: -1px;
+  left: -1px;
+  border-width: 1px 0 0 1px;
+  border-color: var(--sf-cyan);
+}
+
+.stage::after {
+  right: -1px;
+  bottom: -1px;
+  border-width: 0 1px 1px 0;
+}
+
+.stageHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stageTitle {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sf-ink-muted);
+}
+
+.measure {
+  font-family: var(--sf-mono);
+  font-size: 0.6875rem;
+  color: var(--sf-ink-faint);
+}
+
+.cardWrap {
+  container-type: inline-size;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+/* The frame is a one-pixel band of the identity's colors round the empty card. */
+.frame {
+  --frame: var(--sf-rule-strong);
+  padding: 1px;
+  border-radius: 4.2cqi;
+  background: var(--frame);
+  transition: transform var(--sf-medium) var(--sf-ease-out);
+}
+
+.frame[data-generating="true"] {
+  transform: translateY(-4px);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 2.6cqi;
+  aspect-ratio: 63 / 88;
+  padding: 5cqi 5cqi 4cqi;
+  border-radius: calc(4.2cqi - 1px);
+  background: #12111d;
+  color: var(--sf-ink);
+}
+
+.titleBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3cqi;
+  min-height: 9cqi;
+  padding: 0 1cqi 2cqi;
+  border-bottom: 1px solid var(--sf-rule);
+}
+
+.name {
+  overflow: hidden;
+  font-family: var(--sf-serif);
+  font-size: 6cqi;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.name[data-empty="true"] {
+  font-style: italic;
+  color: var(--sf-ink-faint);
+}
+
+.manaValue {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 7.6cqi;
+  height: 7.6cqi;
+  border: 1px solid var(--sf-rule-strong);
+  border-radius: 50%;
+  font-family: var(--sf-mono);
+  font-size: 4.2cqi;
+}
+
+/* The art window: a faint reticle until art exists. */
+.art {
+  position: relative;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  aspect-ratio: 1.36;
+  border: 1px solid var(--sf-rule);
+  background:
+    linear-gradient(var(--sf-rule), var(--sf-rule)) center / 1px 100% no-repeat,
+    linear-gradient(var(--sf-rule), var(--sf-rule)) center / 100% 1px no-repeat;
+}
+
+.art::after {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 26cqi;
+  height: 26cqi;
+  border: 1px solid var(--sf-rule);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.art[data-art="generated"],
+.art[data-art="uploaded"] {
+  border-color: rgb(185 142 255 / 0.45);
+}
+
+.artLabel {
+  position: relative;
+  z-index: 1;
+  max-width: 80%;
+  padding: 0.8cqi 2cqi;
+  overflow: hidden;
+  background: #12111d;
+  font-size: 3.4cqi;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--sf-ink-muted);
+}
+
+.typeBar {
+  padding: 1.6cqi 1cqi;
+  border-block: 1px solid var(--sf-rule);
+  font-size: 4.2cqi;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.typeBar[data-empty="true"] {
+  font-weight: 400;
+  font-style: italic;
+  color: var(--sf-ink-faint);
+}
+
+.textBox {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  padding: 0 1cqi;
+}
+
+.idea {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--sf-serif);
+  font-size: 4.6cqi;
+  font-style: italic;
+  line-height: 1.38;
+  color: var(--sf-ink-muted);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+}
+
+.idea[data-empty="true"] {
+  color: var(--sf-ink-faint);
+}
+
+.customMark {
+  font-size: 3.4cqi;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sf-violet-text);
+}
+
+.runes {
+  position: absolute;
+  left: 50%;
+  bottom: -2cqi;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.footLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 8cqi;
+  padding: 0 1cqi;
+}
+
+.lang {
+  font-family: var(--sf-mono);
+  font-size: 3.2cqi;
+  letter-spacing: 0.08em;
+  color: var(--sf-ink-faint);
+}
+
+.stat {
+  padding: 0.8cqi 2.6cqi;
+  border: 1px solid var(--sf-rule-strong);
+  border-radius: 1cqi;
+  font-family: var(--sf-mono);
+  font-size: 4.2cqi;
+}
+
+/* The readings: a short table of what the outline cannot show. */
+.readings {
+  display: grid;
+  gap: 0;
+  margin: 28px 0 0;
+}
+
+.readings > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-top: 1px solid var(--sf-rule);
+}
+
+.readings dt {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sf-ink-faint);
+  white-space: nowrap;
+}
+
+.readings dd {
+  margin: 0;
+  text-align: right;
+  font-size: 0.875rem;
+  color: var(--sf-ink);
+}
+
+/* Narrow pages: the outline and its readings side by side, the outline small. */
+@container (max-width: 1023px) {
+  .stage {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    column-gap: 32px;
+  }
+
+  .stageHead {
+    grid-column: 1 / -1;
+  }
+
+  .cardWrap {
+    margin: 0;
+  }
+
+  .readings {
+    align-self: start;
+    margin: 0;
+  }
+}
+
+@container (max-width: 599px) {
+  .stage {
+    grid-template-columns: 124px minmax(0, 1fr);
+    column-gap: 18px;
+    padding: 18px 16px 20px;
+  }
+
+  .stageHead {
+    margin-bottom: 16px;
+  }
+
+  .readings > div {
+    flex-direction: column;
+    gap: 2px;
+    padding: 7px 0;
+  }
+
+  .readings dd {
+    text-align: left;
+    font-size: 0.8125rem;
+  }
+}

@@ -1,0 +1,292 @@
+/* Concept E "Starfield" (tasks.md T251): the form's parts: section rows, choices with orbits, chips and fields. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* A section: a narrow margin for the heading, a wide body for the controls, a hairline above. */
+.section {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  gap: 16px 40px;
+  padding: 36px 0 40px;
+  border-top: 1px solid var(--sf-rule);
+}
+
+.margin {
+  padding-top: 3px;
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  color: var(--sf-ink);
+}
+
+.headingStar {
+  flex: none;
+  color: var(--sf-violet-text);
+}
+
+.note {
+  margin: 6px 0 0 18px;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--sf-ink-faint);
+}
+
+.body {
+  min-width: 0;
+}
+
+@container (max-width: 767px) {
+  .section {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 28px 0 32px;
+  }
+
+  .note {
+    display: inline;
+    margin: 0;
+  }
+
+  .margin {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 14px;
+  }
+}
+
+/* A choice of one. */
+.choices {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.choices[data-layout="columns"] {
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+}
+
+.choices[data-layout="inline"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 36px;
+}
+
+.choice {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 24px 4px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.choices[data-layout="columns"] .choice + .choice {
+  border-left: 1px solid var(--sf-rule);
+}
+
+.choices[data-layout="columns"] .choice:first-child {
+  padding-left: 0;
+}
+
+.choices[data-layout="inline"] .choice {
+  padding: 2px 0;
+}
+
+.choiceHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.choiceName {
+  font-family: var(--sf-serif);
+  font-size: 1.375rem;
+  line-height: 1.2;
+  color: var(--sf-ink-muted);
+  transition: color var(--sf-fast) var(--sf-ease-out);
+}
+
+.choices[data-layout="inline"] .choiceName {
+  font-size: 1.1875rem;
+}
+
+.choice[data-checked="true"] .choiceName,
+.choice:hover .choiceName {
+  color: var(--sf-ink);
+}
+
+.meaning {
+  max-width: 30ch;
+  padding-left: 36px;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--sf-ink-muted);
+}
+
+.choice:has(input:focus-visible) .choiceHead {
+  outline: 2px solid var(--sf-violet-text);
+  outline-offset: 4px;
+  border-radius: var(--sf-radius);
+}
+
+/* The orbit: a hollow body at rest; the chosen one fills with violet and gains its tilted ring and moon. */
+.orbit {
+  flex: none;
+  overflow: visible;
+  color: var(--sf-ink-faint);
+}
+
+.orbit [data-part="core"] {
+  opacity: 0;
+  transform-origin: 13px 13px;
+  transform: scale(0.3);
+  transition: opacity var(--sf-fast) var(--sf-ease-out), transform var(--sf-medium) var(--sf-ease-out);
+}
+
+.orbit [data-part="ring"] {
+  opacity: 0;
+  transform-origin: 13px 13px;
+  transform: scale(0.55) rotate(-40deg);
+  transition: opacity var(--sf-medium) var(--sf-ease-out), transform var(--sf-medium) var(--sf-ease-out);
+}
+
+.orbit[data-checked="true"] {
+  color: var(--sf-violet-text);
+}
+
+.orbit[data-checked="true"] [data-part="core"],
+.orbit[data-checked="true"] [data-part="ring"] {
+  opacity: 1;
+  transform: none;
+}
+
+@container (max-width: 599px) {
+  .choices[data-layout="columns"] {
+    grid-auto-flow: row;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .choices[data-layout="columns"] .choice {
+    padding: 14px 0;
+  }
+
+  .choices[data-layout="columns"] .choice + .choice {
+    border-left: 0;
+    border-top: 1px solid var(--sf-rule);
+  }
+
+  .choices[data-layout="columns"] .choice:first-child {
+    padding-top: 0;
+  }
+
+  .meaning {
+    max-width: none;
+  }
+}
+
+/* Labels, hints and fields. */
+.label {
+  display: block;
+  margin: 0 0 10px;
+  padding: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sf-ink-muted);
+}
+
+.hint {
+  margin: 8px 0 0;
+  font-size: 0.8125rem;
+  color: var(--sf-ink-faint);
+}
+
+.field {
+  min-width: 0;
+}
+
+.count {
+  font-family: var(--sf-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: var(--sf-ink-faint);
+  font-variant-numeric: tabular-nums;
+  transition: color var(--sf-fast) var(--sf-ease-out);
+}
+
+.count[data-near="true"] {
+  color: var(--sf-violet-text);
+}
+
+/* Chips: small square toggles with a hairline; a chosen chip turns indigo with a violet edge. */
+.chipSet {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  position: relative;
+  cursor: pointer;
+}
+
+.chipFace {
+  display: inline-block;
+  padding: 7px 12px;
+  border: 1px solid var(--sf-rule-strong);
+  border-radius: var(--sf-radius);
+  font-size: 0.8125rem;
+  color: var(--sf-ink-muted);
+  transition: color var(--sf-fast) var(--sf-ease-out), border-color var(--sf-fast) var(--sf-ease-out),
+    background-color var(--sf-fast) var(--sf-ease-out);
+}
+
+.chip:hover .chipFace {
+  color: var(--sf-ink);
+  border-color: rgb(233 241 251 / 0.4);
+}
+
+.chip input:checked + .chipFace {
+  color: var(--sf-ink);
+  background: var(--sf-indigo);
+  border-color: var(--sf-violet);
+}
+
+.chip input:focus-visible + .chipFace {
+  outline: 2px solid var(--sf-violet-text);
+  outline-offset: 3px;
+}
+
+.chip:active .chipFace {
+  transform: translateY(1px);
+}

@@ -71,7 +71,9 @@ export const starfieldCopy = {
   required: "Required",
   optional: "Optional",
   baseCardLabel: "Base card",
-  baseCardHint: "Search by name, then choose the printing and the face.",
+  baseCardHint:
+    "An existing card as a design example: the new card may follow a similar effect or strategy, in your colors. " +
+    "With generated art, the image copies its frame and layout. Search by name, then choose the printing and the face.",
   oneFaceHint: "Only cards with one face can have a custom art version.",
   searchLabel: "Card name",
   searchPlaceholder: "Search by name",
@@ -87,10 +89,18 @@ export const starfieldCopy = {
     { value: "uploaded", name: "Uploaded" },
   ] as { value: ArtChoice; name: string }[],
   artDescriptionLabel: "Art description",
-  artDescriptionHint: "Optional. What the art shows; without it, the art follows the card.",
+  artDescriptionHint:
+    "Optional. Left empty, the image follows the finished card: its name, type, rules text, colors and design intent.",
+  noArtHint: "The card is text only. Art can be generated or uploaded later.",
+  summary: "Describe the card, choose its color identity and power level, then generate it.",
+  tokens: {
+    low: "Uses the fewest tokens.",
+    medium: "Uses more tokens than Low.",
+    high: "Uses the most tokens: more cards compared, and design notes.",
+  },
   billing: "Art is billed by the image provider, separately from the text.",
   uploadAction: "Choose an image",
-  uploadHint: "PNG, JPEG or WebP, up to 10 MB. Checked when chosen.",
+  uploadHint: "Your image is used as is, as the whole art of the card. PNG, JPEG or WebP, up to 10 MB. Checked when chosen.",
   uploadNone: "No file chosen",
   outlineLabel: "Card outline",
   untitled: "Name comes with the card",

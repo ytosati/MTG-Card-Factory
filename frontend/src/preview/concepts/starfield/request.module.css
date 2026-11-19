@@ -15,9 +15,9 @@
 .title {
   margin: 0;
   font-family: var(--sf-serif);
-  font-size: 4.75rem;
+  font-size: 3rem;
   font-weight: 400;
-  line-height: 0.95;
+  line-height: 1;
   letter-spacing: -0.015em;
 }
 
@@ -62,7 +62,7 @@
   border-bottom: 1px solid var(--sf-rule-strong);
   border-radius: 0;
   font-family: var(--sf-serif);
-  font-size: 1.75rem;
+  font-size: 1.5625rem;
   line-height: 1.3;
   color: var(--sf-ink);
   transition: border-color var(--sf-fast) var(--sf-ease-out);
@@ -99,7 +99,7 @@
   border-bottom: 1px solid var(--sf-rule-strong);
   border-radius: 0;
   font: inherit;
-  font-size: 1rem;
+  font-size: 0.875rem;
   color: var(--sf-ink);
   transition: border-color var(--sf-fast) var(--sf-ease-out);
 }
@@ -123,7 +123,7 @@
   field-sizing: content;
   min-height: 2.6em;
   font-family: var(--sf-serif);
-  font-size: 1.1875rem;
+  font-size: 1.0625rem;
   line-height: 1.4;
 }
 
@@ -170,7 +170,7 @@
 .slash {
   padding-bottom: 8px;
   font-family: var(--sf-serif);
-  font-size: 1.5rem;
+  font-size: 1.375rem;
   line-height: 1;
   color: var(--sf-ink-faint);
 }
@@ -242,7 +242,7 @@
 
 .resultName {
   font-family: var(--sf-serif);
-  font-size: 1.1875rem;
+  font-size: 1.0625rem;
 }
 
 .resultType {
@@ -279,7 +279,7 @@
 .chosenName {
   margin: 0;
   font-family: var(--sf-serif);
-  font-size: 1.5rem;
+  font-size: 1.375rem;
   line-height: 1.2;
 }
 
@@ -496,7 +496,7 @@
   }
 
   .title {
-    font-size: 4rem;
+    font-size: 3.625rem;
   }
 
   .action {
@@ -524,11 +524,11 @@
   }
 
   .title {
-    font-size: 3.25rem;
+    font-size: 2.9375rem;
   }
 
   .idea {
-    font-size: 1.375rem;
+    font-size: 1.25rem;
   }
 
   .grid,
@@ -552,4 +552,30 @@
 :global([data-reduced-motion="true"]) .reveal,
 :global([data-reduced-motion="true"]) .generate:disabled .generateStar {
   animation: none;
+}
+
+/* The token cost of the chosen effort, as three steps that fill. */
+.tokenNote {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 0;
+  font-size: 0.8125rem;
+  color: var(--sf-ink-soft, #b9bdd6);
+}
+
+.tokenMeter {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.tokenMeter span {
+  width: 14px;
+  height: 4px;
+  border-radius: 1px;
+  background: rgb(233 241 251 / 0.16);
+}
+
+.tokenMeter span[data-on="true"] {
+  background: #8b3dff;
 }

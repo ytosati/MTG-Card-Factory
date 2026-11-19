@@ -153,6 +153,7 @@ function ArtPicker({ draft, patch, labelledBy }: { draft: RequestDraft; patch: P
   return (
     <div className={styles.stack}>
       <Choices labelledBy={labelledBy} layout="inline" choices={choices} value={draft.art} onChange={(art) => patch({ art })} />
+      {draft.art === "none" ? <p className={parts.hint}>{copy.noArtHint}</p> : null}
       {draft.art === "generated" ? (
         <div className={styles.reveal}>
           <Field label={copy.artDescriptionLabel} htmlFor={descriptionId} hint={copy.artDescriptionHint} hintId={hintId}>
@@ -292,7 +293,7 @@ export function RequestScreen({ initial }: { initial?: Partial<RequestDraft> }) 
         <header className={styles.head}>
           <div>
             <h1 className={styles.title}>{requestCopy.title}</h1>
-            <p className={styles.summary}>{custom ? copy.customSummary : requestCopy.summary}</p>
+            <p className={styles.summary}>{custom ? copy.customSummary : copy.summary}</p>
           </div>
           <div className={styles.kind}>
             <span id="sf-kind" className={parts.srOnly}>
@@ -350,6 +351,14 @@ export function RequestScreen({ initial }: { initial?: Partial<RequestDraft> }) 
 
                 <Section id="sf-effort" title={requestCopy.effortLabel}>
                   <Choices labelledBy="sf-effort" choices={requestCopy.efforts} value={draft.effort} onChange={(effort) => patch({ effort })} />
+                  <p className={styles.tokenNote}>
+                    <span className={styles.tokenMeter} aria-hidden="true">
+                      {(["low", "medium", "high"] as const).map((level, index) => (
+                        <span key={level} data-on={index <= ["low", "medium", "high"].indexOf(draft.effort) ? "true" : "false"} />
+                      ))}
+                    </span>
+                    {copy.tokens[draft.effort]}
+                  </p>
                 </Section>
 
                 <Section id="sf-language" title={requestCopy.languageLabel}>

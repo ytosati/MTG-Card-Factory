@@ -226,7 +226,8 @@ function Shell() {
 
   // The address names the screen shown, so reloading or going back opens it again.
   useEffect(() => {
-    if (current !== null && current.route !== hash) {
+    // The gallery's address belongs to the gallery, which App shows in place of the shell.
+    if (current !== null && current.route !== hash && !isPreviewAddress(hash)) {
       window.history.replaceState(null, "", current.route);
       setHash(current.route);
     }

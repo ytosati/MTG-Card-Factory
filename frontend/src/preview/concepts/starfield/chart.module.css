@@ -1,0 +1,342 @@
+/* Concept E "Starfield" (tasks.md T251): the card as a celestial chart, its making and its back. Sized by its box:
+   every measure inside is a share of the card's width (cqi). */
+.card {
+  container-type: inline-size;
+  width: 100%;
+}
+
+/* The frame is a one-pixel band of the identity's colors round the face. */
+.frame {
+  --frame: var(--sf-rule-strong);
+  padding: 1px;
+  border-radius: 4.4cqi;
+  background: var(--frame);
+}
+
+.face {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2.4cqi;
+  aspect-ratio: 63 / 88;
+  padding: 5cqi 4.6cqi 3.6cqi;
+  overflow: hidden;
+  border-radius: calc(4.4cqi - 1px);
+  background: #12111d;
+  color: var(--sf-ink);
+}
+
+/* Two fine corner ticks inside the face, like the marks of a plate. */
+.tick {
+  position: absolute;
+  width: 3.2cqi;
+  height: 3.2cqi;
+  border: 0 solid var(--sf-rule-strong);
+  pointer-events: none;
+}
+
+.tick[data-corner="tl"] {
+  top: 2cqi;
+  left: 2cqi;
+  border-width: 1px 0 0 1px;
+}
+
+.tick[data-corner="br"] {
+  right: 2cqi;
+  bottom: 2cqi;
+  border-width: 0 1px 1px 0;
+}
+
+.nameBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2.4cqi;
+  min-height: 8.6cqi;
+  padding: 0 0.6cqi 1.8cqi;
+  border-bottom: 1px solid var(--sf-rule);
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--sf-serif);
+  font-size: 6.2cqi;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cost {
+  flex: none;
+  gap: 0.6cqi;
+}
+
+/* The art window: the image, or a patch of sky. */
+.art {
+  position: relative;
+  flex: none;
+  aspect-ratio: 1.36;
+  overflow: hidden;
+  border: 1px solid var(--sf-rule);
+  background: #0c0b16;
+  color: var(--sf-ink);
+}
+
+.art[data-long="true"] {
+  aspect-ratio: 1.62;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 36%;
+}
+
+.typeBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2cqi;
+  padding: 1.4cqi 0.6cqi;
+  border-block: 1px solid var(--sf-rule);
+}
+
+.type {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 4cqi;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rarity {
+  display: grid;
+  flex: none;
+  color: var(--sf-ink-faint);
+}
+
+.rarity svg {
+  width: 4.2cqi;
+  height: 4.2cqi;
+}
+
+.rarity[data-rarity="uncommon"] {
+  color: var(--sf-ink);
+}
+
+.rarity[data-rarity="rare"] {
+  color: var(--sf-violet-text);
+}
+
+.rarity[data-rarity="mythic"] {
+  color: var(--sf-cyan);
+}
+
+.text {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  padding: 0 0.6cqi;
+  overflow: hidden;
+  font-family: var(--sf-serif);
+  font-size: 4.5cqi;
+  line-height: 1.34;
+}
+
+.textWrap {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.art[data-long="true"] ~ .textWrap .text {
+  font-size: 3.9cqi;
+}
+
+.text p {
+  margin: 0 0 1.4cqi;
+}
+
+.inline {
+  display: inline-block;
+  vertical-align: -0.14em;
+  margin: 0 0.06em;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 7.4cqi;
+  padding: 0 0.6cqi;
+}
+
+.meta {
+  font-family: var(--sf-mono);
+  font-size: 2.9cqi;
+  letter-spacing: 0.1em;
+  color: var(--sf-ink-faint);
+}
+
+.stat {
+  padding: 0.6cqi 2.6cqi;
+  border: 1px solid var(--sf-rule-strong);
+  border-radius: 1cqi;
+  font-family: var(--sf-mono);
+  font-size: 4.4cqi;
+}
+
+/* Starting loyalty sits in a small diamond. */
+.loyalty {
+  display: grid;
+  place-items: center;
+  width: 7.4cqi;
+  height: 7.4cqi;
+  border: 1px solid var(--sf-violet-text);
+  transform: rotate(45deg);
+  font-family: var(--sf-mono);
+  font-size: 4.2cqi;
+}
+
+.loyalty > span {
+  transform: rotate(-45deg);
+}
+
+/* ---- The card while it is generated. ---- */
+
+/* Before the draft, a faint dotted baseline waits where the name and the type line will be written. */
+.guide {
+  display: block;
+  flex: 1;
+  max-width: 62%;
+  height: 0;
+  border-top: 1px dotted rgb(185 142 255 / 0.32);
+}
+
+.guide[data-short="true"] {
+  max-width: 46%;
+}
+
+.runeName,
+.runeType {
+  display: block;
+  min-width: 0;
+}
+
+.runeName {
+  height: 5.8cqi;
+}
+
+.runeType {
+  height: 3.4cqi;
+}
+
+/* The cost waits as empty rings and kindles in the card's colors once the name is written. */
+.pips {
+  display: flex;
+  flex: none;
+  gap: 1.2cqi;
+}
+
+.pips > span {
+  width: 4.6cqi;
+  height: 4.6cqi;
+  border: 1px solid var(--sf-rule-strong);
+  border-radius: 50%;
+  transition:
+    border-color 500ms var(--sf-ease-out),
+    box-shadow 500ms var(--sf-ease-out);
+}
+
+.pips[data-on="true"] > span {
+  border-color: #dcc8ff;
+  box-shadow:
+    0 0 6px rgb(139 61 255 / 0.7),
+    inset 0 0 3px rgb(200 240 255 / 0.6);
+}
+
+.rarityMark {
+  display: grid;
+  flex: none;
+  color: var(--sf-rule-strong);
+  transition: color 600ms var(--sf-ease-out) 900ms;
+}
+
+.rarityMark svg {
+  width: 4.2cqi;
+  height: 4.2cqi;
+}
+
+.rarityMark[data-on="true"] {
+  color: var(--sf-cyan);
+}
+
+.runeText {
+  display: grid;
+  gap: 2.9cqi;
+  padding-top: 1.6cqi;
+}
+
+.runeRow {
+  display: block;
+  height: 3.3cqi;
+}
+
+.veilStat {
+  display: block;
+  width: 9cqi;
+  height: 4.6cqi;
+  border: 1px solid var(--sf-rule);
+  transition: border-color var(--sf-medium) var(--sf-ease-out);
+}
+
+.veilStat[data-on="true"] {
+  border-color: var(--sf-violet-text);
+}
+
+/* Finished: the frame breathes once in violet. */
+.working[data-state="done"] .frame {
+  animation: settle 1400ms var(--sf-ease-out) 1;
+}
+
+@keyframes settle {
+  0% {
+    box-shadow: 0 0 0 0 rgb(139 61 255 / 0.6);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgb(139 61 255 / 0);
+  }
+}
+
+/* ---- The back. ---- */
+
+.back {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .working[data-state="done"] .frame {
+    animation: none;
+  }
+
+  .pips > span,
+  .rarityMark {
+    transition: none;
+  }
+}
+
+:global([data-reduced-motion="true"]) .working[data-state="done"] .frame {
+  animation: none;
+}
+
+:global([data-reduced-motion="true"]) .pips > span,
+:global([data-reduced-motion="true"]) .rarityMark {
+  transition: none;
+}

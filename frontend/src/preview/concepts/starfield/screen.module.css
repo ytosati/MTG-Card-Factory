@@ -1,0 +1,225 @@
+/* Concept E "Starfield" (tasks.md T251): what the screens after Request share: the page, its title, rubrics and actions. */
+.page {
+  padding: 64px var(--sf-gutter) 0;
+  color-scheme: dark;
+}
+
+/* A small tracked label over a title or a column. */
+.rubric {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 18px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sf-ink-muted);
+}
+
+.rubricStar {
+  flex: none;
+  color: var(--sf-cyan);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sf-serif);
+  font-size: 4.75rem;
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
+}
+
+.summary {
+  max-width: 50ch;
+  margin: 20px 0 0;
+  color: var(--sf-ink-muted);
+}
+
+/* The quiet label of a group of facts. */
+.label {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sf-ink-faint);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 24px;
+}
+
+/* The one main action of a screen: solid violet, square-cut. */
+.primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 15px 30px;
+  background: var(--sf-violet);
+  border: 0;
+  border-radius: var(--sf-radius);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #fff;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--sf-fast) var(--sf-ease-out), transform var(--sf-fast) var(--sf-ease-out);
+}
+
+.primary:hover {
+  background: var(--sf-violet-hover);
+}
+
+.primary:active {
+  transform: translateY(1px);
+}
+
+.primaryStar {
+  transition: transform var(--sf-medium) var(--sf-ease-out);
+}
+
+.primary:hover .primaryStar {
+  transform: rotate(45deg);
+}
+
+/* A secondary action: a hairline box, ink text. */
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 20px;
+  background: transparent;
+  border: 1px solid var(--sf-rule-strong);
+  border-radius: var(--sf-radius);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--sf-ink);
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color var(--sf-fast) var(--sf-ease-out), color var(--sf-fast) var(--sf-ease-out);
+}
+
+.secondary:hover {
+  border-color: var(--sf-violet-text);
+}
+
+.secondary:active {
+  transform: translateY(1px);
+}
+
+/* A plain text action, underlined with a hairline. */
+.link {
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--sf-violet-text);
+  text-decoration: underline;
+  text-decoration-color: rgb(185 142 255 / 0.4);
+  text-underline-offset: 4px;
+  cursor: pointer;
+  transition: color var(--sf-fast) var(--sf-ease-out), text-decoration-color var(--sf-fast) var(--sf-ease-out);
+}
+
+.link:hover {
+  color: var(--sf-ink);
+  text-decoration-color: var(--sf-ink);
+}
+
+/* A stage: a hairline box with viewfinder ticks in two corners, the place where a card sits. */
+.stage {
+  position: relative;
+  border: 1px solid var(--sf-rule);
+  background: rgb(14 13 22 / 0.72);
+}
+
+.stage::before,
+.stage::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-style: solid;
+  pointer-events: none;
+}
+
+.stage::before {
+  top: -1px;
+  left: -1px;
+  border-width: 1px 0 0 1px;
+  border-color: var(--sf-cyan);
+}
+
+.stage::after {
+  right: -1px;
+  bottom: -1px;
+  border-width: 0 1px 1px 0;
+  border-color: var(--sf-rule-strong);
+}
+
+/* Facts in ruled rows: the term in small caps on the left, the value on the right. */
+.facts {
+  margin: 0;
+}
+
+.facts > div {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.9fr) minmax(0, 1.4fr);
+  gap: 4px 24px;
+  align-items: baseline;
+  padding: 13px 0;
+  border-top: 1px solid var(--sf-rule);
+}
+
+.facts > div:last-child {
+  border-bottom: 1px solid var(--sf-rule);
+}
+
+.facts dt {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sf-ink-faint);
+}
+
+.facts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@container (max-width: 1023px) {
+  .title {
+    font-size: 4rem;
+  }
+}
+
+@container (max-width: 599px) {
+  .page {
+    padding-top: 40px;
+  }
+
+  .title {
+    font-size: 3rem;
+  }
+
+  .facts > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .primary {
+    width: 100%;
+  }
+}

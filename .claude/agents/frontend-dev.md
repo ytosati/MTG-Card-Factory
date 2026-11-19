@@ -45,7 +45,9 @@ Rules:
 - Follow `frontend/DESIGN.md` once it exists (the design direction) and the
   Interface section of specs/code-standards.md (document structure,
   identity, shapes and motion, content). A screen is not done when it is
-  merely correct: compare it with the direction before finishing.
+  merely correct: it must meet the Design bar of specs/tasks.md (distinctive,
+  striking, never template-like). Compare it with the direction before
+  finishing.
 - For a screen task, say in the report how to reach the screen in the
   running application.
 - Follow specs/code-standards.md (comments, structure). Do not commit, push or

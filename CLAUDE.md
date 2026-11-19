@@ -76,6 +76,9 @@ Development commands. End users start the application with the launcher
   only what its demo needs (specs/tasks.md, "Delivery method").
 - Work from specs/tasks.md one milestone at a time, a feature at a time;
   related tasks are done together. Nothing outside the milestone.
+- Each milestone follows the cycle in specs/tasks.md: build in one go, check it
+  in the running application, hand over a visual test guide, apply the
+  maintainer's notes, close. Screens meet the Design bar.
 - Keep the process light (specs/tasks.md, "Testing policy" and "Process"):
   small changes are made directly, tests cover rules, keys, ownership and the
   main path, and there is one review per milestone.

@@ -1,0 +1,153 @@
+/* Concept E "Starfield" (tasks.md T251): the generation steps as a vertical constellation. */
+.wrap {
+  position: relative;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  column-gap: 18px;
+}
+
+.lines {
+  grid-column: 1;
+  overflow: visible;
+}
+
+.line {
+  fill: none;
+  stroke: var(--sf-ink);
+  stroke-opacity: 0.55;
+  stroke-width: 1;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 700ms var(--sf-ease-out);
+}
+
+.line[data-drawn="true"] {
+  stroke-dashoffset: 0;
+}
+
+.halo {
+  fill: none;
+  stroke: var(--sf-violet-text);
+  stroke-width: 0.8;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.point {
+  fill: var(--sf-ink);
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0.3);
+  transition: opacity var(--sf-medium) var(--sf-ease-out), transform 420ms var(--sf-ease-out);
+}
+
+.dot {
+  fill: var(--sf-ink-faint);
+  transition: fill var(--sf-medium) var(--sf-ease-out);
+}
+
+.star[data-phase="done"] .point {
+  opacity: 1;
+  transform: none;
+}
+
+.star[data-phase="done"] .dot {
+  fill: var(--sf-cyan);
+}
+
+.star[data-phase="running"] .dot {
+  fill: var(--sf-violet-text);
+}
+
+.star[data-phase="running"] .halo {
+  animation: pulse 1.6s var(--sf-ease-out) infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.4);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+}
+
+.list {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--sf-ink-faint);
+  transition: color var(--sf-medium) var(--sf-ease-out);
+}
+
+.number {
+  font-family: var(--sf-mono);
+  font-size: 0.75rem;
+  color: var(--sf-ink-faint);
+}
+
+.name {
+  font-size: 0.9375rem;
+}
+
+.step[data-phase="done"] {
+  color: var(--sf-ink-muted);
+}
+
+.step[data-phase="running"] {
+  color: var(--sf-ink);
+}
+
+.step[data-phase="running"] .name {
+  font-family: var(--sf-serif);
+  font-size: 1.25rem;
+  line-height: 1.15;
+}
+
+.step[data-phase="running"] .number {
+  color: var(--sf-violet-text);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .star[data-phase="running"] .halo {
+    animation: none;
+    opacity: 0.8;
+  }
+
+  .line,
+  .point {
+    transition: none;
+  }
+}
+
+:global([data-reduced-motion="true"]) .star[data-phase="running"] .halo {
+  animation: none;
+  opacity: 0.8;
+}
+
+:global([data-reduced-motion="true"]) .line,
+:global([data-reduced-motion="true"]) .point {
+  transition: none;
+}

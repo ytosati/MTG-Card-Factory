@@ -1,0 +1,485 @@
+/* Concept E "Starfield" (tasks.md T251): the card page: card, rules text and verdicts on top, ruled sections below. */
+.page {
+  padding-top: 56px;
+}
+
+.top {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) 280px;
+  align-items: start;
+  gap: 48px 56px;
+  padding-bottom: 56px;
+}
+
+.figure {
+  display: grid;
+  gap: 16px;
+  justify-items: start;
+}
+
+.figure > div {
+  width: 100%;
+}
+
+/* The card text in rules format, set like a card page. */
+.rules {
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.nameRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--sf-rule-strong);
+}
+
+.name {
+  margin: 0;
+  font-family: var(--sf-serif);
+  font-size: 3.25rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.cost {
+  gap: 4px;
+}
+
+.typeLine {
+  margin: 0;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--sf-rule);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.rulesText {
+  padding: 18px 0 4px;
+  font-family: var(--sf-serif);
+  font-size: 1.3125rem;
+  line-height: 1.5;
+}
+
+.rulesText p {
+  margin: 0 0 12px;
+}
+
+.stat {
+  display: inline-block;
+  margin: 6px 0 0;
+  padding: 4px 14px;
+  border: 1px solid var(--sf-rule-strong);
+  border-radius: var(--sf-radius);
+  font-family: var(--sf-mono);
+  font-size: 1.0625rem;
+}
+
+.facts {
+  margin-top: 32px;
+}
+
+.capital {
+  text-transform: capitalize;
+}
+
+.actions {
+  margin-top: 32px;
+}
+
+/* The side column: the verdicts. */
+.side {
+  display: grid;
+  gap: 40px;
+  padding-left: 32px;
+  border-left: 1px solid var(--sf-rule);
+}
+
+.verdict {
+  display: grid;
+  gap: 10px;
+}
+
+.verdictWord {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 0;
+  font-family: var(--sf-serif);
+  font-size: 1.75rem;
+  line-height: 1.1;
+}
+
+/* Approved: a lit cyan point. Rejected: an empty rose ring. */
+.verdictMark {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--sf-cyan);
+  box-shadow: 0 0 0 4px rgb(91 210 254 / 0.16);
+}
+
+.verdict[data-status="rejected"] .verdictWord {
+  color: #f5b4c0;
+}
+
+.verdict[data-status="rejected"] .verdictMark {
+  background: transparent;
+  border: 1.5px solid #f5b4c0;
+  box-shadow: none;
+}
+
+.quiet {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--sf-ink-muted);
+}
+
+.prose {
+  max-width: 64ch;
+  margin: 0;
+  font-family: var(--sf-serif);
+  font-size: 1.1875rem;
+  line-height: 1.5;
+}
+
+.prose[data-empty="true"] {
+  font-family: var(--sf-sans);
+  font-size: 0.875rem;
+  color: var(--sf-ink-muted);
+}
+
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checks li {
+  padding: 3px 10px;
+  border: 1px solid var(--sf-rule);
+  border-radius: var(--sf-radius);
+  font-size: 0.8125rem;
+  color: var(--sf-ink-muted);
+}
+
+.causes {
+  display: grid;
+  gap: 0;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: cause;
+}
+
+.causes li {
+  display: grid;
+  gap: 4px;
+  padding: 12px 0;
+  border-top: 1px solid var(--sf-rule);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.causeCheck {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #f5b4c0;
+}
+
+/* The power indicator: one line of three states, the assessed one lit in violet. */
+.power {
+  display: grid;
+  gap: 8px;
+}
+
+.powerRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 16px;
+}
+
+.scale {
+  display: flex;
+  align-items: baseline;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sf-ink-faint);
+}
+
+.scale li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.scale li + li::before {
+  content: "·";
+  margin: 0 10px;
+  color: var(--sf-ink-faint);
+}
+
+.scale li[data-on="true"] {
+  color: var(--sf-violet-text);
+}
+
+.scaleStar {
+  flex: none;
+  color: var(--sf-violet-text);
+}
+
+/* The comparables: compact entries of an existing card's name, cost, type line and role. */
+.compared {
+  display: grid;
+  gap: 12px;
+}
+
+.comparedList {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.comparedList li {
+  display: grid;
+  gap: 3px;
+  padding: 12px 0;
+  border-top: 1px solid var(--sf-rule);
+}
+
+.comparedList li:first-child {
+  padding-top: 2px;
+  border-top: 0;
+}
+
+.comparedHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.comparedName {
+  min-width: 0;
+  font-family: var(--sf-serif);
+  font-size: 1.125rem;
+  line-height: 1.25;
+}
+
+.comparedCost {
+  flex: none;
+}
+
+.comparedType {
+  font-size: 0.8125rem;
+  color: var(--sf-ink-muted);
+}
+
+.comparedRole {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--sf-serif);
+  font-size: 0.9375rem;
+  font-style: italic;
+  color: var(--sf-violet-text);
+}
+
+.comparedStar {
+  flex: none;
+  align-self: center;
+  color: var(--sf-cyan);
+}
+
+.justification {
+  margin: 4px 0 0;
+  font-family: var(--sf-serif);
+  font-size: 1.0625rem;
+  line-height: 1.45;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--sf-ink-faint);
+}
+
+/* The quiet sections below. */
+.notes {
+  display: grid;
+  gap: 10px;
+  max-width: 64ch;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notes li {
+  position: relative;
+  padding-left: 22px;
+}
+
+.notes li::before {
+  content: "";
+  position: absolute;
+  top: 0.7em;
+  left: 2px;
+  width: 9px;
+  height: 1px;
+  background: var(--sf-violet-text);
+}
+
+.usage {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.usage th,
+.usage td {
+  padding: 10px 12px 10px 0;
+  border-bottom: 1px solid var(--sf-rule);
+  text-align: left;
+  vertical-align: baseline;
+}
+
+.usage thead th {
+  padding-top: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sf-ink-faint);
+}
+
+.usage tfoot th,
+.usage tfoot td {
+  border-bottom: 0;
+  font-weight: 600;
+}
+
+.usage .num {
+  padding-right: 0;
+  text-align: right;
+  font-family: var(--sf-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.usage thead .num {
+  font-family: var(--sf-sans);
+}
+
+.usage tr[data-failed="true"] td {
+  color: var(--sf-ink-muted);
+}
+
+.mono {
+  font-family: var(--sf-mono);
+  color: var(--sf-ink-faint);
+}
+
+.model {
+  font-family: var(--sf-mono);
+  font-size: 0.8125rem;
+  color: var(--sf-ink-muted);
+  overflow-wrap: anywhere;
+}
+
+.failed {
+  margin-left: 10px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #f5b4c0;
+}
+
+/* Medium pages: card and text side by side, the verdicts below as two columns. */
+@container (max-width: 1023px) {
+  .top {
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 40px;
+  }
+
+  .side {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 40px;
+    padding: 32px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--sf-rule);
+  }
+
+  .name {
+    font-size: 2.625rem;
+  }
+}
+
+@container (max-width: 599px) {
+  .top {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .figure {
+    justify-items: center;
+  }
+
+  .figure > div {
+    width: min(260px, 100%);
+  }
+
+  .side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container (max-width: 599px) {
+  .page {
+    padding-top: 36px;
+  }
+
+  .name {
+    font-size: 2.25rem;
+  }
+
+  .rulesText {
+    font-size: 1.1875rem;
+  }
+
+  .usage {
+    font-size: 0.8125rem;
+  }
+
+  .usage thead th {
+    letter-spacing: 0.06em;
+  }
+
+  .usage .model {
+    display: block;
+  }
+}
+
+/* Facts inside a section start without the rule the section already draws. */
+.sections dl > div:first-child {
+  padding-top: 0;
+  border-top: 0;
+}

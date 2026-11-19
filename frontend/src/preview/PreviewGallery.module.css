@@ -60,6 +60,53 @@
 }
 
 /* The frame is the query container of the screens, so they lay out for the chosen width. */
+/* A state alone at the window's own size, with no toolbar or frame. */
+.full {
+  container-type: inline-size;
+  min-height: 100vh;
+}
+
+/* The page navigator of the full window: small, in a corner, above everything a state draws. */
+.navigator {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  font: 13px/1.2 system-ui, sans-serif;
+  color: #e9f1fb;
+  background: #0b0a12;
+  border: 1px solid #34345a;
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.45);
+}
+
+.navigator button,
+.navigator select,
+.navigator a {
+  height: 28px;
+  padding: 0 10px;
+  font: inherit;
+  color: inherit;
+  background: #1b1c3a;
+  border: 1px solid #34345a;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.navigator a {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.navigator select {
+  max-width: 260px;
+}
+
 .frame {
   container-type: inline-size;
   margin: 0 auto;

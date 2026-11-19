@@ -58,24 +58,62 @@ overrides the "Done when" lines of individual tasks wherever they ask for more.
 - Tests never touch the network or a real provider; they use the fake provider
   and fictional cards written by hand.
 
+## Milestone cycle: build, see, adjust
+
+Every milestone runs the same short cycle, so a whole milestone costs the
+maintainer little effort and every result can be seen:
+
+1. **Build.** The pending tasks run in one go, grouped by feature, with no
+   stop except a decision that belongs to the maintainer.
+2. **See it working.** Before handing over, the application is started and the
+   demo is walked in a browser; each new or changed screen is checked at
+   desktop and phone widths against `frontend/DESIGN.md`, and what looks
+   broken, plain or generic is fixed then.
+3. **Visual test guide.** The maintainer receives a short guide: how to start
+   the application, then numbered steps, each with what to do, what should be
+   seen and a screenshot, and a list of what is new.
+4. **Adjust.** The maintainer's notes are applied as a batch, directly, with
+   no new task IDs (commits cite the milestone's review task), and the guide
+   steps they touch are shown again. This repeats until the maintainer is
+   satisfied.
+5. **Close.** Suites pass, one review of the milestone diff, merge into
+   `main`.
+
+Every milestone is visual: its demo runs in the application's screens, never
+only through the API or the logs. A milestone whose work is mostly backend
+(providers, validation, data) shows its result on a screen it already has or
+adds the smallest screen part that shows it.
+
+## Design bar
+
+The interface is a showcase, not a form: distinctive, striking and crafted,
+in the identity of `frontend/DESIGN.md` (Milestone 3d). A screen that works
+but looks plain, template-like or generic is not done. Screens are judged by
+looking at them in the running application, not by tests.
+
 ## Process
 
+- Milestone order: 3d, 3b, 4, 6, 7, 5, 8, 9, 10, then 10b to 17. Art and the
+  library come before the remaining validators so the application becomes
+  visual early; nothing is cut.
 - One milestone at a time, on its own branch created from `main`
-  (`milestone/<id>-<name>`). Tasks have no branches of their own. The branch
-  merges into `main` when the demo works and the suites pass.
+  (`milestone/<id>-<name>`). Tasks have no branches of their own.
 - Small changes (a few files, no security rule involved) are made directly,
   without a subagent. Larger features use one implementing agent per feature.
 - Review: one `reviewer` pass per milestone, on the milestone diff. Work that
   touches keys, accounts or ownership gets its own review when it is done.
-- The design audit and critique of changed screens run once per milestone.
+- The design audit and critique of changed screens run once per milestone,
+  in step 2 of the cycle, before the guide.
 - Spec changes: a change of rule updates `specs/spec.md` in the same commit as
   the code, with a short line; `/spec-change` is for changes that affect
   several rules or milestones.
-- The card generator is the main delivery: Milestones 3b to 10 end with its
-  public release. The scope after Milestone 10 is kept as a backlog.
+- The card generator is the main delivery: Milestones 3d to 10 end with its
+  public release; Milestones 10b to 17 follow.
 - Every feature is specified in the spec and built in this stack, under
   these standards and in English, whatever inspired it. No code, asset or
-  data is copied from another project.
+  data is copied from another project, except pixel-art effects from
+  pixelfx (MIT), kept under `frontend/src/vendor/pixelfx/` with their license
+  and notice.
 - No new dependency without approval.
 
 ## Progress
@@ -172,6 +210,14 @@ merged into `main`.
 T169 to T173 are retired: screens are built directly by the tasks that wire
 them.
 
+### Milestone 3d — Visual identity
+
+- [x] T251: Visual concepts
+- [ ] T252: Design direction and tokens for the chosen concept
+- [ ] T253: Application shell in the new identity
+- [ ] T254: Existing screens in the new identity
+- [ ] T255: Milestone 3d review
+
 ### Milestone 3b — Generation controls
 
 - [ ] T140: Request generation effort and planeswalker fields
@@ -206,25 +252,6 @@ them.
 - [ ] T185: Fast text model in the pipeline
 - [ ] T119: Milestone 4 review
 
-### Milestone 5 — Rules validation
-
-- [ ] T18: Comprehensive Rules import and English terms
-- [ ] T24: Rules search and English lexicon selector
-- [ ] T30: Type line validator
-- [ ] T31: Keyword validator
-- [ ] T32: Text limits validator
-- [ ] T95: Rules sections and every validator in generation
-- [ ] T134: Download files cleaned after a build
-- [ ] T135: Progress during downloads
-- [ ] T136: Source listing cache that expires
-- [ ] T155: Comparables search without a scan of the whole catalog
-- [ ] T149: Advanced options in the request
-- [ ] T150: Advanced options check
-- [ ] T151: Advanced options in the prompts
-- [ ] T152: Request screen: advanced options
-- [ ] T120: Milestone 5 end-to-end flow test
-- [ ] T96: Milestone 5 review
-
 ### Milestone 6 — Library and versions
 
 - [ ] T188: Owner of saved data
@@ -257,6 +284,25 @@ them.
 - [ ] T113: Manual checks: art with real keys
 - [ ] T122: Milestone 7 end-to-end flow test
 - [ ] T102: Milestone 7 review
+
+### Milestone 5 — Rules validation
+
+- [ ] T18: Comprehensive Rules import and English terms
+- [ ] T24: Rules search and English lexicon selector
+- [ ] T30: Type line validator
+- [ ] T31: Keyword validator
+- [ ] T32: Text limits validator
+- [ ] T95: Rules sections and every validator in generation
+- [ ] T134: Download files cleaned after a build
+- [ ] T135: Progress during downloads
+- [ ] T136: Source listing cache that expires
+- [ ] T155: Comparables search without a scan of the whole catalog
+- [ ] T149: Advanced options in the request
+- [ ] T150: Advanced options check
+- [ ] T151: Advanced options in the prompts
+- [ ] T152: Request screen: advanced options
+- [ ] T120: Milestone 5 end-to-end flow test
+- [ ] T96: Milestone 5 review
 
 ### Milestone 8 — Base card
 
@@ -1449,6 +1495,96 @@ Done when: every suite passes and the design direction (T180) is in place.
 Closed after the move to the lighter method: the remaining previews (T169 to
 T173) were retired.
 
+## Milestone 3d — Visual identity
+
+Goal: the application looks like a crafted product for card designers, not a
+generic web form: a distinctive, striking visual identity that later screens
+inherit. Every screen that exists today is rebuilt in it.
+Demo: open the application and walk Setup, Status, Request and Result (with a
+generated card) at desktop and phone widths; compare with the screenshots of
+the previous look.
+Later: each screen added by a later milestone is built in this identity from
+the start.
+
+Rules for every task of this milestone: frontend-only; the identity is
+original (no card frames, set symbols, fonts or art copied from Magic: The
+Gathering or any other product), except the classic mana symbols, which are
+shown as the maintainer's chosen reference sheet; fonts and images are local files of the
+application; the Interface section of `specs/code-standards.md` applies, and
+this milestone may change it with the maintainer's approval.
+
+### T251: Visual concepts
+Three clearly different visual concepts for Card Factory, each shown as a
+full-page mockup of the Request screen and of the Result screen with a
+fictional generated card, in the preview gallery of the development server.
+Each concept names its typography, color, depth, texture, motion and the way
+a card is presented. The maintainer chooses one, or a mix, before T252.
+Covers: RN-49 (visual part)
+Agent: frontend-dev
+Depends on: T180
+Done when: the three concepts can be opened in the gallery at desktop and phone widths, and the maintainer has chosen.
+
+Outcome: five concepts were shown (A Nocturne, B Drafting Table, C Gallery
+Wall, D Forge, E Starfield) and the maintainer chose E, "Starfield": a modern,
+minimal interface inspired by the mysteries of space with a touch of arcane
+magic, kept in the gallery under `src/preview/concepts/starfield/` (the other
+concepts were removed from the repository). Decided for T252 to T254:
+- a dark scheme: ground #0e0d16 and #15141b, deep indigo #1b1c3a, arcane
+  violet #8b3dff for actions, focus and selection, starlight cyan #5bd2fe used
+  sparingly, text #e9f1fb; a calm starfield behind every screen that travels
+  faster while a card is generated;
+- the high-contrast serif for titles and the card, a clean sans for the tool,
+  small tracked capitals for labels;
+- the classic mana symbols, cut from the reference sheet the maintainer chose,
+  with pixel-art bursts when a color is picked (pixelfx); no sounds;
+- while generating, runes are written into the card's name, type line and
+  rules text, and a mythic constellation draws itself in the art window;
+- the finished card lies face down and is revealed with a burst whose
+  strength follows the power level;
+- text fields show focus on their own line, with no box; drop-down menus are
+  rounded boxes; no glass effects, gradient blobs or cards with a colored left
+  border;
+- the power indicator is one line (Weak, In range, Strong with its
+  justification), and the comparables take the place beside the card;
+- open: whether Request, Generating and Result become one page with the card
+  fixed in the center (the "Studio" layout test) or stay separate screens.
+The interface standards (`specs/code-standards.md`) change in T252 to allow
+the dark scheme, the starfield and the reveal effects.
+
+### T252: Design direction and tokens for the chosen concept
+`frontend/DESIGN.md` and `src/styles/tokens.css` are rewritten for the chosen
+concept: type scale and local font files, color schemes, surfaces and depth,
+the card presentation component, motion and its reduced-motion form.
+Covers: RN-49 (visual part)
+Agent: frontend-dev
+Depends on: T251
+Done when: the direction file and tokens describe the concept, and `npx tsc -b` and the frontend suite pass.
+
+### T253: Application shell in the new identity
+Header, navigation, page background, layout grid, screen transitions, the
+loading and error states shared by every screen, and the readiness gate.
+Covers: RN-49 (visual part)
+Agent: frontend-dev
+Depends on: T252
+Done when: every existing screen renders inside the new shell at desktop and phone widths.
+
+### T254: Existing screens in the new identity
+Setup, Status, Request and Result are rebuilt in the new identity, with the
+generated card presented as the visual center of the Result screen and a
+generation wait that feels alive.
+Covers: RN-49 (visual part)
+Agent: frontend-dev
+Depends on: T253
+Done when: the four screens match the direction at desktop and phone widths and the frontend suite passes.
+
+### T255: Milestone 3d review
+Run the suites, walk the visual test guide with the maintainer and apply the
+adjustments asked for.
+Covers: none (review)
+Agent: maintainer
+Depends on: T251, T252, T253, T254
+Done when: the maintainer approves the look of the four screens.
+
 ## Milestone 3b — Generation controls
 
 Goal: the person chooses how much the generation analyzes, sees the running
@@ -1470,7 +1606,7 @@ request, plan section 7). `GET /api/cards/{id}` returns them, and the design
 notes with their possibly-outdated mark once T141 fills them.
 Covers: RN-11, RN-53, CA-26
 Agent: backend-dev
-Depends on: T94
+Depends on: T255
 Done when: tests pass for a missing or unknown effort named in `fields`, the effort stored with the card, and the starting loyalty and design notes stored and returned; contract samples are regenerated.
 
 ### T142: Job step while a job runs
@@ -1479,7 +1615,7 @@ A running job reports a named step besides its progress, and
 draft, validation and revision (art comes with M7).
 Covers: RN-55
 Agent: backend-dev
-Depends on: T94
+Depends on: T255
 Done when: tests pass for a step reported by a job function and read back through the jobs endpoint, and for a job with no step.
 
 ### T143: Planeswalker and Battle checks
@@ -1503,7 +1639,7 @@ of `validate` (plan sections 5 and 11). Revalidation after an edit, an
 adjustment or a restore no longer looks at names.
 Covers: RN-51, CA-91
 Agent: backend-dev
-Depends on: T94
+Depends on: T255
 Done when: tests pass for CA-91 (a generated card and a manual edit named after an existing card and after a face of a two-faced card), the CA-79 tests are removed, and no skipped check names the name check.
 
 ### T162: Rarity from the power level
@@ -1513,7 +1649,7 @@ schemas and prompts, and the pipeline sets it from the request's power level
 every later version.
 Covers: CA-94 (rarity part)
 Agent: llm-engineer
-Depends on: T94
+Depends on: T255
 Done when: tests with the fake adapter pass for each power level giving its rarity, a scripted response with no rarity accepted, and the revision keeping the rarity.
 
 ### T141: Generation effort, design notes and steps in the pipeline
@@ -1543,10 +1679,10 @@ The Request screen asks for the generation effort, shows the running step
 while a generation runs, and on a refusal offers to edit the request. The
 Result screen shows the starting loyalty of a planeswalker and the design
 notes, with the possibly-outdated mark after an edit.
-Starts from the visual screen of T168 and T170 (Milestone 3c): wires it to the API, adds the behavior and its tests, and replaces the fixture types with the contract samples.
+Built directly in the visual identity of Milestone 3d (`frontend/DESIGN.md`), with the contract samples as its types.
 Covers: RN-11, RN-49, RN-53, RN-55, RN-56, CA-26, CA-85, CA-88
 Agent: frontend-dev
-Depends on: T140, T141, T142, T145, T168, T170
+Depends on: T140, T141, T142, T145, T168
 Done when: Vitest tests pass for the effort as a required field, CA-85, the refusal with the edit option, design notes shown only when present, and the loyalty of a planeswalker.
 
 ### T156: Cost {0} alone and no leading zero
@@ -1573,10 +1709,10 @@ Concepts). The Result screen shows the revision failure read from the card
 instead of the job, and offers to start a new request from the card: the
 Request screen opens with its idea, color identity, power level and generation
 effort, the other fields at their defaults, and nothing sent.
-Starts from the visual screen of T168 and T170 (Milestone 3c): wires it to the API, adds the behavior and its tests, and replaces the fixture types with the contract samples.
+Built directly in the visual identity of Milestone 3d (`frontend/DESIGN.md`), with the contract samples as its types.
 Covers: RN-15, RN-58, CA-11, CA-90
 Agent: frontend-dev
-Depends on: T146, T157, T168, T170
+Depends on: T146, T157, T168
 Done when: Vitest tests pass for the three meanings, the failure shown after a reload of `#/result/<id>`, and CA-90 with no request sent; `npx tsc -b` passes.
 
 ### T175: Mana value computed by the application
@@ -1585,7 +1721,7 @@ revised, adjusted and edited cards; the mana cost validator no longer has a
 cause for a stated value that differs. Replaces the stated-value check of T28.
 Covers: RN-17, CA-02
 Agent: backend-dev
-Depends on: T94
+Depends on: T255
 Done when: tests pass for the computed value of the costs of CA-66, for a draft saved with the computed value, and for no cause about a stated value.
 
 ### T176: Prompts: shared prefix, lighter candidates, no mana value
@@ -1606,7 +1742,7 @@ call and, when reported, cached and reasoning tokens, which go to the
 application log; an output token limit per step (plan section 9.2).
 Covers: RN-09, RN-10
 Agent: llm-engineer
-Depends on: T94
+Depends on: T255
 Done when: tests pass for the hint reaching the OpenAI request only for a model that accepts it, for one attempt after a read timeout and two after a refused connection, and for the seconds on a successful and on a failed call.
 
 ### T178: Seconds of each call in the usage
@@ -1692,10 +1828,10 @@ Done when: tests with the fake adapter pass for a working text key and for a rej
 ### T92: Status screen: connection test
 Add the connection test button to the Status screen, with the result of the
 text key and the setting to fix when it fails.
-Starts from the visual screen of T173 (Milestone 3c): wires it to the API, adds the behavior and its tests, and replaces the fixture types with the contract samples.
+Built directly in the visual identity of Milestone 3d (`frontend/DESIGN.md`), with the contract samples as its types.
 Covers: RN-08, RN-49, CA-25
 Agent: frontend-dev
-Depends on: T45, T173
+Depends on: T45
 Done when: Vitest tests pass for a working key, a rejected key with the setting named, and the button operable with the keyboard.
 
 ### T93: Manual checks: real-key generation
@@ -1774,7 +1910,7 @@ card types and supertypes are marked with the fixed Commander list in plan
 section 4.
 Covers: RN-01, RN-18, RN-19, CA-65
 Agent: backend-dev
-Depends on: T119
+Depends on: T102
 Done when: tests with a fictional rules page and a fictional rules text extract the link, the sections, the expected terms, the card types of each subtype (including a creature type under Kindred and a spell type under both Instant and Sorcery) and the types and supertypes not allowed in a Commander deck, the expected English number words, and the build stores them in the same transaction as the cards.
 
 ### T24: Rules search and English lexicon selector
@@ -1888,7 +2024,7 @@ Done when: tests with the fake adapter pass for the options in the prompts and a
 The advanced options are hidden until the person asks for them; each is
 optional, offers only valid values (types and subtypes from the imported
 terms), and the screen names a refused field.
-Starts from the visual screen of T168 (Milestone 3c): wires it to the API, adds the behavior and its tests, and replaces the fixture types with the contract samples.
+Built directly in the visual identity of Milestone 3d (`frontend/DESIGN.md`), with the contract samples as its types.
 Covers: RN-49, RN-54, CA-84
 Agent: frontend-dev
 Depends on: T149, T168
@@ -1941,7 +2077,7 @@ card and usage services and selectors take the owner. No account screen or
 sign-in is added.
 Covers: RN-26, RN-63, CA-105
 Agent: backend-dev
-Depends on: T96
+Depends on: T119
 Done when: tests pass for cards and usage saved and listed under the local user, for a selector that returns nothing for another owner, and for an upgraded data folder whose earlier cards belong to the local user.
 
 ### T54: Library API
@@ -1949,7 +2085,7 @@ Done when: tests pass for cards and usage saved and listed under the local user,
 the card and its versions. Removing image files on delete is added by T50.
 Covers: RN-25, RN-26, CA-31
 Agent: backend-dev
-Depends on: T96
+Depends on: T119
 Done when: tests pass for CA-31: listed after a new test client session, listed among the favorites with no new version, and gone after deletion.
 
 ### T55: Edit with revalidation
@@ -1997,19 +2133,19 @@ Edit fields with the revalidation result shown right away, the
 possibly-outdated mark of the power indicator on the Result screen, the quick
 adjustments, and the version list with restore. New or uploaded art is added by
 T100.
-Starts from the visual screen of T172 (Milestone 3c): wires it to the API, adds the behavior and its tests, and replaces the fixture types with the contract samples.
+Built directly in the visual identity of Milestone 3d (`frontend/DESIGN.md`), with the contract samples as its types.
 Covers: RN-23, RN-24, RN-25, RN-49, CA-12, CA-13, CA-30, CA-55
 Agent: frontend-dev
-Depends on: T55, T56, T57, T172
+Depends on: T55, T56, T57
 Done when: Vitest tests pass for an edit that ends rejected (CA-12), the outdated mark after an edit (CA-55), a restore that appears as a new version (CA-13) and a failed adjustment with its cause (CA-30).
 
 ### T70: Library screen
 Saved cards, a favorites filter, and deletion with confirmation. Image
 thumbnails are added by T100.
-Starts from the visual screen of T171 (Milestone 3c): wires it to the API, adds the behavior and its tests, and replaces the fixture types with the contract samples.
+Built directly in the visual identity of Milestone 3d (`frontend/DESIGN.md`), with the contract samples as its types.
 Covers: RN-26, RN-49, CA-31
 Agent: frontend-dev
-Depends on: T54, T171
+Depends on: T54
 Done when: Vitest tests pass for the list, the favorites filter and the removal after deletion.
 
 ### T121: Milestone 6 end-to-end flow test
@@ -2148,10 +2284,10 @@ Done when: tests pass for CA-49 (PNG accepted as a new version; a renamed text f
 ### T101: Status screen: art availability
 Extend the Status screen with art availability and its reason, and the image
 key result of the connection test.
-Starts from the visual screen of T173 (Milestone 3c): wires it to the API, adds the behavior and its tests, and replaces the fixture types with the contract samples.
+Built directly in the visual identity of Milestone 3d (`frontend/DESIGN.md`), with the contract samples as its types.
 Covers: RN-07, RN-08, RN-49, CA-32, CA-34, CA-74
 Agent: frontend-dev
-Depends on: T90, T91, T173
+Depends on: T90, T91
 Done when: Vitest tests pass for unavailable art with its reason (CA-32), an invalid image key named by the connection test (CA-34), and the image cases of CA-74.
 
 ### T98: Request screen: art option
@@ -2161,20 +2297,20 @@ available. An image chosen in the request is checked when chosen (PNG, JPEG or
 WebP by content, up to 10 MB); when no card is saved, it is not kept and the
 person is told (RN-43).
 TODO: follow the decision recorded in T50 about sending the request image with the request.
-Starts from the visual screen of T169 (Milestone 3c): wires it to the API, adds the behavior and its tests, and replaces the fixture types with the contract samples.
+Built directly in the visual identity of Milestone 3d (`frontend/DESIGN.md`), with the contract samples as its types.
 Covers: RN-07, RN-35, RN-43, RN-49, CA-32, CA-40, CA-61
 Agent: frontend-dev
-Depends on: T115, T169
+Depends on: T115
 Done when: Vitest tests pass for the billing notice before sending (CA-40), unavailable art (CA-32), a renamed text file refused when chosen, and a failed generation with an uploaded image that is not kept, with a notice (CA-61).
 
 ### T99: Result screen: card image
 The card image fitted into a card-shaped area (whole image, proportions kept,
 loaded only from the local application) beside the card text, or the text
 alone.
-Starts from the visual screen of T170 (Milestone 3c): wires it to the API, adds the behavior and its tests, and replaces the fixture types with the contract samples.
+Built directly in the visual identity of Milestone 3d (`frontend/DESIGN.md`), with the contract samples as its types.
 Covers: RN-33, RN-44, RN-49, CA-38, CA-50
 Agent: frontend-dev
-Depends on: T58, T170
+Depends on: T58
 Done when: Vitest tests pass for a card with and without an image, the fitted display, and image sources limited to local paths (CA-38).
 
 ### T68: Result screen: art actions, notices and usage
@@ -2183,19 +2319,19 @@ resolution; the outdated-text notice after an edit or adjustment; the
 print-quality notice for a small uploaded image; usage with text and art
 shown separately; and an art refusal shown as a refusal, with the options to
 edit the art description or upload an image (RN-56).
-Starts from the visual screen of T170 (Milestone 3c): wires it to the API, adds the behavior and its tests, and replaces the fixture types with the contract samples.
+Built directly in the visual identity of Milestone 3d (`frontend/DESIGN.md`), with the contract samples as its types.
 Covers: RN-09, RN-23, RN-32, RN-34, RN-35, RN-43, RN-44, RN-49, RN-56, CA-35, CA-37, CA-39, CA-40, CA-50, CA-88
 Agent: frontend-dev
-Depends on: T58, T59, T99, T170
+Depends on: T58, T59, T99
 Done when: Vitest tests pass for the art failure cause with retry, the outdated-text notice, the print-quality notice, the separate usage lists and the full-resolution link.
 
 ### T100: Versions and library: art
 The versions screen offers new or uploaded art and shows the art of each
 version; the library shows an image thumbnail when present.
-Starts from the visual screen of T171 and T172 (Milestone 3c): wires it to the API, adds the behavior and its tests, and replaces the fixture types with the contract samples.
+Built directly in the visual identity of Milestone 3d (`frontend/DESIGN.md`), with the contract samples as its types.
 Covers: RN-26, RN-33, RN-34, RN-43, RN-49, CA-39, CA-49
 Agent: frontend-dev
-Depends on: T68, T171, T172
+Depends on: T68
 Done when: Vitest tests pass for a refused upload with its reason (CA-49), a restore that brings back the earlier art (CA-39) and the library thumbnail.
 
 ### T113: Manual checks: art with real keys
@@ -2250,7 +2386,7 @@ printings: set, collector number, frame, border, frame effects, release date
 and the image URL of each face.
 Covers: RN-36, RN-38
 Agent: backend-dev
-Depends on: T102
+Depends on: T96
 Done when: an import test with a fictional bulk file stores the printings, including a two-faced card with one image URL per face, and the build imports them in the same transaction as the cards.
 
 ### T25: Base card search selectors
@@ -2302,19 +2438,19 @@ Done when: tests pass for the template request of each image adapter with record
 ### T66: Base card picker
 Search by part of the name, then choose the printing and, for cards with more
 than one face, the face. A failed image download shows its cause.
-Starts from the visual screen of T169 (Milestone 3c): wires it to the API, adds the behavior and its tests, and replaces the fixture types with the contract samples.
+Built directly in the visual identity of Milestone 3d (`frontend/DESIGN.md`), with the contract samples as its types.
 Covers: RN-36, RN-39, RN-49, CA-41, CA-44
 Agent: frontend-dev
-Depends on: T60, T169
+Depends on: T60
 Done when: Vitest tests pass for picking a face of a two-faced card and for the download failure message.
 
 ### T105: Result screen: base card and template notice
 Show the base card of the version and the notice when art was generated without
 the base card template.
-Starts from the visual screen of T170 (Milestone 3c): wires it to the API, adds the behavior and its tests, and replaces the fixture types with the contract samples.
+Built directly in the visual identity of Milestone 3d (`frontend/DESIGN.md`), with the contract samples as its types.
 Covers: RN-37, RN-38, RN-49, CA-71
 Agent: frontend-dev
-Depends on: T104, T170
+Depends on: T104
 Done when: Vitest tests pass for the base card shown and the no-template notice (CA-71).
 
 ### T163: Custom art version request and card
@@ -2367,10 +2503,10 @@ indicator, and offers no editing or quick adjustments; a new request from it
 opens in custom art mode with the base card and printing filled in. The
 Library marks custom art versions. The set symbol notice is shown when
 present.
-Starts from the visual screen of T169 and T170 and T171 (Milestone 3c): wires it to the API, adds the behavior and its tests, and replaces the fixture types with the contract samples.
+Built directly in the visual identity of Milestone 3d (`frontend/DESIGN.md`), with the contract samples as its types.
 Covers: RN-49, RN-58, RN-59, RN-60, RN-62, CA-92, CA-94
 Agent: frontend-dev
-Depends on: T66, T105, T163, T164, T169, T170, T171
+Depends on: T66, T105, T163, T164
 Done when: Vitest tests pass for the mode choice with only its fields, art required, the Result and Library marks, no edit or adjustment actions, the new request in custom art mode, and the set symbol notice; `npx tsc -b` passes.
 
 ### T114: Manual checks: base card template
@@ -2461,10 +2597,10 @@ Done when: tests with the fake adapter pass for CA-21 (no language chosen: Engli
 The Request screen offers the card language (English by default, Portuguese as
 the only other option); the Result screen shows the skipped checks. Interface
 labels stay in English.
-Starts from the visual screen of T168 and T170 (Milestone 3c): wires it to the API, adds the behavior and its tests, and replaces the fixture types with the contract samples.
+Built directly in the visual identity of Milestone 3d (`frontend/DESIGN.md`), with the contract samples as its types.
 Covers: RN-30, RN-49, CA-21, CA-22, CA-54
 Agent: frontend-dev
-Depends on: T33, T168, T170
+Depends on: T33, T168
 Done when: Vitest tests pass for English as the default with Portuguese as the only other option, labels in English for a Portuguese card (CA-22), and the skipped checks shown (CA-54).
 
 ### T124: Milestone 9 end-to-end flow test
@@ -3307,7 +3443,7 @@ their endpoints, replaced by building each screen directly).
 | RN-46 | T79, T209 |
 | RN-47 | T4, T7, T8, T74, T131, T83 |
 | RN-48 | T67, T51 |
-| RN-49 | T167–T173, T146, T152, T9, T62, T63, T64, T65, T67, T92, T69, T70, T101, T98, T99, T68, T100, T66, T105, T109, T112, T180 |
+| RN-49 | T167, T168, T251–T254, T146, T152, T9, T62, T63, T64, T65, T67, T92, T69, T70, T101, T98, T99, T68, T100, T66, T105, T109, T112, T180 |
 | RN-50 | T13, T49, T196 |
 | RN-51 | T138, T161, T147, T163 |
 | RN-52 | T139, T199, T201, T215, T222, T223, T230, T236, T237, T181, T187 |

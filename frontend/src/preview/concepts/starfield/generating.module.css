@@ -1,0 +1,95 @@
+/* Concept E "Starfield" (tasks.md T251): the generation: the request on the left, the observatory on the right. */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  align-items: start;
+  gap: 48px 80px;
+}
+
+.intro {
+  padding-top: 24px;
+}
+
+.idea {
+  max-width: 34ch;
+  margin: 36px 0 0;
+  padding: 0 0 0 22px;
+  border-left: 1px solid var(--sf-rule-strong);
+  font-family: var(--sf-serif);
+  font-size: 1.375rem;
+  font-style: italic;
+  line-height: 1.38;
+  color: var(--sf-ink-muted);
+}
+
+.idea p {
+  margin: 0;
+}
+
+.facts {
+  max-width: 420px;
+  margin: 36px 0 0;
+}
+
+.facts dd {
+  display: flex;
+}
+
+.live {
+  min-height: 1.55em;
+  margin: 28px 0 22px;
+  font-size: 0.875rem;
+  color: var(--sf-ink-muted);
+}
+
+/* The observatory: the card and the constellation of steps side by side. */
+.stage {
+  display: grid;
+  grid-template-columns: 243px minmax(0, 1fr);
+  align-items: center;
+  gap: 32px 56px;
+  padding: 44px 48px;
+}
+
+.cardCol {
+  width: 243px;
+}
+
+.stepsCol {
+  display: grid;
+  gap: 20px;
+}
+
+@container (max-width: 1023px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .intro {
+    padding-top: 0;
+  }
+
+  .stage {
+    padding: 36px 32px;
+  }
+}
+
+@container (max-width: 599px) {
+  .idea {
+    font-size: 1.1875rem;
+  }
+
+  .stage {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    padding: 28px 20px;
+  }
+
+  .cardCol {
+    width: min(243px, 100%);
+  }
+
+  .stepsCol {
+    justify-self: stretch;
+  }
+}

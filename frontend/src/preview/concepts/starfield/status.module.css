@@ -1,0 +1,152 @@
+/* Concept E "Starfield" (tasks.md T251): the Status screen: the title and actions on the left, the log on the right. */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+  align-items: start;
+  gap: 48px 80px;
+}
+
+.intro {
+  position: sticky;
+  top: 32px;
+}
+
+.actions {
+  margin-top: 36px;
+}
+
+.live {
+  min-height: 1.55em;
+  margin: 16px 0 0;
+  font-size: 0.875rem;
+  color: var(--sf-ink-muted);
+}
+
+.body {
+  min-width: 0;
+  border-bottom: 1px solid var(--sf-rule);
+}
+
+/* Each section's own facts start without the top rule the section already draws. */
+.body dl > div:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.body dl > div:last-child {
+  border-bottom: 0;
+}
+
+.mono {
+  font-family: var(--sf-mono);
+  font-size: 0.875rem;
+}
+
+.answer {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.answerStar {
+  color: var(--sf-cyan);
+}
+
+.answerRing {
+  width: 9px;
+  height: 9px;
+  border: 1px solid var(--sf-ink-faint);
+  border-radius: 50%;
+}
+
+.database {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-family: var(--sf-serif);
+  font-size: 1.3125rem;
+  line-height: 1.35;
+}
+
+.databaseMark {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--sf-cyan);
+  box-shadow: 0 0 0 4px rgb(91 210 254 / 0.16);
+}
+
+.database[data-ready="false"] .databaseMark {
+  background: transparent;
+  border: 1px solid var(--sf-ink-faint);
+  box-shadow: none;
+}
+
+.subhead {
+  margin: 32px 0 14px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sf-ink-faint);
+}
+
+.source + .source {
+  margin-top: 20px;
+}
+
+.sourceName {
+  display: block;
+}
+
+.url {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--sf-mono);
+  font-size: 0.75rem;
+  color: var(--sf-ink-muted);
+  overflow-wrap: anywhere;
+}
+
+.issues {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.issues li {
+  display: grid;
+  gap: 4px;
+  padding: 12px 0;
+  border-top: 1px solid var(--sf-rule);
+}
+
+.issues li:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.setting {
+  font-family: var(--sf-mono);
+  font-size: 0.8125rem;
+  color: var(--sf-violet-text);
+}
+
+.hint {
+  margin: 14px 0 0;
+  font-size: 0.875rem;
+  color: var(--sf-ink-muted);
+}
+
+@container (max-width: 1023px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .intro {
+    position: static;
+  }
+}

@@ -1,7 +1,7 @@
 // Concept E "Starfield" (tasks.md T251): the color identity: the five colors in one aligned row, and Colorless apart.
 import { requestCopy } from "../../../screens/request/copy";
-import { ManaPick } from "../forge/symbols/ManaPick";
-import type { ManaColor } from "../forge/symbols/manaSymbols";
+import { ManaPick } from "./symbols/ManaPick";
+import type { ManaColor } from "./symbols/manaSymbols";
 import styles from "./constellation.module.css";
 
 const COLORS = requestCopy.colors;
@@ -22,7 +22,7 @@ export function Constellation(props: { colors: ManaColor[]; onChange: (colors: M
       <div className={styles.five}>
         {COLORS.map((color) => (
           <span key={color.letter} className={styles.slot}>
-            <ManaPick letter={color.letter} label={color.name} checked={props.colors.includes(color.letter)} onChange={(checked) => pick(color.letter, checked)} sound={false} />
+            <ManaPick letter={color.letter} label={color.name} checked={props.colors.includes(color.letter)} onChange={(checked) => pick(color.letter, checked)} />
           </span>
         ))}
       </div>
@@ -30,7 +30,7 @@ export function Constellation(props: { colors: ManaColor[]; onChange: (colors: M
         {requestCopy.or}
       </span>
       <span className={styles.slot}>
-        <ManaPick letter="C" label={requestCopy.colorless} checked={props.colors.includes("C")} onChange={(checked) => pick("C", checked)} sound={false} />
+        <ManaPick letter="C" label={requestCopy.colorless} checked={props.colors.includes("C")} onChange={(checked) => pick("C", checked)} />
       </span>
     </fieldset>
   );

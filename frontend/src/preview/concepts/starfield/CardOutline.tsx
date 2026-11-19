@@ -2,10 +2,10 @@
 import { useId, type CSSProperties } from "react";
 
 import { requestCopy } from "../../../screens/request/copy";
-import { RUNE_WRITE } from "../forge/fx/effects";
-import { PixelFx } from "../forge/fx/PixelFx";
-import { ManaCostSymbols } from "../forge/symbols/ManaSymbol";
-import type { ManaColor } from "../forge/symbols/manaSymbols";
+import { RUNE_WRITE } from "./fx/effects";
+import { PixelFx } from "./fx/PixelFx";
+import { ManaCostSymbols } from "./symbols/ManaSymbol";
+import type { ManaColor } from "./symbols/manaSymbols";
 import styles from "./card.module.css";
 import { baseCardOf, starfieldCopy as copy, type RequestDraft } from "./model";
 

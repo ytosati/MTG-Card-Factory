@@ -6,7 +6,7 @@ import type { CardVersion, PowerIndicator } from "../../../api/types";
 import { resultCopy } from "../../../screens/result/copy";
 import { statusCopy } from "../../../screens/status/copy";
 import type { PreviewCard } from "../../fixtureTypes";
-import { ManaCostSymbols } from "../forge/symbols/ManaSymbol";
+import { ManaCostSymbols } from "./symbols/ManaSymbol";
 import { ChartCard, RulesText } from "./ChartCard";
 import { StarGlyph } from "./glyphs";
 import { Section } from "./parts";

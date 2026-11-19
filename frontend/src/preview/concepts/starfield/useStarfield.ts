@@ -1,7 +1,7 @@
 // Concept E "Starfield" (tasks.md T251): the canvas loop of the starfield, sized to its box and sharp on dense screens.
 import { useEffect, useRef } from "react";
 
-import { useMotionOff } from "../forge/screens/motion";
+import { useMotionOff } from "./motion";
 
 /** How fast the field travels: a slow drift at rest, a steady warp while a card is generated. */
 export type StarfieldSpeed = "rest" | "generating";

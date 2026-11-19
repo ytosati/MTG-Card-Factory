@@ -212,7 +212,7 @@ them.
 
 ### Milestone 3d — Visual identity
 
-- [ ] T251: Visual concepts
+- [x] T251: Visual concepts
 - [ ] T252: Design direction and tokens for the chosen concept
 - [ ] T253: Application shell in the new identity
 - [ ] T254: Existing screens in the new identity
@@ -1523,6 +1523,33 @@ Covers: RN-49 (visual part)
 Agent: frontend-dev
 Depends on: T180
 Done when: the three concepts can be opened in the gallery at desktop and phone widths, and the maintainer has chosen.
+
+Outcome: five concepts were shown (A Nocturne, B Drafting Table, C Gallery
+Wall, D Forge, E Starfield) and the maintainer chose E, "Starfield": a modern,
+minimal interface inspired by the mysteries of space with a touch of arcane
+magic, kept in the gallery under `src/preview/concepts/starfield/` (the other
+concepts were removed from the repository). Decided for T252 to T254:
+- a dark scheme: ground #0e0d16 and #15141b, deep indigo #1b1c3a, arcane
+  violet #8b3dff for actions, focus and selection, starlight cyan #5bd2fe used
+  sparingly, text #e9f1fb; a calm starfield behind every screen that travels
+  faster while a card is generated;
+- the high-contrast serif for titles and the card, a clean sans for the tool,
+  small tracked capitals for labels;
+- the classic mana symbols, cut from the reference sheet the maintainer chose,
+  with pixel-art bursts when a color is picked (pixelfx); no sounds;
+- while generating, runes are written into the card's name, type line and
+  rules text, and a mythic constellation draws itself in the art window;
+- the finished card lies face down and is revealed with a burst whose
+  strength follows the power level;
+- text fields show focus on their own line, with no box; drop-down menus are
+  rounded boxes; no glass effects, gradient blobs or cards with a colored left
+  border;
+- the power indicator is one line (Weak, In range, Strong with its
+  justification), and the comparables take the place beside the card;
+- open: whether Request, Generating and Result become one page with the card
+  fixed in the center (the "Studio" layout test) or stay separate screens.
+The interface standards (`specs/code-standards.md`) change in T252 to allow
+the dark scheme, the starfield and the reveal effects.
 
 ### T252: Design direction and tokens for the chosen concept
 `frontend/DESIGN.md` and `src/styles/tokens.css` are rewritten for the chosen

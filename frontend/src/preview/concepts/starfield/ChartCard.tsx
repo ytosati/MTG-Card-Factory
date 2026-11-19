@@ -4,8 +4,8 @@ import { Fragment, type CSSProperties, type ReactNode } from "react";
 
 import type { CardVersion } from "../../../api/types";
 import type { PreviewImage } from "../../fixtureTypes";
-import { ManaCostSymbols, ManaSymbol } from "../forge/symbols/ManaSymbol";
-import type { ManaColor } from "../forge/symbols/manaSymbols";
+import { ManaCostSymbols, ManaSymbol } from "./symbols/ManaSymbol";
+import type { ManaColor } from "./symbols/manaSymbols";
 import { frameOf } from "./CardOutline";
 import styles from "./chart.module.css";
 import { CardSky, RuneLine, seeded } from "./Forging";

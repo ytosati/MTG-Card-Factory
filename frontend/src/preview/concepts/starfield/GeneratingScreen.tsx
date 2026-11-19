@@ -3,7 +3,7 @@
 import { useEffect, useId, useState } from "react";
 
 import { requestCopy } from "../../../screens/request/copy";
-import { ManaCostSymbols } from "../forge/symbols/ManaSymbol";
+import { ManaCostSymbols } from "./symbols/ManaSymbol";
 import { ChartInProgress } from "./ChartCard";
 import { StarGlyph } from "./glyphs";
 import { sceneCopy } from "./scenes";

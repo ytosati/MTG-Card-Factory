@@ -5,7 +5,7 @@ import * as holyBurst from "../../../vendor/pixelfx/fx/forge/holy-burst.js";
 import * as manaBurst from "../../../vendor/pixelfx/fx/arcane/mana-burst.js";
 import * as plasmaExplosion from "../../../vendor/pixelfx/fx/explosions/plasma-explosion.js";
 import type { PowerLevel } from "../../../api/types";
-import type { FxLayer } from "../forge/fx/effects";
+import type { FxLayer } from "./fx/effects";
 
 export const sceneCopy = {
   generatingTitle: "Generating",

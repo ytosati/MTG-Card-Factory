@@ -4,7 +4,7 @@
 import type { CSSProperties } from "react";
 
 import { GLYPHS, SIGILS } from "../../../vendor/pixelfx/fx/arcane/_lib.js";
-import type { ManaColor } from "../forge/symbols/manaSymbols";
+import type { ManaColor } from "./symbols/manaSymbols";
 import styles from "./forging.module.css";
 
 type Vars = CSSProperties & Record<`--${string}`, string>;

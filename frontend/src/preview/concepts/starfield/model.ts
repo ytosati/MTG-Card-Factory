@@ -1,7 +1,7 @@
 // Concept E "Starfield" (tasks.md T251): the Request mockup's draft, its own words and the fictional base cards.
 import type { PowerLevel } from "../../../api/types";
 import type { CardLanguage, GenerationEffort } from "../../../screens/request/copy";
-import type { ManaColor } from "../forge/symbols/manaSymbols";
+import type { ManaColor } from "./symbols/manaSymbols";
 
 /** A request for a new card, or for a custom art version of an existing card (RN-59). */
 export type RequestKind = "new" | "custom-art";

@@ -2,7 +2,7 @@
 import { useEffect, useId, useState, type FormEvent } from "react";
 
 import { requestCopy, type GenerationStep } from "../../../screens/request/copy";
-import { ManaCostSymbols } from "../forge/symbols/ManaSymbol";
+import { ManaCostSymbols } from "./symbols/ManaSymbol";
 import { CardOutline } from "./CardOutline";
 import { Constellation } from "./Constellation";
 import { StarGlyph } from "./glyphs";

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import type { PowerLevel } from "../../../api/types";
 import type { PreviewCard } from "../../fixtureTypes";
-import { FxLayers } from "../forge/fx/FxLayers";
+import { FxLayers } from "./fx/FxLayers";
 import { CardBack, ChartCard } from "./ChartCard";
 import { StarGlyph } from "./glyphs";
 import { STAR_REVEAL, sceneCopy } from "./scenes";

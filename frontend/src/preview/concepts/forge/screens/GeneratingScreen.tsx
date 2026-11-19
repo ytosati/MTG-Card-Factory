@@ -1,10 +1,14 @@
-// Concept D "Forge" (tasks.md T251): a self-running wait; the forge works through the six job steps.
+// Concept D "Forge" (tasks.md T251): a self-running wait; the crew forges the card on the anvil through the six steps.
 import { useEffect, useState } from "react";
 
 import { requestCopy } from "../../../../screens/request/copy";
+import { RUNE_WRITE, SPARKS_HIT, STEAM_BURST } from "../fx/effects";
+import { PixelFx } from "../fx/PixelFx";
+import { Goblin } from "../goblins/Goblin";
 import { playLever, playStepTick } from "../sound/forgeAudio";
-import { ForgeStage } from "./ForgeStage";
+import { AnvilStage, Valve } from "./Forge";
 import { ForgingCard } from "./ForgeCard";
+import forge from "./forge.module.css";
 import { IDEA } from "./RequestScreen";
 import { Shell, shell } from "./Shell";
 import styles from "./generating.module.css";
@@ -22,7 +26,21 @@ function stateOf(row: number, index: number): StepState {
 
 const SPOKEN: Record<StepState, string> = { done: "done", running: "in progress", waiting: "waiting" };
 
-/** The Generating screen: the forge at work, the card frame filling with runes, the steps beneath. */
+/** The runes written into the card's text box, line by line, while the job runs. */
+function Writing() {
+  return (
+    <PixelFx
+      effect={RUNE_WRITE.effect}
+      options={RUNE_WRITE.options}
+      width={RUNE_WRITE.width}
+      height={RUNE_WRITE.height}
+      scale={2}
+      className={styles.writing}
+    />
+  );
+}
+
+/** The Generating screen: the card frame over the anvil, the crew at work around it, the steps beneath. */
 export function GeneratingScreen() {
   const [run, setRun] = useState(0);
   const [index, setIndex] = useState(0);
@@ -53,11 +71,12 @@ export function GeneratingScreen() {
     : requestCopy.stepOf(index + 1, STEPS.length, current?.name ?? "");
 
   return (
-    <Shell current="Request">
+    <Shell current="Request" working={!finished}>
       <div className={styles.head}>
         <div>
           <p className={shell.rubric}>{finished ? "Done" : `Step ${index + 1} of ${STEPS.length}`}</p>
           <h1 className={shell.display}>{finished ? "Card ready" : "Generating"}</h1>
+          <p className={styles.idea}>{IDEA}</p>
         </div>
         <div className={styles.headActions}>
           <button type="button" className={shell.secondary} onClick={() => setRun((count) => count + 1)}>
@@ -75,13 +94,49 @@ export function GeneratingScreen() {
         </div>
       </div>
 
-      <ForgeStage
+      <AnvilStage
         className={styles.stage}
-        phase={finished ? "cooling" : "working"}
-        step={current?.value}
         colors={["W"]}
-        slot={<ForgingCard stepIndex={index} colors={["W"]} />}
-      />
+        fire={finished ? "low" : "roar"}
+        embers={finished ? "faint" : "full"}
+        runes={!finished}
+        card={<ForgingCard stepIndex={index} colors={["W"]} writing={finished ? undefined : <Writing />} />}
+      >
+        <span className={`${forge.pipe} ${styles.feed}`} aria-hidden="true">
+          <span className={forge.collar} style={{ left: "30%" }} />
+          <span className={`${forge.valve} ${styles.valve}`} data-turning={finished ? "false" : "true"}>
+            <Valve />
+          </span>
+        </span>
+        <span className={`${forge.burst} ${styles.steamAt}`} aria-hidden="true">
+          <PixelFx
+            effect={STEAM_BURST.effect}
+            options={STEAM_BURST.options}
+            width={STEAM_BURST.width}
+            height={STEAM_BURST.height}
+            scale={2}
+            mode="once"
+            playKey={`${run}-${index}`}
+          />
+        </span>
+        {current?.value === "revision" && !finished && (
+          <span className={`${forge.burst} ${styles.sparksAt}`} aria-hidden="true">
+            <PixelFx
+              effect={SPARKS_HIT.effect}
+              options={SPARKS_HIT.options}
+              width={SPARKS_HIT.width}
+              height={SPARKS_HIT.height}
+              origin={SPARKS_HIT.origin}
+              scale={2}
+              mode="once"
+              playKey={run}
+            />
+          </span>
+        )}
+        <Goblin who="engineer" action={finished ? "idle" : "work"} scale={3} className={`${forge.goblin} ${styles.engineer}`} />
+        <Goblin who="sage" action={finished ? "idle" : "cast"} scale={3} className={`${forge.goblin} ${styles.sage}`} />
+        <Goblin who="operator" action={finished ? "idle" : "pull"} scale={3} flip className={`${forge.goblin} ${styles.operator}`} />
+      </AnvilStage>
 
       <p className={shell.srOnly} role="status">
         {announcement}
@@ -99,10 +154,10 @@ export function GeneratingScreen() {
                   </svg>
                 )}
               </span>
-              <span className={styles.stepNumber} aria-hidden="true">
-                {String(row + 1).padStart(2, "0")}
-              </span>
               <span className={styles.stepName}>
+                <span className={styles.stepNumber} aria-hidden="true">
+                  {String(row + 1).padStart(2, "0")}
+                </span>
                 {step.name}
                 <span className={shell.srOnly}>, {SPOKEN[state]}</span>
               </span>
@@ -110,11 +165,6 @@ export function GeneratingScreen() {
           );
         })}
       </ol>
-
-      <figure className={styles.order}>
-        <figcaption className={shell.rubric}>Idea</figcaption>
-        <blockquote className={styles.quote}>{IDEA}</blockquote>
-      </figure>
     </Shell>
   );
 }

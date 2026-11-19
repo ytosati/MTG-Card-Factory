@@ -1,19 +1,57 @@
-// Concept D "Forge" (tasks.md T251): the page of every screen, its header, and the shared engraved controls.
+// Concept D "Forge" (tasks.md T251): the page of every screen, its header and manifold, and the shared controls.
 import { useId, type ReactNode } from "react";
 
+import { STEAM_VENT } from "../fx/effects";
+import { PixelFx } from "../fx/PixelFx";
 import { SoundToggle } from "../sound/SoundToggle";
+import { Valve } from "./Forge";
 import { GearMark } from "./ornaments";
 import styles from "./shell.module.css";
 
 export type Place = "Request" | "Library" | "Status";
 
-/** The dark ground, the header with the wordmark, the places and the sound switch. */
-export function Shell({ current, children }: { current: Place; children: ReactNode }) {
+/** Where the header's valves sit along the manifold, as shares of its width; the second shows on wide pages only. */
+const VALVES = [
+  { at: 44, seed: 4, wide: false },
+  { at: 66, seed: 11, wide: true },
+] as const;
+
+/** The gold manifold along the header's lower edge: collars, two valves and their slow puffs of steam. */
+function Manifold() {
+  return (
+    <span className={styles.manifold} aria-hidden="true">
+      {[6, 24, 52, 81, 95].map((at) => (
+        <span key={at} className={styles.joint} style={{ left: `${at}%` }} />
+      ))}
+      {VALVES.map((valve) => (
+        <span key={valve.at} className={styles.valve} data-wide={valve.wide ? "true" : "false"} style={{ left: `${valve.at}%` }}>
+          <span className={styles.steam}>
+            <PixelFx
+              effect={STEAM_VENT.effect}
+              options={{ ...STEAM_VENT.options, seed: valve.seed, puffs: 14, burst: 0.4 }}
+              width={STEAM_VENT.width}
+              height={STEAM_VENT.height}
+              scale={2}
+              speed={0.42}
+            />
+          </span>
+          <Valve />
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** The dark ground, the header with the wordmark, the places, the sound switch and the manifold. */
+export function Shell({ current, working = false, children }: { current: Place; working?: boolean; children: ReactNode }) {
   return (
     <div className={styles.root}>
       <header className={styles.bar}>
+        <Manifold />
         <span className={styles.brand}>
-          <GearMark className={styles.brandMark} />
+          <span className={styles.brandMark} data-working={working ? "true" : "false"}>
+            <GearMark />
+          </span>
           Card Factory
         </span>
         <nav aria-label="Main" className={styles.navWrap}>

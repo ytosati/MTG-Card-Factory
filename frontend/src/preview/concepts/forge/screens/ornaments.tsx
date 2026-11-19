@@ -66,32 +66,6 @@ export function RuneLine(props: { seed: number; count: number; className?: strin
   );
 }
 
-/** A ring of runes around a centre, for the strong reveal. */
-export function RuneRing({ className }: { className?: string }) {
-  const count = 18;
-  return (
-    <svg className={className} viewBox="0 0 200 200" aria-hidden="true" focusable="false">
-      <circle cx="100" cy="100" r="96" fill="none" stroke="currentColor" strokeWidth="0.8" opacity="0.6" />
-      <circle cx="100" cy="100" r="76" fill="none" stroke="currentColor" strokeWidth="0.6" opacity="0.45" />
-      {Array.from({ length: count }, (_, index) => {
-        const angle = (index * 360) / count;
-        return (
-          <path
-            key={index}
-            d={RUNES[(index * 5) % RUNES.length]}
-            transform={`rotate(${angle} 100 100) translate(97 8)`}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        );
-      })}
-    </svg>
-  );
-}
-
 /** One corner curl of the filigree, drawn for the top-left corner of a 630 by 880 card. */
 const CURL_SCROLLS =
   "M30 150 C30 80 80 30 150 30 M44 118 C44 74 74 44 118 44 M44 118 C44 100 56 92 66 96 C76 100 74 114 64 114 " +

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-// Smoke test of concept D "Forge" (tasks.md T251): each state renders one level-1 heading, the Result shows
-// the card art with its text alternative, and revealing a card offers the way to the result.
+// Smoke test of concept D "Forge" (tasks.md T251): each state renders one level-1 heading, the goblins and pixel
+// effects stay out of the accessibility tree, the Result shows the card art with its text alternative, and
+// revealing a card offers the way to the result.
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -18,6 +19,14 @@ describe("Forge concept (T251)", () => {
   it.each(forgeStates.map((state) => [state.id, state] as const))("%s has one level-1 heading", (_id, state) => {
     render(<>{state.render()}</>);
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+  });
+
+  it("starts the job from the furnace door and keeps the crew and effects decorative", () => {
+    const { container } = renderState("request");
+    expect(screen.getByRole("button", { name: "Generate card" })).toBeTruthy();
+    const decorations = container.querySelectorAll("svg[data-goblin], canvas");
+    expect(decorations.length).toBeGreaterThan(0);
+    decorations.forEach((element) => expect(element.closest('[aria-hidden="true"]')).not.toBeNull());
   });
 
   it("shows the result card with its art", () => {

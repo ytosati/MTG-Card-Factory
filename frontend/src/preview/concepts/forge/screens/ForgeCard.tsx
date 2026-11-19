@@ -1,9 +1,10 @@
 // Concept D "Forge" (tasks.md T251): the card face in its original gold frame, and the same frame being forged.
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import type { PreviewCard } from "../../../fixtureTypes";
 import { FLAME_COLORS, type ManaLetter } from "../machine/palette";
-import { ManaCostSymbols } from "../symbols/ManaSymbol";
+import { ManaCostSymbols, ManaSymbol } from "../symbols/ManaSymbol";
+import type { ManaColor } from "../symbols/manaSymbols";
 import styles from "./card.module.css";
 import { Filigree, RuneLine, gearPath } from "./ornaments";
 
@@ -83,11 +84,36 @@ export function ForgeCardFace({ entry, className }: { entry: PreviewCard; classN
   );
 }
 
+/** The outline of the card to come, waiting over the anvil; its cost shows the colors picked so far. */
+export function EmptyCard({ colors }: { colors: readonly ManaColor[] }) {
+  return (
+    <div className={styles.box} aria-hidden="true">
+      <div className={styles.empty}>
+        <Filigree className={styles.filigree} />
+        <span className={styles.emptyBar}>
+          <span className={styles.emptyName} />
+          <span className={styles.emptyCost}>
+            {colors.map((letter) => (
+              <ManaSymbol key={letter} symbol={`{${letter}}`} size="7.5cqi" decorative />
+            ))}
+          </span>
+        </span>
+        <span className={styles.emptyArt} />
+        <span className={styles.emptyBar}>
+          <span className={`${styles.emptyName} ${styles.emptyShort}`} />
+        </span>
+        <span className={styles.emptyText} />
+      </div>
+    </div>
+  );
+}
+
 /**
  * The empty frame while the job runs: the name bar shimmers, the text box fills with runes, one row for each
- * step from the search to the revision, and on the art step the art window swirls. Purely decorative.
+ * step from the search to the revision, and on the art step the art window swirls. Purely decorative. A screen
+ * may write the text box itself by passing `writing`.
  */
-export function ForgingCard({ stepIndex, colors }: { stepIndex: number; colors: ManaLetter[] }) {
+export function ForgingCard({ stepIndex, colors, writing }: { stepIndex: number; colors: ManaLetter[]; writing?: ReactNode }) {
   return (
     <div className={styles.box} aria-hidden="true">
       <div className={`${styles.card} ${styles.forging}`} style={tintOf(colors)}>
@@ -103,7 +129,8 @@ export function ForgingCard({ stepIndex, colors }: { stepIndex: number; colors: 
             <span className={`${styles.shimmer} ${styles.shimmerShort}`} />
           </div>
           <div className={styles.text}>
-            {RUNE_ROWS.map((count, row) => {
+            {writing ??
+              RUNE_ROWS.map((count, row) => {
               const state = row < stepIndex - 1 ? "done" : row === stepIndex - 1 ? "active" : "waiting";
               return (
                 <RuneLine

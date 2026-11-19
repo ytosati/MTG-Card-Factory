@@ -1,13 +1,16 @@
-// Concept D "Forge" (tasks.md T251): the Result screen; the card at the centre of a lit stage, its text beside it.
+// Concept D "Forge" (tasks.md T251): the Result screen; the card over the anvil as the centre, its text beside it.
 import { useRef, type PointerEvent } from "react";
 
 import { resultCopy } from "../../../../screens/result/copy";
 import { cardWithImage } from "../../../fixtures";
 import type { PreviewCard } from "../../../fixtureTypes";
 import { ManaCostSymbols } from "../symbols/ManaSymbol";
-import { ForgeCardFace } from "./ForgeCard";
+import { Goblin } from "../goblins/Goblin";
+import { AnvilStage } from "./Forge";
+import { ForgeCardFace, colorsOf } from "./ForgeCard";
+import forge from "./forge.module.css";
 import { useMotionOff } from "./motion";
-import { PowerGauge, SmallGauge } from "./ornaments";
+import { PowerGauge } from "./ornaments";
 import { Engraved, Shell, shell } from "./Shell";
 import styles from "./result.module.css";
 
@@ -34,7 +37,7 @@ function Check() {
   );
 }
 
-/** The stage: soft light from above, a pipe along the top; a mouse tilts the card toward the pointer. */
+/** The anvil with the card over it; a mouse tilts the card toward the pointer. */
 function Stage({ entry }: { entry: PreviewCard }) {
   const [stage, motionOff] = useMotionOff<HTMLDivElement>();
   const card = useRef<HTMLDivElement>(null);
@@ -58,18 +61,21 @@ function Stage({ entry }: { entry: PreviewCard }) {
   }
 
   return (
-    <div ref={stage} className={styles.stage} onPointerMove={onPointerMove} onPointerLeave={onPointerLeave}>
-      <span className={styles.pipe} aria-hidden="true">
-        <span className={styles.collar} data-at="1" />
-        <span className={styles.collar} data-at="2" />
-        <SmallGauge className={styles.gauge} />
-      </span>
-      <div className={styles.cardWrap}>
-        <span className={styles.shadow} aria-hidden="true" />
-        <div ref={card} className={styles.tilt}>
-          <ForgeCardFace entry={entry} />
-        </div>
-      </div>
+    <div className={styles.stageCol} onPointerMove={onPointerMove} onPointerLeave={onPointerLeave}>
+      <AnvilStage
+        stageRef={stage}
+        className={styles.stage}
+        size="xl"
+        colors={colorsOf(entry)}
+        embers="faint"
+        card={
+          <div ref={card} className={styles.tilt}>
+            <ForgeCardFace entry={entry} />
+          </div>
+        }
+      >
+        <Goblin who="engineer" scale={3} flip className={`${forge.goblin} ${styles.peek}`} />
+      </AnvilStage>
     </div>
   );
 }

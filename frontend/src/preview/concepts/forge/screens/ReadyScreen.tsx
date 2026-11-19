@@ -1,107 +1,35 @@
-// Concept D "Forge" (tasks.md T251): the finished card waits face down in the forge; revealing it flips it
-// with an intensity that follows the power level.
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+// Concept D "Forge" (tasks.md T251): the finished card waits face down on the anvil; revealing it turns it over
+// with an intensity that follows the power level, and the crew celebrates.
+import { useEffect, useRef, useState } from "react";
 
 import type { PowerLevel } from "../../../../api/types";
 import type { PreviewCard } from "../../../fixtureTypes";
-import { FLAME_COLORS } from "../machine/palette";
+import { REVEAL } from "../fx/effects";
+import { FxLayers } from "../fx/FxLayers";
+import { Goblin } from "../goblins/Goblin";
 import { playReveal } from "../sound/forgeAudio";
+import { AnvilStage, Valve, type Fire } from "./Forge";
 import { ForgeCardFace, colorsOf } from "./ForgeCard";
-import { ForgeStage } from "./ForgeStage";
-import { CardBack, RuneRing } from "./ornaments";
+import forge from "./forge.module.css";
+import { CardBack } from "./ornaments";
 import { Shell, shell } from "./Shell";
+import crew from "./generating.module.css";
 import styles from "./ready.module.css";
-
-type Vars = CSSProperties & Record<`--${string}`, string>;
 
 const RESULT_HASH = "#/preview/concept-forge/result";
 const TIER_WORDS: Record<PowerLevel, string> = { casual: "Casual", medium: "Medium", strong: "Strong" };
-const SPARK_COUNT: Record<PowerLevel, number> = { casual: 7, medium: 16, strong: 26 };
-/** How long the forge roars in the card's colors after a reveal; a casual card leaves it quiet. */
-const FLARE_MS: Record<PowerLevel, number> = { casual: 0, medium: 1300, strong: 2000 };
+/** How long the fire roars in the card's colors after a reveal; a casual card leaves it low. */
+const FLARE_MS: Record<PowerLevel, number> = { casual: 0, medium: 1400, strong: 2200 };
+/** When the reveal's burst plays: at the turn of a casual or medium card, at the landing of a strong one. */
+const BURST_DELAY_MS: Record<PowerLevel, number> = { casual: 260, medium: 320, strong: 820 };
 
-/** A spread of sparks around the card, the same on every reveal. */
-const SPARKS = Array.from({ length: 26 }, (_, index) => {
-  const angle = index * 2.399963;
-  const reach = 9 + ((index * 37) % 13);
-  return {
-    dx: Math.cos(angle) * reach * 1.6,
-    dy: Math.sin(angle) * reach - 4,
-    delay: (index * 23) % 160,
-    tone: index % 3,
-  };
-});
-
-/** Embers that rain over the forge on a strong reveal. */
-const EMBERS = Array.from({ length: 24 }, (_, index) => ({
-  left: (index * 41 + 7) % 100,
-  drift: ((index * 13) % 9) - 4,
-  delay: 250 + ((index * 97) % 900),
-  duration: 1500 + ((index * 61) % 1000),
-  tone: index % 3,
-}));
-
-const PUFFS = [
-  { dx: -6, delay: 120 },
-  { dx: 4, delay: 200 },
-  { dx: -1, delay: 320 },
-  { dx: 9, delay: 420 },
-];
-
-function Effects({ tier, flare }: { tier: PowerLevel; flare: string }) {
-  return (
-    <div className={styles.effects} data-tier={tier} style={{ "--flare": flare } as Vars} aria-hidden="true">
-      {tier !== "casual" && <span className={styles.flare} />}
-      {tier === "strong" && <RuneRing className={styles.ring} />}
-      {tier !== "casual" &&
-        PUFFS.slice(0, tier === "strong" ? 4 : 3).map((puff, index) => (
-          <span
-            key={index}
-            className={styles.puff}
-            style={{ "--dx": `${puff.dx}%`, animationDelay: `${puff.delay}ms` } as Vars}
-          />
-        ))}
-      {SPARKS.slice(0, SPARK_COUNT[tier]).map((spark, index) => (
-        <span
-          key={index}
-          className={styles.spark}
-          data-tone={spark.tone}
-          style={
-            {
-              "--dx": `${spark.dx.toFixed(1)}cqw`,
-              "--dy": `${spark.dy.toFixed(1)}cqw`,
-              animationDelay: `${(tier === "strong" ? 700 : 280) + spark.delay}ms`,
-            } as Vars
-          }
-        />
-      ))}
-      {tier === "strong" &&
-        EMBERS.map((ember, index) => (
-          <span
-            key={index}
-            className={styles.ember}
-            data-tone={ember.tone}
-            style={
-              {
-                left: `${ember.left}%`,
-                "--drift": `${ember.drift}cqw`,
-                animationDelay: `${ember.delay}ms`,
-                animationDuration: `${ember.duration}ms`,
-              } as Vars
-            }
-          />
-        ))}
-    </div>
-  );
-}
-
-/** The Ready screen: the card face down in the cooling forge, revealed on demand. */
+/** The Ready screen: the card face down over the anvil, revealed on demand. */
 export function ReadyScreen({ tier, entry }: { tier: PowerLevel; entry: PreviewCard }) {
   const [revealed, setRevealed] = useState(false);
   const [flaring, setFlaring] = useState(false);
+  const [burst, setBurst] = useState(false);
   const link = useRef<HTMLAnchorElement>(null);
   const colors = colorsOf(entry);
-  const flare = FLAME_COLORS[colors[0] ?? "C"].bright;
   const name = entry.current_version.name;
 
   useEffect(() => {
@@ -109,10 +37,11 @@ export function ReadyScreen({ tier, entry }: { tier: PowerLevel; entry: PreviewC
   }, [revealed]);
 
   useEffect(() => {
-    if (!flaring) return undefined;
-    const timer = window.setTimeout(() => setFlaring(false), FLARE_MS[tier]);
-    return () => window.clearTimeout(timer);
-  }, [flaring, tier]);
+    if (!revealed) return undefined;
+    const timers = [window.setTimeout(() => setBurst(true), BURST_DELAY_MS[tier])];
+    if (FLARE_MS[tier] > 0) timers.push(window.setTimeout(() => setFlaring(false), FLARE_MS[tier]));
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
+  }, [revealed, tier]);
 
   function reveal() {
     if (revealed) return;
@@ -121,6 +50,10 @@ export function ReadyScreen({ tier, entry }: { tier: PowerLevel; entry: PreviewC
     setFlaring(FLARE_MS[tier] > 0);
   }
 
+  const fire: Fire = flaring ? "roar" : "low";
+  const cheer = revealed ? "cheer" : "idle";
+  const sageAction = !revealed ? "idle" : tier === "casual" ? "nod" : "cast";
+
   return (
     <Shell current="Request">
       <div className={styles.head}>
@@ -128,31 +61,43 @@ export function ReadyScreen({ tier, entry }: { tier: PowerLevel; entry: PreviewC
         <h1 className={shell.display}>Card ready</h1>
       </div>
 
-      <ForgeStage
-        className={styles.plate}
-        phase={flaring ? "working" : "cooling"}
-        step="art"
+      <AnvilStage
+        className={styles.stage}
         colors={colors}
+        fire={fire}
+        embers={revealed && tier !== "casual" ? "full" : "faint"}
         data={{ "data-tier": tier, "data-revealed": revealed ? "true" : "false" }}
-        effects={revealed ? <Effects tier={tier} flare={flare} /> : null}
-        slot={
-          <div className={styles.flipper} data-tier={tier} data-revealed={revealed ? "true" : "false"}>
-            <button
-              type="button"
-              className={styles.back}
-              // The visible "Reveal card" button below is the one assistive technology reaches.
-              aria-hidden="true"
-              tabIndex={-1}
-              onClick={reveal}
-            >
-              <CardBack className={styles.backArt} />
-            </button>
-            <div className={styles.front} aria-hidden={revealed ? undefined : "true"}>
-              <ForgeCardFace entry={entry} />
+        card={
+          <div className={styles.flipWrap}>
+            <div className={styles.flipper} data-tier={tier} data-revealed={revealed ? "true" : "false"}>
+              <button
+                type="button"
+                className={styles.back}
+                // The visible "Reveal card" button below is the one assistive technology reaches.
+                aria-hidden="true"
+                tabIndex={-1}
+                onClick={reveal}
+              >
+                <CardBack className={styles.backArt} />
+              </button>
+              <div className={styles.front} aria-hidden={revealed ? undefined : "true"}>
+                <ForgeCardFace entry={entry} />
+              </div>
             </div>
+            {burst && <FxLayers layers={REVEAL[tier]} scale={tier === "casual" ? 2 : 3} mode="once" className={styles.burst} />}
           </div>
         }
-      />
+      >
+        <span className={`${forge.pipe} ${crew.feed}`} aria-hidden="true">
+          <span className={forge.collar} style={{ left: "30%" }} />
+          <span className={`${forge.valve} ${crew.valve}`}>
+            <Valve />
+          </span>
+        </span>
+        <Goblin who="engineer" action={cheer} scale={3} className={`${forge.goblin} ${crew.engineer}`} />
+        <Goblin who="sage" action={sageAction} scale={3} className={`${forge.goblin} ${crew.sage}`} />
+        <Goblin who="operator" action={cheer} scale={3} flip className={`${forge.goblin} ${crew.operator}`} />
+      </AnvilStage>
 
       <div className={styles.actions}>
         {revealed ? (

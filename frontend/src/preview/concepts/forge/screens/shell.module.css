@@ -52,9 +52,94 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.6rem 2rem;
-  padding: 0.95rem clamp(1rem, 4cqi, 2.5rem);
-  border-bottom: 1px solid var(--forge-hairline);
-  box-shadow: 0 3px 0 -2px rgb(232 179 58 / 0.12);
+  position: relative;
+  z-index: 1;
+  padding: 0.95rem clamp(1rem, 4cqi, 2.5rem) 1.45rem;
+}
+
+/* The manifold: a gold pipe along the header's lower edge, with collars, valves and slow steam. */
+.manifold {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 10px;
+  background: linear-gradient(180deg, var(--forge-gold-light) 0 2px, #c99428 2px 7px, var(--forge-gold-deep) 7px);
+  box-shadow: 0 0 0 1px var(--forge-gold-dark), 0 6px 14px rgb(0 0 0 / 0.55);
+  pointer-events: none;
+}
+
+.joint {
+  position: absolute;
+  top: -3px;
+  width: 7px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--forge-gold-deep);
+  box-shadow: 0 0 0 1px var(--forge-gold-dark), inset 1px 1px 0 var(--forge-gold-light);
+}
+
+.valve {
+  position: absolute;
+  bottom: 8px;
+  width: 22px;
+  height: 22px;
+  transform: translateX(-50%);
+}
+
+.valve::after {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  width: 5px;
+  height: 8px;
+  transform: translateX(-50%);
+  background: var(--forge-gold-deep);
+}
+
+.valve svg {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The steam rises from the valve's top; its canvas is anchored on the vent (column 40, row 88 of 96). */
+.steam {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  width: 0;
+  height: 0;
+  opacity: 0.75;
+}
+
+/* The plume thins out before it leaves the header. */
+.steam canvas {
+  position: absolute;
+  top: -176px;
+  left: -80px;
+  mask-image: linear-gradient(to top, #000 0 10%, transparent 32%);
+}
+
+@container (max-width: 899px) {
+  .valve[data-wide="true"] {
+    display: none;
+  }
+}
+
+@container (max-width: 599px) {
+  .steam {
+    display: none;
+  }
+}
+
+.brand,
+.navWrap {
+  position: relative;
+  z-index: 1;
 }
 
 .brand {
@@ -68,8 +153,26 @@
 }
 
 .brandMark {
+  display: block;
   width: 1.6rem;
   height: 1.6rem;
+}
+
+.brandMark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The gear turns only while a card is being forged. */
+.brandMark[data-working="true"] svg {
+  animation: gear 3.2s linear infinite;
+}
+
+@keyframes gear {
+  to {
+    transform: rotate(1turn);
+  }
 }
 
 .navWrap {

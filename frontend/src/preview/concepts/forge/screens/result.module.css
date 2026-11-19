@@ -1,4 +1,4 @@
-/* Concept D "Forge" (tasks.md T251): the Result screen; the lit stage, the card text in ruled rows, the dial. */
+/* Concept D "Forge" (tasks.md T251): the Result screen; the card over the anvil, its text in ruled rows, the dial. */
 
 .grid {
   display: grid;
@@ -12,74 +12,15 @@
     gap: 3.5rem;
   }
 
-  .stage {
+  .stageCol {
     position: sticky;
     top: 1.5rem;
   }
 }
 
-/* The stage: warm light falls on the card from above; a brass pipe runs along the top edge. */
+/* The card over the anvil; a mouse tilts it toward the pointer. */
 .stage {
-  position: relative;
-  display: grid;
-  place-items: center;
-  padding: 4.2rem clamp(1rem, 4cqi, 3rem) 3.4rem;
-  border-radius: 12px;
-  background:
-    radial-gradient(ellipse 60% 50% at 50% 6%, rgb(255 222 160 / 0.16), transparent 72%),
-    radial-gradient(ellipse 70% 30% at 50% 100%, rgb(139 61 255 / 0.16), transparent 70%),
-    linear-gradient(180deg, #0c0911 0%, #17101f 70%, #0e0a14 100%);
-  box-shadow:
-    0 0 0 1px rgb(232 179 58 / 0.22),
-    inset 0 1px 0 rgb(232 179 58 / 0.2);
   perspective: 1400px;
-}
-
-.pipe {
-  position: absolute;
-  top: 1.1rem;
-  right: 3.4rem;
-  left: -1px;
-  height: 14px;
-  background: #c99428;
-  box-shadow:
-    inset 0 3px 0 var(--forge-gold-light),
-    inset 0 -4px 0 var(--forge-gold-deep),
-    0 0 0 1px var(--forge-gold-dark),
-    0 6px 10px -4px rgb(0 0 0 / 0.8);
-}
-
-.collar {
-  position: absolute;
-  top: -5px;
-  width: 9px;
-  height: 24px;
-  border-radius: 2px;
-  background: var(--forge-gold-deep);
-  box-shadow: 0 0 0 1px var(--forge-gold-dark), inset 1px 0 0 var(--forge-gold-light);
-}
-
-.collar[data-at="1"] {
-  left: 22%;
-}
-
-.collar[data-at="2"] {
-  left: 64%;
-}
-
-.gauge {
-  position: absolute;
-  top: -15px;
-  right: -40px;
-  width: 44px;
-  height: 44px;
-  filter: drop-shadow(0 3px 4px rgb(0 0 0 / 0.7));
-}
-
-.cardWrap {
-  position: relative;
-  width: min(100%, 26rem);
-  animation: land 620ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 .tilt {
@@ -87,25 +28,10 @@
   transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-@keyframes land {
-  from {
-    opacity: 0;
-    transform: translateY(-24px) scale(1.03);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.shadow {
-  position: absolute;
-  right: 8%;
-  bottom: -4%;
-  left: 8%;
-  height: 10%;
-  border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgb(0 0 0 / 0.85), rgb(0 0 0 / 0) 70%);
+/* The engineer, calm now, peeks out from behind the anvil's heel. */
+.stage .peek {
+  z-index: 1;
+  left: calc(50% + var(--anvil-w) * 0.5 - 34px * var(--px));
 }
 
 /* The text of the card, as rows under fine gold rules. */

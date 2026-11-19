@@ -1,0 +1,316 @@
+/* Concept D "Forge" (tasks.md T251): the shared anvil stage, its effects, the goblins' footing and the brass pipes. */
+
+/* The stage has no frame: light on the page, the anvil on a floor line, the card above it. */
+.stage {
+  --card-w: 16rem;
+  --anvil-w: calc(var(--card-w) * 1.6);
+  --face: calc(var(--anvil-w) * 17 / 360);
+  --lift: 1.7rem;
+  --px: 3;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 2.5rem;
+}
+
+.stage[data-size="md"] {
+  --card-w: 14.5rem;
+}
+
+.stage[data-size="xl"] {
+  --card-w: 18.5rem;
+  --anvil-w: calc(var(--card-w) * 1.36);
+}
+
+@container (max-width: 599px) {
+  .stage {
+    --px: 2;
+    --lift: 1.2rem;
+    --card-w: 12.5rem;
+    --anvil-w: calc(var(--card-w) * 1.4);
+    padding-top: 1.5rem;
+  }
+
+  .stage[data-size="md"] {
+    --card-w: 10rem;
+  }
+
+  .stage[data-size="xl"] {
+    --card-w: 14rem;
+  }
+}
+
+/* A floor line that fades at both ends, for the plinth and the goblins to stand on. */
+.stage::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(232 179 58 / 0.45) 22%, rgb(232 179 58 / 0.45) 78%, transparent);
+  pointer-events: none;
+}
+
+.light {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  z-index: 0;
+  width: min(100%, calc(var(--card-w) * 3.4));
+  transform: translateX(-50%);
+  background:
+    radial-gradient(ellipse 46% 42% at 50% 46%, rgb(139 61 255 / 0.16), transparent 72%),
+    radial-gradient(ellipse 38% 16% at 50% 84%, rgb(232 179 58 / 0.16), transparent 72%);
+  pointer-events: none;
+  transition: opacity 700ms ease-out;
+}
+
+.stage[data-fire="roar"] .light {
+  background:
+    radial-gradient(ellipse 50% 46% at 50% 50%, rgb(139 61 255 / 0.22), transparent 72%),
+    radial-gradient(ellipse 46% 26% at 50% 80%, rgb(242 140 40 / 0.26), transparent 72%);
+}
+
+.floatArea {
+  position: relative;
+  z-index: 4;
+  width: var(--card-w);
+}
+
+.float[data-float="true"] {
+  animation: bob 6.5s ease-in-out infinite;
+}
+
+@keyframes bob {
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+.anvilArea {
+  position: relative;
+  width: var(--anvil-w);
+  aspect-ratio: 360 / 164;
+  margin-top: calc(var(--lift) - var(--face));
+}
+
+.anvil {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The card's shadow on the anvil's face, breathing with the bob. */
+.cardShadow {
+  position: absolute;
+  top: calc(var(--face) - 5px);
+  left: 50%;
+  z-index: 3;
+  width: calc(var(--card-w) * 0.86);
+  height: 12px;
+  transform: translateX(-50%);
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.7), transparent);
+  pointer-events: none;
+  animation: shadow 6.5s ease-in-out infinite;
+}
+
+@keyframes shadow {
+  50% {
+    transform: translateX(-50%) scaleX(0.9);
+    opacity: 0.75;
+  }
+}
+
+/* Fire behind the anvil: three tongues rooted just under its face, low at rest, tall when the forge works. Each
+   tongue's point is the fire's rim (row 93 of 128, 25 effect pixels over its anchor), so it grows from there. */
+.fireBed {
+  position: absolute;
+  top: calc(var(--face) + 14px);
+  right: 0;
+  left: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.tongue {
+  position: absolute;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+  transition:
+    transform 800ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 800ms ease-out;
+}
+
+.tongue canvas {
+  position: absolute;
+  top: -279px;
+  left: -192px;
+}
+
+.stage[data-fire="low"] .tongue {
+  opacity: 0.38;
+  transform: scale(0.8, 0.45);
+}
+
+.stage[data-fire="roar"] .tongue {
+  opacity: 1;
+  transform: scale(1.05, 1.15);
+}
+
+.runes {
+  position: absolute;
+  top: calc(var(--face) + 6px);
+  left: 50%;
+  z-index: 3;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.runes canvas {
+  position: absolute;
+  top: -160px;
+  left: -136px;
+}
+
+.embers {
+  position: absolute;
+  top: var(--face);
+  left: 50%;
+  z-index: 5;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.embers canvas {
+  position: absolute;
+  top: -360px;
+  left: -288px;
+}
+
+.embers[data-level="faint"] {
+  opacity: 0.55;
+}
+
+@container (max-width: 599px) {
+  .tongue canvas,
+  .runes canvas,
+  .embers canvas {
+    scale: 0.67;
+  }
+
+  .tongue canvas {
+    transform-origin: 192px 279px;
+  }
+
+  .runes canvas {
+    transform-origin: 136px 160px;
+  }
+
+  .embers canvas {
+    transform-origin: 288px 360px;
+  }
+}
+
+/* A goblin standing on the floor line; screens give it its place. Feet are on row 61 of 64. */
+.goblin {
+  position: absolute;
+  bottom: calc(-3px * var(--px));
+  z-index: 4;
+  width: calc(64px * var(--px)) !important;
+  height: calc(64px * var(--px)) !important;
+  pointer-events: none;
+}
+
+/* Brass pipes: flat gold with a lit edge, a shaded edge and darker collars at the joints. */
+.pipe {
+  position: absolute;
+  height: 14px;
+  background:
+    linear-gradient(180deg, var(--forge-gold-light) 0 3px, #c99428 3px 10px, var(--forge-gold-deep) 10px);
+  box-shadow: 0 0 0 1px var(--forge-gold-dark), 0 4px 8px rgb(0 0 0 / 0.45);
+  pointer-events: none;
+}
+
+.collar {
+  position: absolute;
+  top: -4px;
+  width: 8px;
+  height: 22px;
+  border-radius: 2px;
+  background: var(--forge-gold-deep);
+  box-shadow: 0 0 0 1px var(--forge-gold-dark), inset 1px 1px 0 var(--forge-gold-light);
+}
+
+.valve {
+  position: absolute;
+  bottom: 10px;
+  width: 30px;
+  height: 30px;
+  transform: translateX(-50%);
+}
+
+.valve::before {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  width: 6px;
+  height: 14px;
+  transform: translateX(-50%);
+  background: var(--forge-gold-deep);
+  box-shadow: 0 0 0 1px var(--forge-gold-dark);
+}
+
+.valve svg {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.valve[data-turning="true"] svg {
+  animation: turn 1.6s linear infinite;
+}
+
+@keyframes turn {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* A one-shot effect anchored on a point of the stage. */
+.burst {
+  position: absolute;
+  z-index: 6;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage *,
+  .stage *::before,
+  .stage *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+:global([data-reduced-motion="true"]) .stage *,
+:global([data-reduced-motion="true"]) .stage *::before,
+:global([data-reduced-motion="true"]) .stage *::after {
+  animation: none !important;
+  transition: none !important;
+}

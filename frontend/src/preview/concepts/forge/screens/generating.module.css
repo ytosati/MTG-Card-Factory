@@ -1,4 +1,4 @@
-/* Concept D "Forge" (tasks.md T251): the Generating screen; the forge at work and the row of step lamps. */
+/* Concept D "Forge" (tasks.md T251): the Generating screen; the crew round the anvil and the rail of step lamps. */
 
 .head {
   display: flex;
@@ -6,7 +6,16 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 1rem 2rem;
-  margin-bottom: 1.6rem;
+}
+
+.idea {
+  max-width: 46ch;
+  margin: 0.7rem 0 0;
+  font-family: var(--forge-display);
+  font-size: 1.08rem;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--forge-muted);
 }
 
 .headActions {
@@ -15,9 +24,82 @@
   gap: 0.75rem;
 }
 
+/* The crew: the engineer at the feed's valve, the sage casting at the anvil, the operator at his lever. */
 .stage {
-  max-width: 64rem;
-  margin-inline: auto;
+  margin-top: 0.5rem;
+}
+
+.feed {
+  bottom: calc(18px * var(--px));
+  left: 0;
+  right: calc(50% + var(--anvil-w) * 0.26);
+  z-index: 1;
+}
+
+.feed .valve {
+  right: calc(var(--anvil-w) * 0.24 + 150px * var(--px) / 3 + 0.4rem);
+}
+
+.engineer {
+  left: calc(50% - var(--anvil-w) / 2 - 340px * var(--px) / 3);
+}
+
+.sage {
+  left: calc(50% - var(--anvil-w) / 2 - 150px * var(--px) / 3);
+}
+
+.operator {
+  left: calc(50% + var(--anvil-w) / 2 - 36px * var(--px) / 3);
+}
+
+/* Steam bursts from the valve on every new step; the anchor is the burst's mouth (column 68, row 116 of 128). */
+.steamAt {
+  bottom: calc(18px * var(--px) + 34px);
+  left: calc(50% - var(--anvil-w) / 2 - 150px * var(--px) / 3 - 0.4rem - 15px);
+  opacity: 0.6;
+}
+
+.steamAt canvas {
+  position: absolute;
+  top: -232px;
+  left: -136px;
+}
+
+/* On the revision the anvil rings: sparks spray from its face under the card. */
+.sparksAt {
+  bottom: calc(var(--anvil-w) * 147 / 360);
+  left: 50%;
+}
+
+.sparksAt canvas {
+  position: absolute;
+  top: -200px;
+  left: -200px;
+}
+
+/* The runes are written across the whole text box. */
+.writing {
+  width: 100% !important;
+  height: auto !important;
+}
+
+@container (max-width: 899px) {
+  .engineer,
+  .feed,
+  .steamAt {
+    display: none !important;
+  }
+}
+
+@container (max-width: 599px) {
+  .operator {
+    display: none !important;
+  }
+
+  .sage {
+    left: calc(50% - var(--anvil-w) / 2 - 36px);
+    z-index: 5;
+  }
 }
 
 /* The steps: lamps on a gold rail; done is a lit gold lamp, running a violet one that breathes. */
@@ -26,23 +108,21 @@
   display: grid;
   gap: 0.2rem;
   max-width: 64rem;
-  margin: 2rem auto 0;
+  margin: 2.2rem auto 0;
   padding: 0;
   list-style: none;
-  counter-reset: step;
 }
 
 .step {
   position: relative;
   display: grid;
-  grid-template-columns: 1.6rem auto 1fr;
+  grid-template-columns: 1.6rem 1fr;
   align-items: center;
   gap: 0.75rem;
   min-height: 2.6rem;
   color: var(--forge-muted);
 }
 
-/* The rail between lamps on a narrow page runs down. */
 .step:not(:last-child)::after {
   content: "";
   position: absolute;
@@ -97,6 +177,7 @@
 }
 
 .stepNumber {
+  margin-right: 0.55rem;
   font-family: var(--forge-display);
   font-size: 1.05rem;
   font-variant-numeric: tabular-nums;
@@ -123,47 +204,39 @@
   color: var(--forge-violet-bright);
 }
 
+/* On a wide page the lamps stand in a row on one rail, each name under its lamp. */
 @container (min-width: 760px) {
   .steps {
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 0;
   }
 
   .step {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
+    grid-template-columns: none;
     justify-items: center;
-    gap: 0.35rem;
+    gap: 0.6rem;
     text-align: center;
   }
 
   .step:not(:last-child)::after {
-    top: calc(0.8rem - 1px);
-    left: calc(50% + 0.8rem);
-    width: calc(100% - 1.6rem);
+    top: 0.8rem;
+    left: calc(50% + 0.95rem);
+    width: calc(100% - 1.9rem);
     height: 2px;
   }
 
-  .stepName {
-    padding-inline: 0.3rem;
-    font-size: 0.92rem;
-    line-height: 1.3;
+  .stepNumber {
+    display: block;
+    margin: 0;
   }
 }
 
-.order {
-  max-width: 44rem;
-  margin: 2.6rem auto 0;
-  padding-top: 1.2rem;
-  border-top: 1px solid var(--forge-hairline);
-  text-align: center;
+@media (prefers-reduced-motion: reduce) {
+  .step[data-state="running"] .lamp {
+    animation: none;
+  }
 }
 
-.quote {
-  margin: 0;
-  font-family: var(--forge-display);
-  font-size: clamp(1.15rem, 2.6cqi, 1.4rem);
-  font-style: italic;
-  line-height: 1.45;
-  color: var(--forge-ink);
+:global([data-reduced-motion="true"]) .step[data-state="running"] .lamp {
+  animation: none;
 }

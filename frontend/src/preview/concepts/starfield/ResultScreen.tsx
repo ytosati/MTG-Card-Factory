@@ -26,7 +26,7 @@ export interface ResultExtras {
 const COUNT = new Intl.NumberFormat("en-US");
 
 /** A check's code read as words: "color_identity" becomes "Color identity". */
-function checkName(code: string): string {
+export function checkName(code: string): string {
   const words = code.replace(/_/g, " ");
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
@@ -50,7 +50,7 @@ function arc(from: number, to: number, radius: number): string {
 }
 
 /** The power indicator as a half dial in three zones, the assessed zone lit and a star on its needle. */
-function PowerDial({ value }: { value: PowerIndicator }) {
+export function PowerDial({ value }: { value: PowerIndicator }) {
   const tip = point(DIAL_ANGLE[value], 74);
   return (
     <div className={styles.dial}>
@@ -79,7 +79,7 @@ function PowerDial({ value }: { value: PowerIndicator }) {
   );
 }
 
-function Validation({ version }: { version: CardVersion }) {
+export function Validation({ version }: { version: CardVersion }) {
   const { validation } = version;
   const approved = validation.status === "approved";
   return (
@@ -117,11 +117,53 @@ function Validation({ version }: { version: CardVersion }) {
   );
 }
 
+/** The text usage of a card: one row per provider call, then the totals. */
+export function UsageTable({ entry }: { entry: PreviewCard }) {
+  const totalIn = entry.usage.text.reduce((sum, record) => sum + record.input_tokens, 0);
+  const totalOut = entry.usage.text.reduce((sum, record) => sum + record.output_tokens, 0);
+  return (
+    <table className={styles.usage}>
+      <thead>
+        <tr>
+          <th scope="col">{resultCopy.usageCall}</th>
+          <th scope="col">{resultCopy.usageProviderModel}</th>
+          <th scope="col" className={styles.num}>
+            {resultCopy.usageInput}
+          </th>
+          <th scope="col" className={styles.num}>
+            {resultCopy.usageOutput}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {entry.usage.text.map((record, index) => (
+          <tr key={index} data-failed={record.outcome === "failed" ? "true" : "false"}>
+            <td className={styles.mono}>{String(index + 1).padStart(2, "0")}</td>
+            <td>
+              {statusCopy.providerNames[record.provider] ?? record.provider} <span className={styles.model}>{record.model}</span>
+              {record.outcome === "failed" ? <span className={styles.failed}>{resultCopy.usageFailed}</span> : null}
+            </td>
+            <td className={styles.num}>{COUNT.format(record.input_tokens)}</td>
+            <td className={styles.num}>{COUNT.format(record.output_tokens)}</td>
+          </tr>
+        ))}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row" colSpan={2}>
+            {resultCopy.usageTotal}
+          </th>
+          <td className={styles.num}>{COUNT.format(totalIn)}</td>
+          <td className={styles.num}>{COUNT.format(totalOut)}</td>
+        </tr>
+      </tfoot>
+    </table>
+  );
+}
+
 export function ResultScreen({ entry, extras }: { entry: PreviewCard; extras: ResultExtras }) {
   const version = entry.current_version;
   const powerId = useId();
-  const totalIn = entry.usage.text.reduce((sum, record) => sum + record.input_tokens, 0);
-  const totalOut = entry.usage.text.reduce((sum, record) => sum + record.output_tokens, 0);
 
   useEffect(() => {
     document.title = `${version.name} · Card Factory`;
@@ -241,42 +283,7 @@ export function ResultScreen({ entry, extras }: { entry: PreviewCard; extras: Re
           </Section>
           <Section id="sf-usage" title={resultCopy.usageHeading}>
             {entry.usage.text.length > 0 ? (
-              <table className={styles.usage}>
-                <thead>
-                  <tr>
-                    <th scope="col">{resultCopy.usageCall}</th>
-                    <th scope="col">{resultCopy.usageProviderModel}</th>
-                    <th scope="col" className={styles.num}>
-                      {resultCopy.usageInput}
-                    </th>
-                    <th scope="col" className={styles.num}>
-                      {resultCopy.usageOutput}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {entry.usage.text.map((record, index) => (
-                    <tr key={index} data-failed={record.outcome === "failed" ? "true" : "false"}>
-                      <td className={styles.mono}>{String(index + 1).padStart(2, "0")}</td>
-                      <td>
-                        {statusCopy.providerNames[record.provider] ?? record.provider} <span className={styles.model}>{record.model}</span>
-                        {record.outcome === "failed" ? <span className={styles.failed}>{resultCopy.usageFailed}</span> : null}
-                      </td>
-                      <td className={styles.num}>{COUNT.format(record.input_tokens)}</td>
-                      <td className={styles.num}>{COUNT.format(record.output_tokens)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <th scope="row" colSpan={2}>
-                      {resultCopy.usageTotal}
-                    </th>
-                    <td className={styles.num}>{COUNT.format(totalIn)}</td>
-                    <td className={styles.num}>{COUNT.format(totalOut)}</td>
-                  </tr>
-                </tfoot>
-              </table>
+              <UsageTable entry={entry} />
             ) : (
               <p className={styles.quiet}>{resultCopy.noUsage}</p>
             )}

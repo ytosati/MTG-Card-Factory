@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 // Smoke test of concept E "Starfield" (tasks.md T251): each state renders one level-1 heading, the footer notice
 // (RN-69) and a decorative starfield; Colorless excludes the colors; a custom art version asks only for card and art;
-// generation announces its step; the reveal turns into the way to the result; the build shows its progress.
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+// generation announces its step; the reveal turns into the way to the result; the build shows its progress; the
+// Studio keeps one card in place while its phases swap only the elements around it.
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { starfieldStates } from "./starfield.states";
@@ -79,5 +80,28 @@ describe("Starfield concept (T251)", () => {
     expect(screen.queryByRole("navigation")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Start the build" }));
     expect(screen.getByRole("progressbar", { name: "Building the card database" })).toBeTruthy();
+  });
+
+  it("keeps the Studio's card in place when Generate swaps the settings for the steps", async () => {
+    const { container } = renderState("studio");
+    const card = container.querySelector("[data-studio-card]");
+    fireEvent.click(screen.getByRole("button", { name: "Generate card" }));
+    expect(screen.getByRole("status").textContent).toBe("Step 1 of 6: Design intent");
+    expect(await screen.findByRole("list", { name: "Generation steps" })).toBeTruthy();
+    expect(screen.queryByRole("group", { name: "Color identity" })).toBeNull();
+    expect(container.querySelector("[data-studio-card]")).toBe(card);
+  });
+
+  it("reveals the Studio's card in place, then shows its page around it and returns to the request", async () => {
+    const { container } = renderState("studio-ready");
+    const card = container.querySelector("[data-studio-card]");
+    fireEvent.click(screen.getByRole("button", { name: "Reveal card" }));
+    const again = await screen.findByRole("button", { name: "New request from this card" }, { timeout: 3000 });
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Result");
+    expect(screen.getByRole("heading", { name: "Validation" })).toBeTruthy();
+    expect(container.querySelector("[data-studio-card]")).toBe(card);
+    fireEvent.click(again);
+    await waitFor(() => expect(screen.getByRole("group", { name: "Color identity" })).toBeTruthy());
+    expect(container.querySelector("[data-studio-card]")).toBe(card);
   });
 });

@@ -23,7 +23,7 @@ import { Shell } from "./Shell";
 /** Time each running step stays on screen in the mockup. */
 const STEP_MS = 1800;
 
-type Patch = (change: Partial<RequestDraft>) => void;
+export type Patch = (change: Partial<RequestDraft>) => void;
 
 /** The running steps of this request: a custom art version has only art; art shows only when requested (RN-55). */
 function stepsOf(draft: RequestDraft): { value: GenerationStep; name: string }[] {
@@ -32,7 +32,7 @@ function stepsOf(draft: RequestDraft): { value: GenerationStep; name: string }[]
 }
 
 /** The required parts still missing, named as their fields. */
-function missingOf(draft: RequestDraft): string[] {
+export function missingOf(draft: RequestDraft): string[] {
   if (draft.kind === "custom-art") {
     const missing = draft.baseCardId ? [] : [copy.baseCardLabel];
     if (draft.art === "uploaded" && !draft.uploadName) missing.push(copy.artLabel);
@@ -46,7 +46,7 @@ function missingOf(draft: RequestDraft): string[] {
 }
 
 /** The base card: a search by name with its matches, then the chosen card's printing and face. */
-function BaseCardPicker({ draft, patch }: { draft: RequestDraft; patch: Patch }) {
+export function BaseCardPicker({ draft, patch }: { draft: RequestDraft; patch: Patch }) {
   const searchId = useId();
   const hintId = useId();
   const printingId = useId();
@@ -168,7 +168,7 @@ function FilePick({ label, name, hint, onPick }: { label: string; name: string |
 }
 
 /** The art: none, generated with an optional description and the billing notice, or an uploaded image. */
-function ArtPicker({ draft, patch, labelledBy }: { draft: RequestDraft; patch: Patch; labelledBy: string }) {
+export function ArtPicker({ draft, patch, labelledBy }: { draft: RequestDraft; patch: Patch; labelledBy: string }) {
   const descriptionId = useId();
   const countId = useId();
   const hintId = useId();
@@ -222,7 +222,7 @@ function ArtPicker({ draft, patch, labelledBy }: { draft: RequestDraft; patch: P
 }
 
 /** The advanced options, every one optional (RN-54). */
-function AdvancedFields({ draft, patch }: { draft: RequestDraft; patch: Patch }) {
+export function AdvancedFields({ draft, patch }: { draft: RequestDraft; patch: Patch }) {
   const subtypesId = useId();
   const subtypesHint = useId();
   const manaValueId = useId();

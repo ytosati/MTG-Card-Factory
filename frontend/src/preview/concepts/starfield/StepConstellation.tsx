@@ -1,5 +1,7 @@
 // Concept E "Starfield" (tasks.md T251): the generation steps as a vertical constellation: each finished step lights
 // its star and draws a line to the next (RN-55).
+import type { ReactNode } from "react";
+
 import { requestCopy } from "../../../screens/request/copy";
 import styles from "./steps.module.css";
 
@@ -12,12 +14,15 @@ function centre(index: number): { x: number; y: number } {
   return { x: DRIFT[index % DRIFT.length] ?? 20, y: index * ROW + ROW / 2 };
 }
 
-type Phase = "done" | "running" | "waiting";
+export type StepPhase = "done" | "running" | "waiting";
 
-/** The steps with the running one marked; `current` past the last step means every step is finished. */
-export function StepConstellation({ current, labelledBy }: { current: number; labelledBy: string }) {
+/**
+ * The steps with the running one marked; `current` past the last step means every step is finished. A caller may
+ * draw each step's words itself through `label`, for example to add a description and a time.
+ */
+export function StepConstellation({ current, labelledBy, label }: { current: number; labelledBy: string; label?: (index: number, phase: StepPhase) => ReactNode }) {
   const steps = requestCopy.steps;
-  const phaseOf = (index: number): Phase => (index < current ? "done" : index === current ? "running" : "waiting");
+  const phaseOf = (index: number): StepPhase => (index < current ? "done" : index === current ? "running" : "waiting");
 
   return (
     <div className={styles.wrap} style={{ height: steps.length * ROW }}>
@@ -58,7 +63,7 @@ export function StepConstellation({ current, labelledBy }: { current: number; la
               <span className={styles.number} aria-hidden="true">
                 {String(index + 1).padStart(2, "0")}
               </span>
-              <span className={styles.name}>{step.name}</span>
+              {label ? label(index, phase) : <span className={styles.name}>{step.name}</span>}
               <span className={styles.srOnly}>{phase === "done" ? ", done" : phase === "running" ? ", running" : ""}</span>
             </li>
           );

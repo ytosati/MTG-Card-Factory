@@ -47,15 +47,69 @@ function artLabelOf(draft: RequestDraft): string {
   return copy.noArt;
 }
 
-/** The outline of the card to come, then the request's readings beneath it. */
-export function CardOutline({ draft, generating }: { draft: RequestDraft; generating: boolean }) {
-  const titleId = useId();
+/** The outline's face alone: the frame in the identity's colors, the title, art window, type line and idea. */
+export function OutlineFace({ draft, generating }: { draft: RequestDraft; generating: boolean }) {
   const base = baseCardOf(draft.baseCardId);
   const custom = draft.kind === "custom-art";
   const face = base?.faces[draft.faceIndex] ?? base?.faces[0];
   const typeLine = custom ? face?.typeLine ?? null : typeLineOf(draft);
   const hasPowerToughness = !custom && (draft.power !== "" || draft.toughness !== "");
   const hasLoyalty = !custom && draft.loyalty !== "";
+
+  return (
+    <div className={styles.frame} style={{ "--frame": frameOf(custom ? [] : draft.colors) } as Vars} data-generating={generating ? "true" : "false"}>
+      <div className={styles.card}>
+        <div className={styles.titleBar}>
+          <span className={styles.name} data-empty={custom && face ? "false" : "true"}>
+            {custom && face ? face.name : copy.untitled}
+          </span>
+          {custom && face?.cost ? (
+            <ManaCostSymbols cost={face.cost} size="4.6cqi" />
+          ) : !custom && draft.manaValue !== "" ? (
+            <span className={styles.manaValue}>{draft.manaValue}</span>
+          ) : null}
+        </div>
+        <div className={styles.art} data-art={draft.art}>
+          <span className={styles.artLabel}>{artLabelOf(draft)}</span>
+        </div>
+        <div className={styles.typeBar} data-empty={typeLine ? "false" : "true"}>
+          {typeLine ?? copy.freeType}
+        </div>
+        <div className={styles.textBox}>
+          {custom ? (
+            <span className={styles.customMark}>{copy.customMark}</span>
+          ) : (
+            <p className={styles.idea} data-empty={draft.idea ? "false" : "true"}>
+              {draft.idea || copy.noIdea}
+            </p>
+          )}
+          {generating ? (
+            <span className={styles.runes} aria-hidden="true">
+              <PixelFx effect={RUNE_WRITE.effect} options={{ ...RUNE_WRITE.options, palette: STARLIGHT_RUNES }} width={RUNE_WRITE.width} height={RUNE_WRITE.height} scale={2} mode="loop" />
+            </span>
+          ) : null}
+        </div>
+        <div className={styles.footLine}>
+          <span className={styles.lang}>{draft.language === "pt-BR" ? "PT-BR" : "EN"}</span>
+          {hasPowerToughness ? (
+            <span className={styles.stat}>
+              {draft.power || "?"} / {draft.toughness || "?"}
+            </span>
+          ) : hasLoyalty ? (
+            <span className={styles.stat}>{draft.loyalty}</span>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** The outline of the card to come, then the request's readings beneath it. */
+export function CardOutline({ draft, generating }: { draft: RequestDraft; generating: boolean }) {
+  const titleId = useId();
+  const base = baseCardOf(draft.baseCardId);
+  const custom = draft.kind === "custom-art";
+  const face = base?.faces[draft.faceIndex] ?? base?.faces[0];
   const power = requestCopy.powerLevels.find((level) => level.value === draft.powerLevel);
   const effort = requestCopy.efforts.find((level) => level.value === draft.effort);
   const language = requestCopy.languages.find((entry) => entry.value === draft.language);
@@ -73,50 +127,7 @@ export function CardOutline({ draft, generating }: { draft: RequestDraft; genera
       </div>
 
       <div className={styles.cardWrap}>
-        <div className={styles.frame} style={{ "--frame": frameOf(custom ? [] : draft.colors) } as Vars} data-generating={generating ? "true" : "false"}>
-          <div className={styles.card}>
-            <div className={styles.titleBar}>
-              <span className={styles.name} data-empty={custom && face ? "false" : "true"}>
-                {custom && face ? face.name : copy.untitled}
-              </span>
-              {custom && face?.cost ? (
-                <ManaCostSymbols cost={face.cost} size="4.6cqi" />
-              ) : !custom && draft.manaValue !== "" ? (
-                <span className={styles.manaValue}>{draft.manaValue}</span>
-              ) : null}
-            </div>
-            <div className={styles.art} data-art={draft.art}>
-              <span className={styles.artLabel}>{artLabelOf(draft)}</span>
-            </div>
-            <div className={styles.typeBar} data-empty={typeLine ? "false" : "true"}>
-              {typeLine ?? copy.freeType}
-            </div>
-            <div className={styles.textBox}>
-              {custom ? (
-                <span className={styles.customMark}>{copy.customMark}</span>
-              ) : (
-                <p className={styles.idea} data-empty={draft.idea ? "false" : "true"}>
-                  {draft.idea || copy.noIdea}
-                </p>
-              )}
-              {generating ? (
-                <span className={styles.runes} aria-hidden="true">
-                  <PixelFx effect={RUNE_WRITE.effect} options={{ ...RUNE_WRITE.options, palette: STARLIGHT_RUNES }} width={RUNE_WRITE.width} height={RUNE_WRITE.height} scale={2} mode="loop" />
-                </span>
-              ) : null}
-            </div>
-            <div className={styles.footLine}>
-              <span className={styles.lang}>{draft.language === "pt-BR" ? "PT-BR" : "EN"}</span>
-              {hasPowerToughness ? (
-                <span className={styles.stat}>
-                  {draft.power || "?"} / {draft.toughness || "?"}
-                </span>
-              ) : hasLoyalty ? (
-                <span className={styles.stat}>{draft.loyalty}</span>
-              ) : null}
-            </div>
-          </div>
-        </div>
+        <OutlineFace draft={draft} generating={generating} />
       </div>
 
       <dl className={styles.readings}>

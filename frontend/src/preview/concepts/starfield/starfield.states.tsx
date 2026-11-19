@@ -1,5 +1,5 @@
-// Preview states of concept E "Starfield" (tasks.md T251): the Request screen in its forms, then the generation, the
-// reveal by power level, the Result page, Status and Setup.
+// Preview states of concept E "Starfield" (tasks.md T251): the Request screen in its forms, the Studio layout test (the
+// same steps as one page), then the generation, the reveal by power level, the Result page, Status and Setup.
 import { setupBuilding, setupNotReady, statusFullConfiguration, statusWithSources } from "../../../api/contract/samples";
 import type { SetupResponse, StatusResponse } from "../../../api/types";
 import { cardWithImage, cardWithoutImage, planeswalkerCard, rejectedCard } from "../../fixtures";
@@ -12,6 +12,7 @@ import { RequestScreen } from "./RequestScreen";
 import { ResultScreen, type ResultExtras } from "./ResultScreen";
 import { SetupScreen } from "./SetupScreen";
 import { StatusScreen } from "./StatusScreen";
+import { StudioScreen } from "./StudioScreen";
 
 const FILLED: Partial<RequestDraft> = {
   idea: "A lighthouse keeper who trades memories with the tide, drawing a card whenever the sea takes something back.",
@@ -89,6 +90,10 @@ export const starfieldStates: PreviewState[] = [
   { id: "request-empty", name: "Request, empty", render: () => <RequestScreen /> },
   { id: "request-advanced", name: "Request, advanced options, base card and art", render: () => <RequestScreen initial={ADVANCED} /> },
   { id: "request-custom-art", name: "Request, custom art version", render: () => <RequestScreen initial={CUSTOM_ART} /> },
+  { id: "studio", name: "Studio, one page: compose, filled", render: () => <StudioScreen initial={FILLED} entry={RESULT_CARD} extras={RESULT_EXTRAS} /> },
+  { id: "studio-generating", name: "Studio, generating", render: () => <StudioScreen phase="generating" initial={FILLED} entry={RESULT_CARD} extras={RESULT_EXTRAS} /> },
+  { id: "studio-ready", name: "Studio, ready face down", render: () => <StudioScreen phase="ready" initial={FILLED} entry={RESULT_CARD} extras={RESULT_EXTRAS} /> },
+  { id: "studio-result", name: "Studio, result", render: () => <StudioScreen phase="result" initial={FILLED} entry={RESULT_CARD} extras={RESULT_EXTRAS} /> },
   { id: "generating", name: "Generating, the steps walked automatically", render: () => <GeneratingScreen /> },
   { id: "ready-casual", name: "Ready, casual power", render: () => <ReadyScreen tier="casual" entry={cardWithoutImage} /> },
   { id: "ready-medium", name: "Ready, medium power", render: () => <ReadyScreen tier="medium" entry={RESULT_CARD} /> },

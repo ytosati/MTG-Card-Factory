@@ -1,0 +1,706 @@
+/* Concept E "Starfield" (tasks.md T251): the Studio layout test: the card fixed in the centre of a three-column
+   stage, the request around it, and the elements that change with each phase. */
+.page {
+  padding: 40px var(--sf-gutter) 0;
+  color-scheme: dark;
+}
+
+/* The title row has a fixed height, so a longer word in any phase never pushes the card down. */
+.head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px 40px;
+  max-width: 1360px;
+  height: 112px;
+  margin: 0 auto 44px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--sf-rule);
+}
+
+.headText {
+  min-width: 0;
+}
+
+.rubric {
+  margin-bottom: 12px;
+  white-space: nowrap;
+}
+
+.title {
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--sf-serif);
+  font-size: 3.25rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.015em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.title:focus {
+  outline: none;
+}
+
+/* The phases as a line of stars joined by hairlines. */
+.track {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0 0 6px;
+  list-style: none;
+}
+
+.track li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sf-ink-faint);
+  white-space: nowrap;
+  transition: color var(--sf-medium) var(--sf-ease-out);
+}
+
+.track li + li::before {
+  content: "";
+  width: 28px;
+  height: 1px;
+  margin: 0 6px 0 4px;
+  background: var(--sf-rule-strong);
+}
+
+.trackStar {
+  flex: none;
+  color: var(--sf-rule-strong);
+  transition: color var(--sf-medium) var(--sf-ease-out), transform var(--sf-medium) var(--sf-ease-out);
+}
+
+.track li[data-state="done"] {
+  color: var(--sf-ink-muted);
+}
+
+.track li[data-state="done"] .trackStar {
+  color: var(--sf-violet-text);
+}
+
+.track li[data-state="current"] {
+  color: var(--sf-ink);
+}
+
+.track li[data-state="current"] .trackStar {
+  color: var(--sf-cyan);
+  transform: rotate(45deg) scale(1.3);
+}
+
+/* The stage: settings left and right of the card, the action under it, wide groups along the bottom. The card's
+   track is fixed and the side columns span two rows, so their height never moves the card. */
+.stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px minmax(0, 1fr);
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "left card right"
+    "left under right"
+    "bottom bottom bottom";
+  column-gap: 64px;
+  max-width: 1360px;
+  margin: 0 auto;
+}
+
+.slot {
+  grid-area: card;
+  position: relative;
+  width: 320px;
+  aspect-ratio: 63 / 88;
+  perspective: 1400px;
+}
+
+/* Two plate marks round the card, the same in every phase. */
+.slot::before,
+.slot::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 0 solid var(--sf-rule-strong);
+  pointer-events: none;
+}
+
+.slot::before {
+  top: -14px;
+  left: -14px;
+  border-width: 1px 0 0 1px;
+  border-color: var(--sf-cyan);
+}
+
+.slot::after {
+  right: -14px;
+  bottom: -14px;
+  border-width: 0 1px 1px 0;
+}
+
+/* A thin tilted orbit behind the card while it is made and while it waits face down. */
+.orbit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: -1;
+  width: 480px;
+  height: 150px;
+  border: 1px solid var(--sf-rule);
+  border-radius: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(-18deg) scale(0.92);
+  transition: opacity 600ms var(--sf-ease-out), transform 600ms var(--sf-ease-out);
+  pointer-events: none;
+}
+
+.orbit::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  right: 64px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--sf-cyan);
+}
+
+.orbit[data-on="true"] {
+  opacity: 1;
+  transform: translate(-50%, -50%) rotate(-18deg);
+}
+
+/* The card's layers: each phase draws one inside the slot; the next fades in over the last. */
+.layer {
+  position: absolute;
+  inset: 0;
+  animation: layer-in 280ms var(--sf-ease-out) backwards;
+  transition: opacity 320ms var(--sf-ease-out);
+}
+
+.layer[data-out="true"] {
+  opacity: 0;
+}
+
+.outline {
+  container-type: inline-size;
+}
+
+@keyframes layer-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The finished card arrives face down by turning in from its edge, then turns over in place. */
+.faceLayer {
+  perspective: 1400px;
+}
+
+.turnIn {
+  animation: turn-in 560ms cubic-bezier(0.3, 0.7, 0.2, 1) backwards;
+}
+
+@keyframes turn-in {
+  from {
+    opacity: 0;
+    transform: rotateY(-90deg);
+  }
+}
+
+.still {
+  animation: none !important;
+}
+
+.left {
+  grid-area: left;
+  --dx: -18px;
+  --dy: 0px;
+}
+
+.right {
+  grid-area: right;
+  --dx: 18px;
+  --dy: 0px;
+}
+
+.left,
+.right {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+}
+
+.bottom {
+  grid-area: bottom;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  column-gap: 64px;
+  margin-top: 48px;
+  --dx: 0px;
+  --dy: 14px;
+}
+
+.stage[data-phase="result"] .right {
+  gap: 36px;
+}
+
+.under {
+  grid-area: under;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 14px;
+  padding-top: 32px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 20px;
+  --dx: 0px;
+  --dy: 10px;
+}
+
+.stage[data-phase="result"] .actions {
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  max-width: 320px;
+  text-align: center;
+}
+
+.stage[data-phase="result"] .actions > a {
+  align-self: center;
+  margin-top: 4px;
+}
+
+.status {
+  max-width: 320px;
+  min-height: 1.5em;
+  margin: 0;
+  font-size: 0.875rem;
+  text-align: center;
+  color: var(--sf-ink-muted);
+}
+
+.status[data-tone="missing"] {
+  color: #f5b4c0;
+}
+
+/* The elements round the card arrive from their side, lightly staggered, and leave the same way. */
+.stage [data-area] > * {
+  animation: arrive var(--sf-medium) var(--sf-ease-out) backwards;
+}
+
+.stage [data-area] > *:nth-child(2) {
+  animation-delay: 50ms;
+}
+
+.stage [data-area] > *:nth-child(3) {
+  animation-delay: 100ms;
+}
+
+.stage [data-area] > *:nth-child(n + 4) {
+  animation-delay: 150ms;
+}
+
+.stage [data-area][data-leaving="true"] > * {
+  animation: leave 200ms var(--sf-ease-out) both;
+  pointer-events: none;
+}
+
+.stage [data-area][data-leaving="true"] > *:nth-child(2) {
+  animation-delay: 20ms;
+}
+
+.stage [data-area][data-leaving="true"] > *:nth-child(n + 3) {
+  animation-delay: 40ms;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy));
+  }
+}
+
+@keyframes leave {
+  to {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy));
+  }
+}
+
+/* A compact group: heading and note on one line, the controls under them. */
+.panel {
+  min-width: 0;
+  padding: 22px 0 28px;
+  border-top: 1px solid var(--sf-rule);
+}
+
+.panel[data-wide="true"] {
+  grid-column: 1 / -1;
+}
+
+.panelHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-bottom: 16px;
+}
+
+.panelNote {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--sf-ink-faint);
+}
+
+.pairRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 28px;
+  min-width: 0;
+}
+
+/* The identity in a side column: the six picks in one row, smaller, with Colorless after its "or". */
+.colors > fieldset {
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 0 12px;
+}
+
+.colors > fieldset > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.colors > fieldset label[data-color] {
+  --pick-size: 38px;
+  gap: 10px;
+}
+
+.colors > fieldset label[data-color] > span:last-child {
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+}
+
+.colors > fieldset > span:not(:last-child) {
+  padding-top: 10px;
+  padding-bottom: 0;
+}
+
+.idea {
+  min-height: 5.4em;
+  font-size: 1.3125rem;
+}
+
+/* The request while the card is made: the idea set in the serif, then each choice on a ruled row. */
+.readout {
+  display: grid;
+  gap: 14px;
+  padding-top: 22px;
+  border-top: 1px solid var(--sf-rule);
+}
+
+.readings {
+  margin: 8px 0 0;
+}
+
+.readings > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 44px;
+  padding: 8px 0;
+  border-top: 1px solid var(--sf-rule);
+}
+
+.readings > div:last-child {
+  border-bottom: 1px solid var(--sf-rule);
+}
+
+.readings dt {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sf-ink-faint);
+  white-space: nowrap;
+}
+
+.readings dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+  font-size: 0.875rem;
+  color: var(--sf-ink);
+}
+
+/* Each step's words: its name over a short note, its time at the end of the row. */
+.stepText {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+
+.stepNote {
+  overflow: hidden;
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--sf-ink-faint);
+}
+
+.stepTime {
+  flex: none;
+  font-family: var(--sf-mono);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--sf-ink-faint);
+}
+
+/* The running step under the card: its name in the serif and a hairline that fills step by step. */
+.running {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.runningName {
+  font-family: var(--sf-serif);
+  font-size: 1.625rem;
+  line-height: 1.15;
+  text-align: center;
+  color: var(--sf-ink);
+}
+
+.progress {
+  display: block;
+  width: 100%;
+  height: 1px;
+  background: var(--sf-rule);
+}
+
+.progress > span {
+  display: block;
+  height: 100%;
+  background: var(--sf-violet-text);
+  transform-origin: left center;
+  transition: transform 2000ms linear;
+}
+
+.summaryIdea {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--sf-serif);
+  font-size: 1.25rem;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--sf-ink);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.steps {
+  display: grid;
+  gap: 20px;
+  padding-top: 22px;
+  border-top: 1px solid var(--sf-rule);
+}
+
+/* The result's text in rules format. */
+.rules {
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.cardName {
+  margin: 0;
+  font-family: var(--sf-serif);
+  font-size: 2.25rem;
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+
+.rulesText {
+  font-size: 1.125rem;
+}
+
+.facts {
+  margin-top: 24px;
+}
+
+/* Medium pages: the card first and centred, the settings in two columns under it. */
+@container (max-width: 1199px) {
+  .stage {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas:
+      "card card"
+      "under under"
+      "left right"
+      "bottom bottom";
+    column-gap: 40px;
+  }
+
+  .stage[data-phase="compose"] {
+    grid-template-areas:
+      "card card"
+      "left right"
+      "bottom bottom"
+      "under under";
+  }
+
+  .slot {
+    justify-self: center;
+    width: 280px;
+  }
+
+  .left,
+  .right {
+    margin-top: 40px;
+  }
+
+  .stage[data-phase="compose"] .under {
+    padding-top: 40px;
+  }
+
+  .bottom {
+    column-gap: 40px;
+  }
+}
+
+/* Narrow pages: one column, the card still first. */
+@container (max-width: 767px) {
+  .head {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    height: 148px;
+    margin-bottom: 40px;
+  }
+
+  .title {
+    font-size: 2.5rem;
+  }
+
+  .track li + li::before {
+    width: 14px;
+  }
+
+  /* Only the current phase is named on a narrow page; the others keep their star and stay in the list. */
+  .track li:not([data-state="current"]) .trackName {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .stage {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "card"
+      "under"
+      "left"
+      "right"
+      "bottom";
+  }
+
+  .stage[data-phase="compose"] {
+    grid-template-areas:
+      "card"
+      "left"
+      "right"
+      "bottom"
+      "under";
+  }
+
+  .slot {
+    width: 240px;
+  }
+
+  .pairRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Too narrow for six picks in a row: Colorless goes under the five. */
+  .colors > fieldset {
+    flex-wrap: wrap;
+    row-gap: 14px;
+  }
+
+  .colors > fieldset > div {
+    flex-basis: 100%;
+  }
+
+  .right {
+    margin-top: 24px;
+  }
+
+  .bottom {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 24px;
+  }
+
+  .orbit {
+    width: 360px;
+    height: 120px;
+  }
+
+  .idea {
+    font-size: 1.125rem;
+  }
+
+  .cardName {
+    font-size: 1.875rem;
+  }
+}
+
+/* Reduced motion: the elements swap without moving, the card's layers swap without turning. */
+@media (prefers-reduced-motion: reduce) {
+  .stage [data-area] > *,
+  .stage [data-area][data-leaving="true"] > *,
+  .layer,
+  .turnIn {
+    animation: none;
+  }
+
+  .orbit,
+  .layer,
+  .progress > span {
+    transition: none;
+  }
+}
+
+:global([data-reduced-motion="true"]) .stage [data-area] > *,
+:global([data-reduced-motion="true"]) .stage [data-area][data-leaving="true"] > *,
+:global([data-reduced-motion="true"]) .layer,
+:global([data-reduced-motion="true"]) .turnIn {
+  animation: none;
+}
+
+:global([data-reduced-motion="true"]) .orbit,
+:global([data-reduced-motion="true"]) .layer,
+:global([data-reduced-motion="true"]) .progress > span {
+  transition: none;
+}

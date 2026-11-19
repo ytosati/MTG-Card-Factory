@@ -1,0 +1,236 @@
+/* Concept B "Drafting Table" (tasks.md T251): the generation wait, a card drafted stroke by stroke. */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 48px;
+  align-items: start;
+}
+
+.board {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.drawingSlot {
+  position: relative;
+  width: min(420px, 100%);
+}
+
+.draft {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.construction {
+  fill: none;
+  stroke: var(--d-pencil);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 8;
+}
+
+.stroke {
+  fill: none;
+  stroke: var(--d-ink);
+  stroke-width: 3;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: draw 700ms var(--d-snap) both;
+  animation-delay: calc(var(--d) * 180ms);
+}
+
+.stroke:first-of-type {
+  fill: var(--d-sheet);
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+.pencilText {
+  fill: none;
+  stroke: var(--d-pencil);
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+
+/* The running step: its zone is traced again and again with the pen. */
+.tracing {
+  fill: var(--d-pen-tint);
+  fill-opacity: 0.5;
+  stroke: var(--d-pen);
+  stroke-width: 4;
+  stroke-dasharray: 0.3 0.7;
+  animation: trace 1.8s linear infinite;
+}
+
+@keyframes trace {
+  to {
+    stroke-dashoffset: -1;
+  }
+}
+
+.pending {
+  fill: none;
+  stroke: var(--d-pencil);
+  stroke-width: 2;
+  stroke-dasharray: 4 6;
+}
+
+/* The scan line sweeps the card while the checks run; still, it rests on the text box. */
+.scan {
+  animation: scan 2.6s ease-in-out infinite alternate;
+}
+
+.scan path {
+  stroke: var(--d-pen);
+  stroke-width: 2;
+}
+
+.scan text {
+  font-family: var(--d-mono);
+  font-size: 22px;
+  fill: var(--d-pen);
+}
+
+@keyframes scan {
+  from {
+    transform: translateY(-600px);
+  }
+  to {
+    transform: translateY(220px);
+  }
+}
+
+/* The side: the steps as annotation lines and the brief being worked on. */
+.side {
+  display: grid;
+  gap: 32px;
+}
+
+.heading {
+  margin: 0 0 10px;
+  font-family: var(--d-display);
+  font-stretch: condensed;
+  font-weight: 700;
+  font-size: 1.375rem;
+  text-transform: uppercase;
+}
+
+.status {
+  margin: 0 0 16px;
+  padding-left: 12px;
+  border-left: 2px solid var(--d-pen);
+  font-family: var(--d-mono);
+  font-size: 0.875rem;
+  color: var(--d-pen);
+}
+
+.steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--d-pencil);
+  font-size: 0.9375rem;
+}
+
+.stepNum {
+  font-family: var(--d-mono);
+  font-size: 0.75rem;
+  color: var(--d-ink-soft);
+}
+
+.stepName {
+  font-family: var(--d-display);
+  font-stretch: condensed;
+  font-weight: 700;
+  font-size: 1.0625rem;
+  text-transform: uppercase;
+}
+
+.stepLine {
+  flex: 1;
+  min-width: 16px;
+  height: 2px;
+  transform-origin: left center;
+}
+
+.stepState {
+  font-family: var(--d-mono);
+  font-size: 0.75rem;
+  color: var(--d-ink-soft);
+}
+
+.step[data-state="done"] .stepLine {
+  background: var(--d-pen);
+  animation: extend 320ms var(--d-snap) both;
+  animation-delay: calc(var(--i) * 120ms);
+}
+
+.step[data-state="done"] .stepState {
+  color: var(--d-ok);
+}
+
+.step[data-state="running"] .stepName,
+.step[data-state="running"] .stepState {
+  color: var(--d-pen);
+}
+
+.step[data-state="running"] .stepLine {
+  background-image: repeating-linear-gradient(90deg, var(--d-pen) 0 8px, transparent 8px 14px);
+  background-size: 28px 2px;
+  animation: march 700ms linear infinite;
+}
+
+.step[data-state="waiting"] {
+  color: var(--d-ink-soft);
+}
+
+.step[data-state="waiting"] .stepLine {
+  background-image: repeating-linear-gradient(90deg, var(--d-pencil) 0 2px, transparent 2px 6px);
+}
+
+@keyframes extend {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes march {
+  to {
+    background-position: 28px 0;
+  }
+}
+
+.brief {
+  padding: 30px 22px 22px;
+}
+
+.excerpt {
+  margin: 0 0 14px;
+  font-size: 1.0625rem;
+  line-height: 1.5;
+}
+
+@container (max-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .drawingSlot {
+    width: min(320px, 80%);
+  }
+}

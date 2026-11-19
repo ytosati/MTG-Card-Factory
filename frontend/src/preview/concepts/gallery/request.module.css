@@ -1,0 +1,463 @@
+/* Concept C, "Gallery Wall" (tasks.md T251): the Request screen as an editorial spread on a painted wall. Each part
+   sits on one field, so its text always has the contrast of that field; the idea is a paper sheet across both. */
+.page {
+  min-height: 100%;
+}
+
+.spread {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "head"
+    "idea"
+    "colors"
+    "ident"
+    "choices";
+}
+
+.spread fieldset {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+}
+
+.head,
+.ident,
+.colors,
+.choices {
+  padding: 2rem 1.25rem;
+}
+
+.head {
+  grid-area: head;
+  padding-top: 1.5rem;
+}
+
+.title {
+  margin: 1.25rem 0 2.5rem;
+  font-family: var(--serif);
+  font-size: clamp(4.25rem, 19cqi, 9.5rem);
+  font-weight: 700;
+  line-height: 0.82;
+  letter-spacing: -0.045em;
+}
+
+.summary {
+  max-width: 26rem;
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+}
+
+.ident {
+  grid-area: ident;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.ident h2 {
+  font-size: 0.75rem;
+}
+
+.wallName {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(2.25rem, 7cqi, 4.5rem);
+  font-style: italic;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.wallMeaning {
+  margin-top: 0.75rem;
+  font-family: var(--grotesk);
+  font-size: 0.8rem;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* The idea sheet lies across the split wall: the row is painted in both fields, the sheet is paper. */
+.ideaRow {
+  grid-area: idea;
+  padding: 0 0.75rem;
+  background: var(--wall-a);
+}
+
+.sheet {
+  position: relative;
+  padding: 1.25rem 1.25rem 1rem;
+  color: var(--paper-ink);
+  background: var(--paper);
+  box-shadow:
+    0 1px 0 rgb(0 0 0 / 0.2),
+    0 22px 30px -18px rgb(0 0 0 / 0.55);
+}
+
+.sheetLabel {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--paper-soft);
+}
+
+.index {
+  font-family: var(--condensed);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--paper-ink);
+}
+
+.idea {
+  min-height: 9.5rem;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0 0 0.5rem;
+  font-family: var(--serif);
+  font-size: clamp(1.4rem, 3.4cqi, 2.6rem);
+  font-style: italic;
+  line-height: 1.25;
+  color: var(--paper-ink);
+  resize: vertical;
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid var(--paper-ink);
+  border-radius: 0;
+}
+
+.idea:focus-visible {
+  outline: none;
+  border-bottom-color: #5b2a86;
+  box-shadow: 0 3px 0 #5b2a86;
+}
+
+.count {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--paper-soft);
+  text-align: right;
+}
+
+/* A legend: an oversized index numeral beside a tracked caption. */
+.legend {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  padding: 0;
+  margin-bottom: 1.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.legendNumeral {
+  font-size: clamp(3.5rem, 9cqi, 6.5rem);
+}
+
+.hint {
+  max-width: 30rem;
+  margin: 0 0 1.5rem;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+}
+
+.colors {
+  grid-area: colors;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+/* Paint chips: six across on a wide wall, three on a narrow one. */
+.chips {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem 0.75rem;
+  align-items: end;
+}
+
+.or {
+  display: none;
+}
+
+.chip {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+
+.chipFace {
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  box-shadow:
+    0 1px 0 rgb(0 0 0 / 0.25),
+    0 8px 12px -8px rgb(0 0 0 / 0.5);
+  transition:
+    transform 260ms cubic-bezier(0.2, 0.9, 0.3, 1.2),
+    box-shadow 260ms ease-out;
+}
+
+.chipPaint {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  margin: 6px 6px 0;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.18);
+}
+
+.chipMark {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0.3rem;
+  color: #ffffff;
+  background: #5b2a86;
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 180ms ease-out,
+    transform 220ms cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+
+.chipStrip {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0.6rem 0.6rem;
+  color: var(--paper-ink);
+  border-bottom: 5px solid transparent;
+}
+
+.chipName {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.chipWall {
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--paper-soft);
+}
+
+.chip input:checked + .chipFace {
+  transform: translateY(-10px) rotate(-1.5deg);
+  box-shadow:
+    0 1px 0 rgb(0 0 0 / 0.25),
+    0 22px 24px -12px rgb(0 0 0 / 0.6);
+}
+
+.chip input:checked + .chipFace .chipMark {
+  opacity: 1;
+  transform: none;
+}
+
+.chip input:checked + .chipFace .chipStrip {
+  border-bottom-color: #5b2a86;
+}
+
+.chip input:focus-visible + .chipFace {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+
+/* Power and effort: the choices are the words themselves, set large; the chosen one carries a violet bar. */
+.choices {
+  grid-area: choices;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.words {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.word {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 0.3rem;
+  align-items: baseline;
+  column-gap: 1rem;
+  cursor: pointer;
+}
+
+.wordFace {
+  position: relative;
+  padding-left: 1.6rem;
+  font-family: var(--serif);
+  font-size: clamp(2.4rem, 6cqi, 4.25rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--ink-soft);
+}
+
+/* An open square before every choice; it fills with violet when chosen. */
+.wordFace::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 0.9rem;
+  height: 0.9rem;
+  content: "";
+  border: 2px solid currentColor;
+  transform: translateY(-50%);
+}
+
+.wordMeaning {
+  max-width: 18rem;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+
+.word input:checked + .wordFace {
+  font-style: italic;
+  color: var(--ink);
+  text-decoration: underline 0.09em var(--accent);
+  text-underline-offset: 0.12em;
+}
+
+.word input:checked + .wordFace::before {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.word input:checked ~ .wordMeaning {
+  color: var(--ink);
+}
+
+.word input:focus-visible + .wordFace {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.wordsInline {
+  gap: 0.75rem;
+}
+
+.wordSmall .wordFace {
+  font-size: clamp(1.75rem, 3.6cqi, 2.6rem);
+}
+
+.actionRow {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: 0.5rem;
+}
+
+.arrow {
+  width: 2rem;
+  height: 0.75rem;
+}
+
+@container (min-width: 700px) {
+  .word {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .chips {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) auto minmax(0, 1fr);
+  }
+
+  .or {
+    display: block;
+    align-self: center;
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--ink-soft);
+  }
+}
+
+/* Wide: two fields side by side; the idea sheet crosses the split. */
+@container (min-width: 900px) {
+  .spread {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "head ident"
+      "idea idea"
+      "colors choices";
+  }
+
+  .head,
+  .ident,
+  .colors,
+  .choices {
+    padding: 2.5rem 3rem 3rem;
+  }
+
+  .head {
+    padding-bottom: 4rem;
+  }
+
+  .ident {
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .ideaRow {
+    padding: 0 3rem;
+    background: linear-gradient(90deg, var(--wall-a) 50%, var(--wall-b) 50%);
+  }
+
+  .sheet {
+    padding: 1.75rem 2.25rem 1.25rem;
+    transform: translateY(-1.5rem);
+  }
+
+  .chips {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .or {
+    display: none;
+  }
+
+  .actionRow {
+    justify-content: flex-end;
+  }
+}
+
+@container (min-width: 1200px) {
+  .chipPaint {
+    aspect-ratio: 5 / 4;
+  }
+
+  .wordsInline .wordFace {
+    font-size: 2.1rem;
+  }
+
+  .wordsInline {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem 1.5rem;
+  }
+
+  .wordsInline .word {
+    grid-template-columns: auto;
+    row-gap: 0.4rem;
+  }
+
+  .wordsInline .wordMeaning {
+    max-width: 10rem;
+  }
+}

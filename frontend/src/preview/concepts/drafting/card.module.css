@@ -1,0 +1,231 @@
+/* Concept B "Drafting Table" (tasks.md T251): the card, 63 by 88, in an original frame; the serif lives only here. */
+
+.card {
+  container-type: inline-size;
+  position: relative;
+  display: grid;
+  width: var(--card-w, 320px);
+  aspect-ratio: 63 / 88;
+  padding: 4.5%;
+  border-radius: 4.6% / 3.3%;
+  background: #20262b;
+  box-shadow: var(--d-shadow-card);
+  color: #1b2228;
+  font-family: var(--d-serif);
+  --frame: var(--d-mana-c);
+}
+
+.card[data-frame="w"] {
+  --frame: var(--d-mana-w);
+}
+.card[data-frame="u"] {
+  --frame: var(--d-mana-u);
+}
+.card[data-frame="b"] {
+  --frame: var(--d-mana-b);
+}
+.card[data-frame="r"] {
+  --frame: var(--d-mana-r);
+}
+.card[data-frame="g"] {
+  --frame: var(--d-mana-g);
+}
+.card[data-frame="multi"] {
+  --frame: #ebdfbd;
+}
+
+.inner {
+  display: grid;
+  grid-template-rows: minmax(0, 9fr) minmax(0, 45fr) minmax(0, 7fr) minmax(0, 30fr) minmax(0, 9fr);
+  min-height: 0;
+  padding: 0 2.2%;
+  border-radius: 2.2%;
+  background: var(--frame);
+  overflow: hidden;
+}
+
+.titleLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2cqi;
+  min-width: 0;
+  border-bottom: 1px solid #20262b;
+}
+
+.name {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 5.6cqi;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pips {
+  display: inline-flex;
+  flex: none;
+  gap: 0.8cqi;
+}
+
+/* A pip: a drafted circle, the symbol inside in mono so it reads as a measure, not a printed glyph. */
+.pip {
+  display: inline-grid;
+  place-items: center;
+  width: 5.4cqi;
+  height: 5.4cqi;
+  min-width: 14px;
+  min-height: 14px;
+  border: 1px solid #20262b;
+  border-radius: 50%;
+  background: var(--d-mana-c);
+  font-family: var(--d-mono);
+  font-size: max(9px, 3.2cqi);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pip[data-mana="w"] {
+  background: var(--d-mana-w);
+}
+.pip[data-mana="u"] {
+  background: var(--d-mana-u);
+}
+.pip[data-mana="b"] {
+  background: var(--d-mana-b);
+}
+.pip[data-mana="r"] {
+  background: var(--d-mana-r);
+}
+.pip[data-mana="g"] {
+  background: var(--d-mana-g);
+}
+
+.art {
+  position: relative;
+  margin: 2.2cqi 0 1.6cqi;
+  border: 1px solid #20262b;
+  background: #2b3238;
+  overflow: hidden;
+}
+
+.art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 38%;
+}
+
+.noArt {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--d-mono);
+  font-size: 3cqi;
+  color: #e8eef0;
+}
+
+.typeLine {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0 1cqi;
+  border-top: 1px solid #20262b;
+  border-bottom: 1px solid #20262b;
+  font-size: 4.3cqi;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rules {
+  margin: 1.8cqi 0 0;
+  padding: 2.4cqi 3cqi;
+  background: #fbf8ef;
+  border: 1px solid rgb(32 38 43 / 0.35);
+  font-size: 4.4cqi;
+  line-height: 1.3;
+  overflow: hidden;
+}
+
+.rules p {
+  margin: 0 0 1.6cqi;
+}
+
+.rules p:last-child {
+  margin-bottom: 0;
+}
+
+.keyword {
+  font-style: italic;
+}
+
+.foot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.footMark {
+  font-size: 2.9cqi;
+  font-style: italic;
+  text-transform: capitalize;
+  color: #3a444c;
+}
+
+.stats {
+  padding: 0.6cqi 2.6cqi;
+  border: 1px solid #20262b;
+  background: var(--d-sheet);
+  font-size: 5.2cqi;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* The numbered markers that callouts end on, set on the card's edge. */
+.marker {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-top: -10px;
+  border-radius: 50%;
+  background: var(--d-pen);
+  color: #ffffff;
+  font-family: var(--d-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px var(--d-sheet);
+}
+
+.marker[data-side="left"] {
+  left: -10px;
+}
+
+.marker[data-side="right"] {
+  right: -10px;
+}
+
+/* Arrival: the card drops onto the mat and stops exactly, without a bounce. */
+.arrive {
+  animation: snap 260ms var(--d-snap) both;
+}
+
+@keyframes snap {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 14px 22px -8px rgb(20 30 40 / 0.3);
+  }
+  60% {
+    opacity: 1;
+  }
+}

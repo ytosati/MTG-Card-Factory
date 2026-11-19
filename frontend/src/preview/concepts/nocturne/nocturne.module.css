@@ -1,0 +1,921 @@
+/* Concept A "Nocturne" (tasks.md T251): the dark atelier around the card; page, controls, panels and sheet. */
+
+.root {
+  --nocturne-ground: #110d18;
+  --nocturne-lacquer: #1a1424;
+  --nocturne-velvet: #241a31;
+  --nocturne-selected: #2a1b3d;
+  --nocturne-ink: #ece6f3;
+  --nocturne-ink-muted: #a99dbb;
+  --nocturne-violet: #7a43b3;
+  --nocturne-violet-hover: #8a52c4;
+  --nocturne-violet-bright: #b48be6;
+  --nocturne-brass: #c9a45c;
+  --nocturne-hairline: rgb(201 164 92 / 0.26);
+  --nocturne-approved: #86c89c;
+  --nocturne-rejected: #ec8f86;
+  --nocturne-display: "Bodoni 72", "Didot", "Bodoni MT", "Constantia", "Iowan Old Style", "Palatino Linotype",
+    Georgia, serif;
+  --nocturne-sans: "Segoe UI Variable Text", "Segoe UI", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  --nocturne-mono: "Cascadia Mono", "SF Mono", Consolas, "Liberation Mono", monospace;
+  --nocturne-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+  isolation: isolate;
+  min-height: 100%;
+  overflow: hidden;
+  background: var(--nocturne-ground);
+  color: var(--nocturne-ink);
+  font-family: var(--nocturne-sans);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.root :focus-visible {
+  outline: 2px solid var(--nocturne-violet-bright);
+  outline-offset: 3px;
+}
+
+.grain {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  opacity: 0.07;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Header: the name in the display serif, the places in tracked small caps, a brass rule beneath. */
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 2rem;
+  padding: 1.1rem clamp(1rem, 4cqi, 2.5rem);
+  border-bottom: 1px solid var(--nocturne-hairline);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--nocturne-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.brandMark {
+  width: 1.4rem;
+  height: 1.4rem;
+  color: var(--nocturne-brass);
+}
+
+.nav {
+  display: flex;
+  gap: clamp(1rem, 3cqi, 2rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navItem {
+  display: inline-block;
+  padding-block: 0.25rem;
+  font-size: 0.95rem;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.14em;
+  color: var(--nocturne-ink-muted);
+}
+
+.navItem[aria-current="page"] {
+  color: var(--nocturne-ink);
+  box-shadow: inset 0 -2px 0 var(--nocturne-violet-bright);
+}
+
+.main {
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 5cqi, 3.5rem) clamp(1rem, 4cqi, 2.5rem) clamp(2.5rem, 6cqi, 4.5rem);
+}
+
+/* Type roles. */
+.rubric {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.18em;
+  color: var(--nocturne-brass);
+}
+
+.display {
+  margin: 0;
+  font-family: var(--nocturne-display);
+  font-size: clamp(2.1rem, 6.2cqi, 3.6rem);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+
+.lede {
+  max-width: 38rem;
+  margin: 0.9rem 0 0;
+  color: var(--nocturne-ink-muted);
+}
+
+/* Request: the idea is the hero; the slot for the card waits beside it on the table. */
+.requestGrid {
+  display: grid;
+  gap: 3rem;
+}
+
+@container (min-width: 900px) {
+  .requestGrid {
+    grid-template-columns: minmax(0, 1fr) 19rem;
+    gap: 4.5rem;
+    align-items: start;
+  }
+}
+
+.form {
+  display: grid;
+  gap: 2.4rem;
+  margin-top: 2.2rem;
+}
+
+.ideaLabel {
+  display: block;
+}
+
+.idea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 11rem;
+  padding: 1.4rem 1.5rem;
+  border: 0;
+  border-bottom: 1px solid var(--nocturne-brass);
+  border-radius: 8px 8px 0 0;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.03), transparent 40%),
+    var(--nocturne-lacquer);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  color: var(--nocturne-ink);
+  font-family: var(--nocturne-display);
+  font-size: clamp(1.3rem, 3.4cqi, 1.9rem);
+  line-height: 1.35;
+  resize: vertical;
+  transition: border-color 160ms var(--nocturne-ease);
+}
+
+.idea:focus-visible {
+  outline-offset: 0;
+  border-bottom-color: var(--nocturne-violet-bright);
+}
+
+.hint {
+  margin: 0.6rem 0 0;
+  font-size: 0.9rem;
+  color: var(--nocturne-ink-muted);
+}
+
+.fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.fieldset legend {
+  padding: 0;
+}
+
+/* Colors: five gems and colorless, each a toggle with its name beneath. */
+.gems {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.9rem clamp(0.6rem, 2.4cqi, 1.4rem);
+}
+
+.gemDivider {
+  align-self: stretch;
+  width: 1px;
+  margin-inline: 0.2rem;
+  background: var(--nocturne-hairline);
+}
+
+.gemButton {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  min-width: 3.4rem;
+  padding: 0.35rem 0.1rem;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--nocturne-ink-muted);
+  font: inherit;
+  font-size: 0.8rem;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+}
+
+.gemButton[aria-pressed="true"] {
+  color: var(--nocturne-ink);
+}
+
+.gemStone {
+  display: block;
+  width: 2.9rem;
+  height: 2.9rem;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 -4px 7px rgb(0 0 0 / 0.45),
+    inset 0 2px 2px rgb(255 255 255 / 0.25),
+    0 0 0 1px rgb(201 164 92 / 0.45),
+    0 6px 12px -4px rgb(0 0 0 / 0.8);
+  opacity: 0.55;
+  transition:
+    opacity 160ms var(--nocturne-ease),
+    box-shadow 160ms var(--nocturne-ease),
+    transform 160ms var(--nocturne-ease);
+}
+
+.gemButton:hover .gemStone {
+  opacity: 0.8;
+}
+
+.gemButton[aria-pressed="true"] .gemStone {
+  opacity: 1;
+  box-shadow:
+    inset 0 -4px 7px rgb(0 0 0 / 0.45),
+    inset 0 2px 2px rgb(255 255 255 / 0.3),
+    0 0 0 3px var(--nocturne-ground),
+    0 0 0 5px var(--nocturne-violet-bright),
+    0 8px 16px -4px rgb(0 0 0 / 0.9);
+}
+
+.gemButton:active .gemStone {
+  transform: translateY(1px);
+}
+
+.gemStone[data-color="W"] {
+  background: radial-gradient(circle at 35% 28%, #fffaf0, #e6d9b8 58%, #a8966d);
+}
+
+.gemStone[data-color="U"] {
+  background: radial-gradient(circle at 35% 28%, #b4d6fa, #3f78bb 58%, #1f416d);
+}
+
+.gemStone[data-color="B"] {
+  background: radial-gradient(circle at 35% 28%, #9a8ea6, #3b3343 58%, #19151e);
+}
+
+.gemStone[data-color="R"] {
+  background: radial-gradient(circle at 35% 28%, #f9bca7, #cc513a 58%, #74251a);
+}
+
+.gemStone[data-color="G"] {
+  background: radial-gradient(circle at 35% 28%, #bde6c3, #3f8f58 58%, #1f4b2b);
+}
+
+.gemStone[data-color="C"] {
+  background: radial-gradient(circle at 35% 28%, #d9d3e0, #8c8496 58%, #4b4552);
+}
+
+/* Power and effort: segmented choices in a brass-edged strip; the chosen one sits in violet velvet. */
+.choiceRow {
+  display: grid;
+  gap: 2.4rem;
+}
+
+@container (min-width: 700px) {
+  .choiceRow {
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+}
+
+.segments {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--nocturne-lacquer);
+  box-shadow: inset 0 0 0 1px var(--nocturne-hairline);
+}
+
+.segment {
+  position: relative;
+  padding: 0.8rem 0.5rem;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--nocturne-ink-muted);
+  cursor: pointer;
+  transition:
+    background-color 160ms var(--nocturne-ease),
+    color 160ms var(--nocturne-ease);
+}
+
+.segment + .segment {
+  box-shadow: inset 1px 0 0 var(--nocturne-hairline);
+}
+
+.segment:hover {
+  color: var(--nocturne-ink);
+}
+
+.segment:has(input:checked) {
+  background: var(--nocturne-selected);
+  color: var(--nocturne-ink);
+  box-shadow: inset 0 -2px 0 var(--nocturne-violet-bright);
+}
+
+.segment:has(input:focus-visible) {
+  outline: 2px solid var(--nocturne-violet-bright);
+  outline-offset: -4px;
+}
+
+/* Actions. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+}
+
+.primary,
+.secondary {
+  padding: 1rem 2.1rem;
+  border: 0;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    background-color 160ms var(--nocturne-ease),
+    transform 90ms var(--nocturne-ease);
+}
+
+.primary {
+  background: var(--nocturne-violet);
+  color: #fbf7ff;
+  font-size: 1.1rem;
+  box-shadow:
+    inset 0 0 0 1px rgb(232 206 150 / 0.35),
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    0 14px 26px -14px rgb(0 0 0 / 0.95);
+}
+
+.primary:hover {
+  background: var(--nocturne-violet-hover);
+}
+
+.secondary {
+  background: transparent;
+  color: var(--nocturne-ink);
+  box-shadow: inset 0 0 0 1px var(--nocturne-brass);
+}
+
+.secondary:hover {
+  background: var(--nocturne-lacquer);
+}
+
+.primary:active,
+.secondary:active {
+  transform: translateY(1px);
+}
+
+@container (max-width: 520px) {
+  .actions > * {
+    flex: 1 1 100%;
+  }
+}
+
+/* The empty slot on the table, marked by brass corners. */
+.waitingSlot {
+  container-type: inline-size;
+  position: relative;
+  width: min(100%, 19rem);
+  margin-inline: auto;
+}
+
+.emptySlot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 63 / 88;
+  padding: 2rem;
+  border-radius: 14px;
+  background:
+    radial-gradient(ellipse 80% 45% at 50% 0%, rgb(255 232 196 / 0.08), transparent 70%),
+    #140f1b;
+  box-shadow: inset 0 0 0 1px rgb(201 164 92 / 0.14);
+  text-align: center;
+}
+
+.emptySlot p {
+  margin: 0;
+  font-family: var(--nocturne-display);
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--nocturne-ink-muted);
+}
+
+.corner {
+  position: absolute;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 0 solid var(--nocturne-brass);
+}
+
+.corner[data-at="tl"] {
+  top: 0.7rem;
+  left: 0.7rem;
+  border-width: 1px 0 0 1px;
+}
+
+.corner[data-at="tr"] {
+  top: 0.7rem;
+  right: 0.7rem;
+  border-width: 1px 1px 0 0;
+}
+
+.corner[data-at="bl"] {
+  bottom: 0.7rem;
+  left: 0.7rem;
+  border-width: 0 0 1px 1px;
+}
+
+.corner[data-at="br"] {
+  bottom: 0.7rem;
+  right: 0.7rem;
+  border-width: 0 1px 1px 0;
+}
+
+/* Result and generating: the card on its table as the center, the label and panels beside it. */
+.resultGrid {
+  display: grid;
+  gap: 2.5rem;
+}
+
+@container (min-width: 760px) {
+  .resultGrid {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+    gap: clamp(2rem, 4.5cqi, 4rem);
+    align-items: start;
+  }
+}
+
+.label {
+  display: grid;
+  gap: 1.6rem;
+}
+
+.labelHead {
+  padding-bottom: 1.4rem;
+  border-bottom: 1px solid var(--nocturne-hairline);
+}
+
+.typeMeta {
+  margin: 0.7rem 0 0;
+  font-size: 0.95rem;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.12em;
+  color: var(--nocturne-ink-muted);
+}
+
+.marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 6px;
+  background: var(--nocturne-lacquer);
+  box-shadow: inset 0 0 0 1px var(--nocturne-hairline);
+  font-size: 0.9rem;
+}
+
+.markIcon {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: none;
+}
+
+.approved {
+  color: var(--nocturne-approved);
+}
+
+.panel {
+  padding: 1.25rem 1.4rem 1.35rem;
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.025), transparent 50%),
+    var(--nocturne-lacquer);
+  box-shadow:
+    inset 0 1px 0 rgb(201 164 92 / 0.28),
+    0 18px 30px -22px rgb(0 0 0 / 0.9);
+}
+
+.panelTitle {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.16em;
+  color: var(--nocturne-brass);
+}
+
+.panelText {
+  margin: 0;
+  color: var(--nocturne-ink);
+}
+
+.checks {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checks li {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--nocturne-ink-muted);
+}
+
+/* The power scale: three cells, the assessed one filled in violet. */
+.scale {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin: 0 0 0.9rem;
+  padding: 0;
+  list-style: none;
+}
+
+.scale li {
+  padding: 0.55rem 0.3rem 0.5rem;
+  border-top: 3px solid var(--nocturne-velvet);
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--nocturne-ink-muted);
+}
+
+.scale li[aria-current="true"] {
+  border-top-color: var(--nocturne-violet-bright);
+  background: var(--nocturne-selected);
+  color: var(--nocturne-ink);
+  font-weight: 600;
+}
+
+.usage {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 1.2rem;
+  margin: 0;
+}
+
+.usage dt {
+  color: var(--nocturne-ink-muted);
+}
+
+.usage dd {
+  margin: 0;
+  font-family: var(--nocturne-mono);
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Generating: the steps in order, the running one marked in violet. */
+.steps {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: 1.6rem 1fr;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--nocturne-hairline);
+  color: var(--nocturne-ink-muted);
+}
+
+.step[data-state="running"] {
+  color: var(--nocturne-ink);
+}
+
+.stepDot {
+  width: 0.75rem;
+  height: 0.75rem;
+  justify-self: center;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--nocturne-ink-muted);
+}
+
+.step[data-state="done"] .stepDot {
+  background: var(--nocturne-brass);
+  box-shadow: none;
+}
+
+.step[data-state="running"] .stepDot {
+  background: var(--nocturne-violet-bright);
+  box-shadow: none;
+  animation: breathe 1600ms ease-in-out infinite;
+}
+
+@keyframes breathe {
+  50% {
+    transform: scale(0.65);
+    opacity: 0.6;
+  }
+}
+
+.quote {
+  margin: 0;
+  padding-left: 1.1rem;
+  border-left: 1px solid var(--nocturne-brass);
+  font-family: var(--nocturne-display);
+  font-style: italic;
+  font-size: 1.2rem;
+  line-height: 1.45;
+  color: var(--nocturne-ink);
+}
+
+/* Concept sheet. */
+.sheetHead {
+  max-width: 46rem;
+  padding-bottom: 2.4rem;
+  border-bottom: 1px solid var(--nocturne-hairline);
+}
+
+.sheetTitle {
+  margin: 0;
+  font-family: var(--nocturne-display);
+  font-size: clamp(3rem, 11cqi, 6.5rem);
+  font-weight: 600;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+
+.sheetGrid {
+  display: grid;
+  gap: 3rem;
+  margin-top: 2.8rem;
+}
+
+@container (min-width: 900px) {
+  .sheetGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3.5rem 4rem;
+  }
+
+  .sheetWide {
+    grid-column: 1 / -1;
+  }
+}
+
+.sheetSection h2 {
+  margin: 0 0 1rem;
+  font-family: var(--nocturne-display);
+  font-size: 1.8rem;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.sheetSection p {
+  margin: 0 0 0.8rem;
+  color: var(--nocturne-ink-muted);
+}
+
+.specimens {
+  display: grid;
+  gap: 1.1rem;
+  margin: 0;
+}
+
+.specimen {
+  display: grid;
+  gap: 0.2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--nocturne-hairline);
+}
+
+.specimen dt {
+  font-size: 0.85rem;
+  color: var(--nocturne-ink-muted);
+}
+
+.specimen dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.specimenDisplay {
+  font-family: var(--nocturne-display);
+  font-size: clamp(2rem, 5cqi, 2.8rem);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.specimenSans {
+  font-size: 1.05rem;
+}
+
+.specimenRubric {
+  font-weight: 600;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.18em;
+  color: var(--nocturne-brass);
+}
+
+.specimenMono {
+  font-family: var(--nocturne-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.swatch {
+  display: grid;
+  grid-template-columns: 3rem 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.88rem;
+}
+
+.chip {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 8px;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.12),
+    0 8px 14px -8px rgb(0 0 0 / 0.9);
+}
+
+.swatchName {
+  display: block;
+  font-weight: 600;
+  color: var(--nocturne-ink);
+}
+
+.swatchMeta {
+  display: block;
+  font-family: var(--nocturne-mono);
+  font-size: 0.8rem;
+  color: var(--nocturne-ink-muted);
+}
+
+.layers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.layer {
+  display: grid;
+  align-content: end;
+  min-height: 6rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+}
+
+.layer[data-depth="0"] {
+  background: var(--nocturne-ground);
+  box-shadow: inset 0 0 0 1px var(--nocturne-hairline);
+}
+
+.layer[data-depth="1"] {
+  background: var(--nocturne-lacquer);
+  box-shadow:
+    inset 0 1px 0 rgb(201 164 92 / 0.28),
+    0 18px 30px -22px rgb(0 0 0 / 0.9);
+}
+
+.layer[data-depth="2"] {
+  background: var(--nocturne-velvet);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.07),
+    0 2px 3px rgb(0 0 0 / 0.5),
+    0 28px 40px -18px rgb(0 0 0 / 0.95);
+}
+
+.textureTile {
+  position: relative;
+  isolation: isolate;
+  height: 7rem;
+  margin-top: 1rem;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--nocturne-lacquer);
+  box-shadow: inset 0 0 0 1px var(--nocturne-hairline);
+}
+
+.textureTile .tileGrain {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.35;
+  mix-blend-mode: soft-light;
+}
+
+.motionList,
+.changes {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.motionList li,
+.changes li {
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  background: var(--nocturne-lacquer);
+  box-shadow: inset 2px 0 0 var(--nocturne-brass);
+  color: var(--nocturne-ink-muted);
+}
+
+.motionList strong,
+.changes strong {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: var(--nocturne-ink);
+}
+
+.presentation {
+  display: grid;
+  gap: 2rem;
+  align-items: center;
+}
+
+@container (min-width: 760px) {
+  .presentation {
+    grid-template-columns: minmax(0, 18rem) minmax(0, 1fr);
+  }
+}
+
+/* Reduced motion, by the system or by the gallery switch: nothing moves. */
+@media (prefers-reduced-motion: reduce) {
+  .root *,
+  .root *::before,
+  .root *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+:global([data-reduced-motion="true"]) .root *,
+:global([data-reduced-motion="true"]) .root *::before,
+:global([data-reduced-motion="true"]) .root *::after {
+  animation: none !important;
+  transition: none !important;
+}

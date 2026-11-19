@@ -1,0 +1,376 @@
+/* Concept A "Nocturne" (tasks.md T251): the card as a lit object on a dark table, its tilt, landing and assembly. */
+
+/* The table: a pool of warm light falls from above onto the place where the card rests. */
+.stage {
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  --shadow-x: 0px;
+  --sheen-x: 30%;
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 2.5rem 1rem 3.5rem;
+  border-radius: 12px;
+  background:
+    radial-gradient(ellipse 55% 45% at 50% 4%, rgb(255 232 196 / 0.11), transparent 70%),
+    linear-gradient(180deg, #0d0a13 0%, #15101d 62%, #0f0b15 100%);
+  box-shadow: inset 0 1px 0 rgb(201 164 92 / 0.18);
+}
+
+.lift {
+  container-type: inline-size;
+  position: relative;
+  width: min(100%, 25rem);
+}
+
+/* Landing: the card comes down onto the table, short and eased, and its shadow tightens under it. */
+.lift[data-landing="true"] {
+  animation: land 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.lift[data-landing="true"] .shadow {
+  animation: shadow-settle 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes land {
+  from {
+    transform: translateY(-26px) scale(1.035);
+    opacity: 0;
+  }
+  45% {
+    opacity: 1;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes shadow-settle {
+  from {
+    opacity: 0.25;
+    transform: translateX(var(--shadow-x)) scale(1.25, 1.6);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(var(--shadow-x));
+  }
+}
+
+/* The cast shadow: dark under the card, softening outward, sliding against the tilt. */
+.shadow {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: -5%;
+  height: 12%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgb(0 0 0 / 0.78), rgb(0 0 0 / 0) 70%);
+  filter: blur(10px);
+  transform: translateX(var(--shadow-x));
+  transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* The card: lacquer inside a brass hairline, proportioned 63 by 88, sized by its own width. */
+.card {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto auto 1fr auto;
+  gap: 2.4cqi;
+  aspect-ratio: 63 / 88;
+  padding: 4.6cqi 4.6cqi 3.6cqi;
+  overflow: hidden;
+  border-radius: 3.6cqi;
+  background:
+    radial-gradient(ellipse 90% 40% at 50% 0%, rgb(255 240 214 / 0.09), transparent 70%),
+    #1a1424;
+  box-shadow:
+    inset 0 0 0 1px rgb(201 164 92 / 0.55),
+    inset 0 0 0 1.4cqi #1a1424,
+    inset 0 0 0 calc(1.4cqi + 1px) rgb(201 164 92 / 0.22),
+    inset 0 1px 0 rgb(255 255 255 / 0.07),
+    0 2px 3px rgb(0 0 0 / 0.5),
+    0 28px 50px -18px rgb(0 0 0 / 0.85);
+  color: #ece6f3;
+  transform: perspective(1400px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.cardGrain {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.09;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+.head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2cqi;
+  padding-inline: 1.4cqi;
+}
+
+.name {
+  font-family: var(--nocturne-display);
+  font-size: 6.6cqi;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0.005em;
+}
+
+.cost {
+  display: inline-flex;
+  flex: none;
+  gap: 1cqi;
+}
+
+.costGem {
+  display: inline-grid;
+  place-items: center;
+  width: 5.6cqi;
+  height: 5.6cqi;
+  border-radius: 50%;
+  font-family: var(--nocturne-display);
+  font-size: 3.8cqi;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow:
+    inset 0 -0.6cqi 1cqi rgb(0 0 0 / 0.45),
+    0 0 0 1px rgb(201 164 92 / 0.6);
+}
+
+.costGem[data-color="generic"] {
+  background: #2c2238;
+  color: #e9d7a8;
+}
+
+.costGem[data-color="W"] {
+  background: radial-gradient(circle at 35% 30%, #fffaf0, #e6d9b8 60%, #b9a77e);
+}
+
+.costGem[data-color="U"] {
+  background: radial-gradient(circle at 35% 30%, #a7cdf5, #3f78bb 60%, #23497a);
+}
+
+.costGem[data-color="B"] {
+  background: radial-gradient(circle at 35% 30%, #8d8199, #3b3343 60%, #1d1822);
+}
+
+.costGem[data-color="R"] {
+  background: radial-gradient(circle at 35% 30%, #f7b29c, #cc513a 60%, #7f2a1d);
+}
+
+.costGem[data-color="G"] {
+  background: radial-gradient(circle at 35% 30%, #b2e0b9, #3f8f58 60%, #22512f);
+}
+
+/* The art window: a recess in the lacquer, edged in brass. */
+.art {
+  position: relative;
+  aspect-ratio: 5 / 4;
+  overflow: hidden;
+  border-radius: 1.2cqi;
+  background: #0d0a12;
+  box-shadow:
+    0 0 0 1px rgb(201 164 92 / 0.5),
+    inset 0 0 2cqi rgb(0 0 0 / 0.6);
+}
+
+.art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 35%;
+}
+
+.noArt {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: 3.6cqi;
+  color: #a99dbb;
+}
+
+.typeLine {
+  margin: 0;
+  padding: 1.2cqi 1.4cqi;
+  border-block: 1px solid rgb(201 164 92 / 0.4);
+  font-family: var(--nocturne-sans);
+  font-size: 3.5cqi;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.1em;
+  color: #d8bb7c;
+}
+
+.rules {
+  padding: 2.4cqi 3cqi;
+  border-radius: 1.2cqi;
+  background: #241a31;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  font-family: var(--nocturne-display);
+  font-size: 4.4cqi;
+  line-height: 1.38;
+  color: #ece6f3;
+}
+
+.rules p {
+  margin: 0 0 1.4cqi;
+}
+
+.rules p:last-child {
+  margin-bottom: 0;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 1.4cqi;
+}
+
+.rarity {
+  font-family: var(--nocturne-sans);
+  font-size: 3cqi;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.16em;
+  color: #a99dbb;
+}
+
+.body {
+  padding: 0.8cqi 3cqi;
+  border-radius: 1cqi;
+  background: #241a31;
+  box-shadow: inset 0 0 0 1px rgb(201 164 92 / 0.6);
+  font-family: var(--nocturne-display);
+  font-size: 4.8cqi;
+  font-weight: 700;
+  color: #f1e3bd;
+}
+
+/* The foil sheen: a faint band of warm light that slides across the card as it tilts. */
+.sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    112deg,
+    transparent 32%,
+    rgb(255 236 200 / 0.1) 44%,
+    rgb(214 190 255 / 0.08) 50%,
+    transparent 62%
+  );
+  background-size: 260% 100%;
+  background-position: var(--sheen-x) 0;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  transition: background-position 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* While a card generates: the empty slot draws its frame and a slow band of light passes over it. */
+.slot {
+  position: relative;
+  aspect-ratio: 63 / 88;
+  overflow: hidden;
+  border-radius: 3.6cqi;
+  background: #15101d;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    0 28px 50px -18px rgb(0 0 0 / 0.85);
+}
+
+.slot svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.slotLine {
+  fill: none;
+  stroke: #c9a45c;
+  stroke-width: 1;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  vector-effect: non-scaling-stroke;
+  animation: draw 1100ms cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+.slotLine[data-order="1"] {
+  animation-delay: 180ms;
+}
+
+.slotLine[data-order="2"] {
+  animation-delay: 360ms;
+}
+
+.slotLine[data-order="3"] {
+  animation-delay: 540ms;
+}
+
+.slotLine[data-order="4"] {
+  animation-delay: 720ms;
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.slotSweep {
+  position: absolute;
+  inset: -30% 0;
+  background: linear-gradient(180deg, transparent 40%, rgb(255 232 196 / 0.09) 50%, transparent 60%);
+  animation: sweep 2600ms cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@keyframes sweep {
+  from {
+    transform: translateY(-35%);
+  }
+  to {
+    transform: translateY(35%);
+  }
+}
+
+/* Reduced motion, by the system or by the gallery switch: the card rests flat and nothing moves. */
+@media (prefers-reduced-motion: reduce) {
+  .stage *,
+  .stage *::before,
+  .stage *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .card {
+    transform: none !important;
+  }
+
+  .slotSweep {
+    display: none;
+  }
+}
+
+:global([data-reduced-motion="true"]) .stage *,
+:global([data-reduced-motion="true"]) .stage *::before,
+:global([data-reduced-motion="true"]) .stage *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+:global([data-reduced-motion="true"]) .card {
+  transform: none !important;
+}
+
+:global([data-reduced-motion="true"]) .slotSweep {
+  display: none;
+}

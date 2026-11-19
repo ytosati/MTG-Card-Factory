@@ -1,0 +1,183 @@
+/* Concept C, "Gallery Wall" (tasks.md T251): the wait. The chosen color washes up the plum wall step by step, the
+   frame is built around an empty canvas, and the spotlight warms as the card nears the wall. */
+.page {
+  min-height: 100%;
+}
+
+.hall {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.hangZone,
+.labelZone {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* The wash: the chosen paint, rising from the floor by the share of steps done. */
+.wash {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--wash-paint);
+  transform: scaleY(var(--progress));
+  transform-origin: bottom;
+  transition: transform 1200ms var(--wash-ease);
+}
+
+/* The spotlight warms with the progress and breathes while a step runs. */
+.spot {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(44% 42% at 50% 46%, rgb(255 236 200 / 0.24), transparent 72%);
+  mix-blend-mode: screen;
+  opacity: var(--progress);
+  pointer-events: none;
+  transition: opacity 1200ms ease-out;
+  animation: breathe 2400ms ease-in-out infinite alternate;
+}
+
+@keyframes breathe {
+  to {
+    filter: brightness(1.35);
+  }
+}
+
+.hangZone {
+  --card-width: min(64cqi, 260px);
+  display: flex;
+  justify-content: center;
+  min-height: 34rem;
+  padding: 7.5rem 1rem 4rem;
+}
+
+.stepNumeral {
+  position: absolute;
+  right: -0.04em;
+  bottom: -0.08em;
+  font-size: clamp(14rem, 52cqi, 34rem);
+  color: color-mix(in srgb, var(--wash-paint) 84%, var(--ink));
+}
+
+.hangSpot {
+  position: relative;
+}
+
+.labelZone {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 2.5rem 1.25rem 3rem;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(3rem, 13cqi, 6.25rem);
+  font-weight: 700;
+  font-style: italic;
+  line-height: 0.86;
+  letter-spacing: -0.04em;
+}
+
+.idea {
+  max-width: 28rem;
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+/* The meter: a heavy rule that fills with violet. */
+.meter {
+  height: 8px;
+  max-width: 28rem;
+  background: color-mix(in srgb, var(--ink) 25%, transparent);
+}
+
+.meterFill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(var(--progress));
+  transform-origin: left;
+  transition: transform 1200ms var(--wash-ease);
+}
+
+.steps {
+  max-width: 28rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  padding: 0.55rem 0;
+  color: var(--ink-soft);
+  border-top: 1px solid color-mix(in srgb, var(--ink) 30%, transparent);
+}
+
+.stepIndex {
+  font-family: var(--condensed);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.stepName {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+}
+
+.stepState {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.step[data-state="current"] {
+  color: var(--ink);
+}
+
+.step[data-state="current"] .stepName {
+  font-size: 1.6rem;
+  font-style: italic;
+}
+
+.step[data-state="current"] .stepState {
+  padding: 0.15rem 0.45rem;
+  color: var(--action-ink);
+  background: var(--accent);
+}
+
+@container (min-width: 1000px) {
+  .hall {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    min-height: 52rem;
+  }
+
+  .hangZone {
+    --card-width: 300px;
+    justify-content: flex-start;
+    padding: 9rem 3rem 5rem 12%;
+  }
+
+  .spot {
+    background: radial-gradient(40% 46% at 38% 44%, rgb(255 236 200 / 0.24), transparent 72%);
+  }
+
+  .labelZone {
+    justify-content: flex-end;
+    padding: 4rem 3.5rem;
+  }
+
+  .title {
+    font-size: clamp(3rem, 6cqi, 5.5rem);
+  }
+}

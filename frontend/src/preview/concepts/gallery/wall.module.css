@@ -1,0 +1,146 @@
+/* Concept C, "Gallery Wall" (tasks.md T251): the painted wall, the type, the action and the motion switch shared by
+   every page of the concept. The colors of a field come from palette.ts as custom properties. */
+.root {
+  --serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  --grotesk: Bahnschrift, "DIN Alternate", "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+  --condensed: "Bahnschrift Condensed", "Bahnschrift SemiBold Condensed", "Arial Narrow", Bahnschrift, sans-serif;
+  --paper: #f5f1e8;
+  --paper-ink: #1e1a14;
+  --paper-soft: #5a5146;
+  --hang-ease: cubic-bezier(0.3, 1.45, 0.45, 1);
+  --wash-ease: cubic-bezier(0.65, 0, 0.35, 1);
+
+  position: relative;
+  min-height: 100%;
+  overflow: hidden;
+  font-family: var(--grotesk);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--wall);
+}
+
+/* A field of painted wall: its paint, a broad tonal variation like a roller leaves, and fine brushing. The light
+   and dark patches are the wall's own color mixed with its ink or with black, so the paint never changes hue. */
+.field {
+  position: relative;
+  color: var(--ink);
+  background-color: var(--wall);
+  background-image:
+    repeating-linear-gradient(
+      179deg,
+      color-mix(in srgb, var(--wall) 98%, #000) 0 1px,
+      transparent 1px 5px,
+      color-mix(in srgb, var(--wall) 98.5%, var(--ink)) 5px 7px,
+      transparent 7px 13px
+    ),
+    radial-gradient(
+      120% 70% at 18% 12%,
+      color-mix(in srgb, var(--wall) 92%, var(--ink)) 0%,
+      transparent 60%
+    ),
+    radial-gradient(90% 80% at 90% 100%, color-mix(in srgb, var(--wall) 85%, #000) 0%, transparent 70%);
+  /* The texture is laid on the view, not on each field, so two fields of one paint meet without a seam. */
+  background-attachment: fixed;
+  transition:
+    background-color 700ms var(--wash-ease),
+    color 700ms var(--wash-ease);
+}
+
+/* An exhibition caption: small, tracked capitals. */
+.caption {
+  margin: 0;
+  font-family: var(--grotesk);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* A numeral used as a graphic element: condensed, enormous, a quiet tone of the wall. */
+.bigNumeral {
+  font-family: var(--condensed);
+  font-weight: 700;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+  color: color-mix(in srgb, var(--wall) 82%, var(--ink));
+  user-select: none;
+}
+
+/* The main action: violet, square-cornered, heavy; it presses down. */
+.action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-height: 3.5rem;
+  padding: 0 1.75rem;
+  font-family: var(--grotesk);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--action-ink);
+  background: var(--action-fill);
+  border: 0;
+  border-radius: 2px;
+  box-shadow: 0 6px 0 color-mix(in srgb, var(--action-fill) 55%, #000);
+  cursor: pointer;
+  transition:
+    transform 120ms ease-out,
+    box-shadow 120ms ease-out;
+}
+
+.action:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--action-fill) 55%, #000);
+}
+
+/* A quiet action: underlined text in the wall's ink. */
+.quietAction {
+  padding: 0.5rem 0;
+  font-family: var(--grotesk);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-bottom: 2px solid currentColor;
+  cursor: pointer;
+}
+
+.root :focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The gallery's reduced-motion switch and the system setting both stop every animation and transition. */
+:global([data-reduced-motion="true"]) .root,
+:global([data-reduced-motion="true"]) .root *,
+:global([data-reduced-motion="true"]) .root *::before,
+:global([data-reduced-motion="true"]) .root *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root,
+  .root *,
+  .root *::before,
+  .root *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

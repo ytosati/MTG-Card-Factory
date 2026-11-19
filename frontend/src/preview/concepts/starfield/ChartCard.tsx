@@ -4,18 +4,14 @@ import { Fragment, type CSSProperties, type ReactNode } from "react";
 
 import type { CardVersion } from "../../../api/types";
 import type { PreviewImage } from "../../fixtureTypes";
-import { RUNE_WRITE } from "../forge/fx/effects";
-import { PixelFx } from "../forge/fx/PixelFx";
 import { ManaCostSymbols, ManaSymbol } from "../forge/symbols/ManaSymbol";
 import type { ManaColor } from "../forge/symbols/manaSymbols";
 import { frameOf } from "./CardOutline";
 import styles from "./chart.module.css";
+import { CardSky, RuneLine, seeded } from "./Forging";
 import { StarGlyph } from "./glyphs";
 
 type Vars = CSSProperties & Record<`--${string}`, string>;
-
-/** The violet and cyan ramp the rune writing is drawn in, dark to bright. */
-const STARLIGHT_RUNES = ["#140a26", "#2b1252", "#481c88", "#8b3dff", "#b07cff", "#5bd2fe", "#c8f0ff", "#ffffff"];
 
 /** Rules text longer than this is set a step smaller, so a planeswalker's three abilities fit the box. */
 const LONG_TEXT = 140;
@@ -41,50 +37,12 @@ export function RulesText({ text, className, symbolSize = "1em" }: { text: strin
   );
 }
 
-/** A seeded random sequence, so a chart is drawn the same on every render. */
-function seeded(seed: number): () => number {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let value = state;
-    value = Math.imul(value ^ (value >>> 15), value | 1);
-    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
-    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 function starsOf(seed: number, count: number, width: number, height: number) {
   const random = seeded(seed);
   return Array.from({ length: count }, () => ({ x: random() * width, y: random() * height, r: 0.12 + random() * random() * 0.5, o: 0.3 + random() * 0.6 }));
 }
 
-const ART_STARS = starsOf(7, 46, 100, 72);
 const BACK_STARS = starsOf(19, 90, 63, 88);
-
-/** The empty art window: a patch of sky with a reticle and a small figure. */
-function SkyArt({ drawn = true }: { drawn?: boolean }) {
-  const figure = [
-    [22, 48],
-    [34, 30],
-    [52, 36],
-    [66, 20],
-    [80, 28],
-  ];
-  return (
-    <svg className={styles.sky} viewBox="0 0 100 72" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false" data-drawn={drawn ? "true" : "false"}>
-      <circle cx="50" cy="36" r="26" fill="none" stroke="currentColor" strokeOpacity="0.16" strokeWidth="0.3" />
-      <circle cx="50" cy="36" r="14" fill="none" stroke="currentColor" strokeOpacity="0.12" strokeWidth="0.3" />
-      <path d="M0 36 H100 M50 0 V72" stroke="currentColor" strokeOpacity="0.1" strokeWidth="0.25" />
-      {ART_STARS.map((star, index) => (
-        <circle key={index} cx={star.x} cy={star.y} r={star.r} fill="currentColor" opacity={star.o} />
-      ))}
-      <polyline className={styles.figure} points={figure.map((point) => point.join(",")).join(" ")} fill="none" stroke="var(--sf-cyan)" strokeWidth="0.35" pathLength={1} />
-      {figure.map(([x, y], index) => (
-        <circle key={index} cx={x} cy={y} r="0.9" fill="var(--sf-ink)" />
-      ))}
-    </svg>
-  );
-}
 
 /** The rarity as a small star in the type line: faint for common, then ink, violet and cyan. */
 function Rarity({ rarity }: { rarity: string }) {
@@ -95,9 +53,10 @@ function Rarity({ rarity }: { rarity: string }) {
   );
 }
 
-function Frame({ colors, children, className, state }: { colors: readonly ManaColor[]; children: ReactNode; className?: string; state?: string }) {
+function Frame(props: { colors: readonly ManaColor[]; children: ReactNode; className?: string; state?: string; forging?: boolean }) {
+  const { colors, children, className, state, forging } = props;
   return (
-    <div className={[styles.card, className].filter(Boolean).join(" ")} data-state={state}>
+    <div className={[styles.card, className].filter(Boolean).join(" ")} data-state={state} data-forging={forging ? "true" : undefined}>
       <div className={styles.frame} style={{ "--frame": frameOf(colors) } as Vars}>
         <div className={styles.face}>
           <span className={styles.tick} data-corner="tl" aria-hidden="true" />
@@ -126,7 +85,7 @@ export function ChartCard(props: { version: CardVersion; image: PreviewImage | n
           {version.mana_cost ? <ManaCostSymbols cost={version.mana_cost} size="5.2cqi" className={styles.cost} /> : null}
         </div>
         <div className={styles.art} data-long={long ? "true" : "false"}>
-          {image ? <img className={styles.image} src={image.src} alt={image.alt} /> : <SkyArt />}
+          {image ? <img className={styles.image} src={image.src} alt={image.alt} /> : <CardSky colors={colorsOfCost(version.mana_cost)} />}
         </div>
         <div className={styles.typeBar} aria-hidden={hidden}>
           <span className={styles.type}>{version.type_line}</span>
@@ -152,44 +111,76 @@ export function ChartCard(props: { version: CardVersion; image: PreviewImage | n
   );
 }
 
+/** When each part of the card is written, in milliseconds from the draft step: the name, the type line, the text. */
+const WRITE = { name: 0, type: 520, text: 860, namePace: 40, typePace: 26, textPace: 10 };
+/** The runes of the forging card in words: the name, the type line and four lines of rules text. */
+const NAME_WORDS = [7, 5];
+const TYPE_WORDS = [6, 1, 5, 6];
+const TEXT_LINES = [
+  [4, 3, 6, 2, 5, 3, 4],
+  [2, 5, 4, 7, 3, 4, 2],
+  [5, 2, 3, 6, 4, 5, 3],
+  [4, 2, 6, 3, 5, 4, 3],
+  [3, 6, 2, 5],
+];
+
 /**
- * The card while it is generated, step by step (RN-55): the frame is drawn, related cards light as stars in the art
- * window, runes write the text box line by line from the draft on, a scan line passes at validation, and the art
- * window fills at the art step. The name stays veiled until the reveal.
+ * The card while it is generated, step by step (RN-55): the frame is drawn and the figure of the art window lights
+ * star by star as related cards are found; from the draft on, runes write the card top to bottom: the name, the
+ * type line, then the rules text. Validation sends a shimmer through the writing, revision writes a few runes again,
+ * the art step gathers the sky's dust, and the finished figure glows once.
  */
 export function ChartInProgress({ step, colors }: { step: number; colors: readonly ManaColor[] }) {
   const writing = step >= 2;
+  const pips = colors.length > 0 ? colors.length : 1;
   return (
     <div aria-hidden="true">
-      <Frame colors={step >= 0 ? colors : []} className={styles.working} state={step >= 6 ? "done" : `step-${step}`}>
+      <Frame colors={colors} className={styles.working} state={step >= 6 ? "done" : `step-${step}`} forging>
         <div className={styles.nameBar}>
-          <span className={styles.veil} data-on={step >= 2 ? "true" : "false"} />
-          <span className={styles.veilCost} data-on={step >= 2 ? "true" : "false"} />
+          {writing ? (
+            <span className={styles.runeName}>
+              <RuneLine hand="name" words={NAME_WORDS} seed={3} start={WRITE.name} pace={WRITE.namePace} />
+            </span>
+          ) : (
+            <span className={styles.guide} />
+          )}
+          <span className={styles.pips} data-on={writing ? "true" : "false"}>
+            {Array.from({ length: pips }, (_, at) => (
+              <span key={at} style={{ transitionDelay: `${WRITE.type - 180 + at * 90}ms` }} />
+            ))}
+          </span>
         </div>
-        <div className={styles.art} data-filling={step >= 5 ? "true" : "false"}>
-          <SkyArt drawn={step >= 1} />
-          {step === 3 || step === 4 ? <span className={styles.scan} /> : null}
+        <div className={styles.art}>
+          <CardSky colors={colors} drawn={step >= 1} />
         </div>
         <div className={styles.typeBar}>
-          <span className={styles.veil} data-on={step >= 2 ? "true" : "false"} data-short="true" />
+          {writing ? (
+            <span className={styles.runeType}>
+              <RuneLine hand="type" words={TYPE_WORDS} seed={5} start={WRITE.type} pace={WRITE.typePace} />
+            </span>
+          ) : (
+            <span className={styles.guide} data-short="true" />
+          )}
+          <span className={styles.rarityMark} data-on={writing ? "true" : "false"}>
+            <StarGlyph size={10} />
+          </span>
         </div>
         <div className={styles.text}>
           {writing ? (
-            <span className={styles.runes}>
-              <PixelFx
-                effect={RUNE_WRITE.effect}
-                options={{ ...RUNE_WRITE.options, palette: STARLIGHT_RUNES, lines: 4, perLine: 11 }}
-                width={112}
-                height={70}
-                origin={{ x: 56, y: 62 }}
-                scale={2}
-                mode="loop"
-              />
-            </span>
+            <div className={styles.runeText}>
+              {TEXT_LINES.map((words, line) => {
+                const before = TEXT_LINES.slice(0, line).reduce((sum, value) => sum + value.reduce((total, length) => total + length, 0), 0);
+                return (
+                  <span key={line} className={styles.runeRow}>
+                    <RuneLine hand="text" words={words} seed={11 + line} start={WRITE.text + before * WRITE.textPace} pace={WRITE.textPace} index={line} />
+                  </span>
+                );
+              })}
+            </div>
           ) : null}
         </div>
         <div className={styles.foot}>
-          <span className={styles.meta}>CF · ·· · EN</span>
+          <span />
           <span className={styles.veilStat} data-on={step >= 4 ? "true" : "false"} />
         </div>
       </Frame>

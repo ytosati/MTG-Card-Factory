@@ -57,6 +57,7 @@ const RESULT_CARD: PreviewCard = {
     comparables: [
       { oracle_id: "00000000-0000-4000-8000-0000000000b3", name: "Bellwarden of the Ward", role: "toughness anthem at four mana" },
       { oracle_id: "00000000-0000-4000-8000-0000000000b4", name: "Dawnwatch Captain", role: "vigilant defender for tokens" },
+      { oracle_id: "00000000-0000-4000-8000-0000000000b5", name: "Gloamspire Bulwark", role: "cheaper wall, no anthem" },
     ],
     validation: { ...cardWithImage.current_version.validation, checks_run: ["mana_cost", "color_identity", "rules_wording", "uniqueness"], skipped: ["similar_names"] },
   },
@@ -69,6 +70,11 @@ const RESULT_EXTRAS: ResultExtras = {
   ],
   base: null,
   art: { provider: "google", model: "fake-image-model-1", images: 1 },
+  comparableFaces: {
+    "00000000-0000-4000-8000-0000000000b3": { cost: "{2}{W}{W}", typeLine: "Creature — Human Cleric" },
+    "00000000-0000-4000-8000-0000000000b4": { cost: "{3}{W}", typeLine: "Creature — Human Soldier" },
+    "00000000-0000-4000-8000-0000000000b5": { cost: "{1}{W}{W}", typeLine: "Creature — Spirit Wall" },
+  },
 };
 
 const REJECTED_EXTRAS: ResultExtras = { notes: [], base: null, art: null };

@@ -198,66 +198,116 @@
   color: #f5b4c0;
 }
 
-/* The power dial. */
+/* The power indicator: one line of three states, the assessed one lit in violet. */
 .power {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
-.dial {
-  max-width: 240px;
-}
-
-.dial svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  overflow: visible;
-}
-
-.dialTick {
-  stroke: var(--sf-ink-faint);
-  stroke-width: 0.8;
-}
-
-.zone {
-  fill: none;
-  stroke: var(--sf-rule-strong);
-  stroke-width: 3;
-}
-
-.zone[data-on="true"] {
-  stroke: var(--sf-violet-text);
-}
-
-.needle {
-  stroke: var(--sf-ink);
-  stroke-width: 0.8;
-}
-
-.hub {
-  fill: var(--sf-ground);
-  stroke: var(--sf-ink);
-  stroke-width: 1;
-}
-
-.tip {
-  fill: var(--sf-cyan);
-}
-
-.dialScale {
+.powerRow {
   display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
   justify-content: space-between;
-  margin-top: 6px;
-  font-size: 0.6875rem;
+  gap: 6px 16px;
+}
+
+.scale {
+  display: flex;
+  align-items: baseline;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--sf-ink-faint);
 }
 
-.dialScale [data-on="true"] {
+.scale li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.scale li + li::before {
+  content: "·";
+  margin: 0 10px;
+  color: var(--sf-ink-faint);
+}
+
+.scale li[data-on="true"] {
   color: var(--sf-violet-text);
+}
+
+.scaleStar {
+  flex: none;
+  color: var(--sf-violet-text);
+}
+
+/* The comparables: compact entries of an existing card's name, cost, type line and role. */
+.compared {
+  display: grid;
+  gap: 12px;
+}
+
+.comparedList {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.comparedList li {
+  display: grid;
+  gap: 3px;
+  padding: 12px 0;
+  border-top: 1px solid var(--sf-rule);
+}
+
+.comparedList li:first-child {
+  padding-top: 2px;
+  border-top: 0;
+}
+
+.comparedHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.comparedName {
+  min-width: 0;
+  font-family: var(--sf-serif);
+  font-size: 1.125rem;
+  line-height: 1.25;
+}
+
+.comparedCost {
+  flex: none;
+}
+
+.comparedType {
+  font-size: 0.8125rem;
+  color: var(--sf-ink-muted);
+}
+
+.comparedRole {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--sf-serif);
+  font-size: 0.9375rem;
+  font-style: italic;
+  color: var(--sf-violet-text);
+}
+
+.comparedStar {
+  flex: none;
+  align-self: center;
+  color: var(--sf-cyan);
 }
 
 .justification {
@@ -296,38 +346,6 @@
   width: 9px;
   height: 1px;
   background: var(--sf-violet-text);
-}
-
-.comparables {
-  display: grid;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.comparables li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 4px 24px;
-  padding: 12px 0;
-  border-top: 1px solid var(--sf-rule);
-}
-
-.comparables li:first-child {
-  padding-top: 0;
-  border-top: 0;
-}
-
-.comparableName {
-  font-family: var(--sf-serif);
-  font-size: 1.1875rem;
-}
-
-.comparableRole {
-  font-size: 0.875rem;
-  color: var(--sf-ink-muted);
 }
 
 .usage {

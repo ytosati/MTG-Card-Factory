@@ -21,6 +21,11 @@ export interface ResultExtras {
   base: string | null;
   art: { provider: string; model: string; images: number } | null;
   loyalty?: string;
+  /**
+   * The cost and type line of each comparable, by oracle id. The card response names a comparable and its role
+   * only; these stand in for what the reference database holds.
+   */
+  comparableFaces?: Record<string, { cost: string; typeLine: string }>;
 }
 
 const COUNT = new Intl.NumberFormat("en-US");
@@ -31,51 +36,66 @@ export function checkName(code: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-const DIAL_ANGLE: Record<PowerIndicator, number> = { too_weak: 150, in_range: 90, too_strong: 30 };
-const ZONES: { value: PowerIndicator; from: number; to: number }[] = [
-  { value: "too_weak", from: 180, to: 122 },
-  { value: "in_range", from: 118, to: 62 },
-  { value: "too_strong", from: 58, to: 0 },
-];
+const POWER_SCALE: PowerIndicator[] = ["too_weak", "in_range", "too_strong"];
 
-function point(angle: number, radius: number): { x: number; y: number } {
-  const radians = (angle * Math.PI) / 180;
-  return { x: 100 + Math.cos(radians) * radius, y: 100 - Math.sin(radians) * radius };
-}
-
-function arc(from: number, to: number, radius: number): string {
-  const start = point(from, radius);
-  const end = point(to, radius);
-  return `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${radius} ${radius} 0 0 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`;
-}
-
-/** The power indicator as a half dial in three zones, the assessed zone lit and a star on its needle. */
-export function PowerDial({ value }: { value: PowerIndicator }) {
-  const tip = point(DIAL_ANGLE[value], 74);
+/** The power indicator as one quiet line: the label, the three states with the assessed one lit, the reason below. */
+export function PowerLine({ version, hint = false }: { version: CardVersion; hint?: boolean }) {
+  const id = useId();
   return (
-    <div className={styles.dial}>
-      <svg viewBox="0 0 200 112" role="img" aria-label={`${resultCopy.powerHeading}: ${resultCopy.powerWords[value]}`}>
-        {Array.from({ length: 19 }, (_, index) => {
-          const angle = index * 10;
-          const outer = point(angle, 92);
-          const inner = point(angle, index % 3 === 0 ? 86 : 89);
-          return <line key={angle} x1={inner.x} y1={inner.y} x2={outer.x} y2={outer.y} className={styles.dialTick} />;
-        })}
-        {ZONES.map((zone) => (
-          <path key={zone.value} d={arc(zone.from, zone.to, 80)} className={styles.zone} data-on={zone.value === value ? "true" : "false"} />
-        ))}
-        <line x1="100" y1="100" x2={tip.x} y2={tip.y} className={styles.needle} />
-        <circle cx="100" cy="100" r="3" className={styles.hub} />
-        <path transform={`translate(${tip.x} ${tip.y})`} d="M0 -6 L1.2 -1.2 L6 0 L1.2 1.2 L0 6 L-1.2 1.2 L-6 0 L-1.2 -1.2 Z" className={styles.tip} />
-      </svg>
-      <div className={styles.dialScale} aria-hidden="true">
-        {ZONES.map((zone) => (
-          <span key={zone.value} data-on={zone.value === value ? "true" : "false"}>
-            {sceneCopy.powerScale[zone.value]}
-          </span>
-        ))}
+    <section className={styles.power} aria-labelledby={id}>
+      <div className={styles.powerRow}>
+        <h2 id={id} className={ui.label}>
+          {sceneCopy.powerLabel}
+        </h2>
+        <ol className={styles.scale} aria-label={resultCopy.powerHeading}>
+          {POWER_SCALE.map((level) => {
+            const on = level === version.power_indicator;
+            return (
+              <li key={level} data-on={on ? "true" : "false"} aria-current={on ? "true" : undefined}>
+                {on ? <StarGlyph size={8} className={styles.scaleStar} /> : null}
+                {sceneCopy.powerScale[level]}
+              </li>
+            );
+          })}
+        </ol>
       </div>
-    </div>
+      <p className={styles.justification}>{version.power_justification || resultCopy.noJustification}</p>
+      {hint ? <p className={styles.hint}>{resultCopy.powerHint}</p> : null}
+    </section>
+  );
+}
+
+/** The existing cards the text model compared the card against: name, cost, type line and the role each played. */
+export function Comparables({ version, faces = {} }: { version: CardVersion; faces?: ResultExtras["comparableFaces"] }) {
+  const id = useId();
+  return (
+    <section className={styles.compared} aria-labelledby={id}>
+      <h2 id={id} className={ui.label}>
+        {resultCopy.comparablesHeading}
+      </h2>
+      {version.comparables.length > 0 ? (
+        <ul className={styles.comparedList}>
+          {version.comparables.map((card) => {
+            const face = faces[card.oracle_id];
+            return (
+              <li key={card.oracle_id}>
+                <span className={styles.comparedHead}>
+                  <span className={styles.comparedName}>{card.name}</span>
+                  {face?.cost ? <ManaCostSymbols cost={face.cost} size={15} className={styles.comparedCost} /> : null}
+                </span>
+                {face ? <span className={styles.comparedType}>{face.typeLine}</span> : null}
+                <span className={styles.comparedRole}>
+                  <StarGlyph size={7} className={styles.comparedStar} />
+                  {card.role}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className={styles.quiet}>{resultCopy.noComparables}</p>
+      )}
+    </section>
   );
 }
 
@@ -163,7 +183,6 @@ export function UsageTable({ entry }: { entry: PreviewCard }) {
 
 export function ResultScreen({ entry, extras }: { entry: PreviewCard; extras: ResultExtras }) {
   const version = entry.current_version;
-  const powerId = useId();
 
   useEffect(() => {
     document.title = `${version.name} · Card Factory`;
@@ -222,14 +241,8 @@ export function ResultScreen({ entry, extras }: { entry: PreviewCard; extras: Re
 
           <aside className={styles.side}>
             <Validation version={version} />
-            <section className={styles.power} aria-labelledby={powerId}>
-              <h2 id={powerId} className={ui.label}>
-                {resultCopy.powerHeading}
-              </h2>
-              <PowerDial value={version.power_indicator} />
-              <p className={styles.justification}>{version.power_justification || resultCopy.noJustification}</p>
-              <p className={styles.hint}>{resultCopy.powerHint}</p>
-            </section>
+            <PowerLine version={version} hint />
+            <Comparables version={version} faces={extras.comparableFaces} />
           </aside>
         </div>
 
@@ -253,20 +266,6 @@ export function ResultScreen({ entry, extras }: { entry: PreviewCard; extras: Re
               </ul>
             </Section>
           ) : null}
-          <Section id="sf-comparables" title={resultCopy.comparablesHeading}>
-            {version.comparables.length > 0 ? (
-              <ul className={styles.comparables}>
-                {version.comparables.map((card) => (
-                  <li key={card.oracle_id}>
-                    <span className={styles.comparableName}>{card.name}</span>
-                    <span className={styles.comparableRole}>{card.role}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className={styles.quiet}>{resultCopy.noComparables}</p>
-            )}
-          </Section>
           <Section id="sf-base" title={sceneCopy.baseHeading}>
             <p className={styles.quiet}>{extras.base ?? sceneCopy.noBase}</p>
           </Section>

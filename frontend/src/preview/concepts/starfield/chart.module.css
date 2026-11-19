@@ -95,17 +95,6 @@
   object-position: 50% 36%;
 }
 
-.sky {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.figure {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 0;
-}
-
 .typeBar {
   display: flex;
   align-items: center;
@@ -220,114 +209,94 @@
 
 /* ---- The card while it is generated. ---- */
 
-.veil,
-.veilCost,
+/* Before the draft, a faint dotted baseline waits where the name and the type line will be written. */
+.guide {
+  display: block;
+  flex: 1;
+  max-width: 62%;
+  height: 0;
+  border-top: 1px dotted rgb(185 142 255 / 0.32);
+}
+
+.guide[data-short="true"] {
+  max-width: 46%;
+}
+
+.runeName,
+.runeType {
+  display: block;
+  min-width: 0;
+}
+
+.runeName {
+  height: 5.8cqi;
+}
+
+.runeType {
+  height: 3.4cqi;
+}
+
+/* The cost waits as empty rings and kindles in the card's colors once the name is written. */
+.pips {
+  display: flex;
+  flex: none;
+  gap: 1.2cqi;
+}
+
+.pips > span {
+  width: 4.6cqi;
+  height: 4.6cqi;
+  border: 1px solid var(--sf-rule-strong);
+  border-radius: 50%;
+  transition:
+    border-color 500ms var(--sf-ease-out),
+    box-shadow 500ms var(--sf-ease-out);
+}
+
+.pips[data-on="true"] > span {
+  border-color: #dcc8ff;
+  box-shadow:
+    0 0 6px rgb(139 61 255 / 0.7),
+    inset 0 0 3px rgb(200 240 255 / 0.6);
+}
+
+.rarityMark {
+  display: grid;
+  flex: none;
+  color: var(--sf-rule-strong);
+  transition: color 600ms var(--sf-ease-out) 900ms;
+}
+
+.rarityMark svg {
+  width: 4.2cqi;
+  height: 4.2cqi;
+}
+
+.rarityMark[data-on="true"] {
+  color: var(--sf-cyan);
+}
+
+.runeText {
+  display: grid;
+  gap: 2.9cqi;
+  padding-top: 1.6cqi;
+}
+
+.runeRow {
+  display: block;
+  height: 3.3cqi;
+}
+
 .veilStat {
   display: block;
-  height: 2.2cqi;
-  background: var(--sf-rule);
-  transition: background-color var(--sf-medium) var(--sf-ease-out), width 600ms var(--sf-ease-out);
-}
-
-.veil {
-  width: 30%;
-}
-
-.veil[data-on="true"] {
-  width: 58%;
-  background: rgb(185 142 255 / 0.32);
-}
-
-.veil[data-short="true"][data-on="true"] {
-  width: 44%;
-}
-
-.veilCost {
-  width: 10cqi;
-}
-
-.veilCost[data-on="true"] {
-  background: rgb(185 142 255 / 0.32);
-}
-
-.veilStat {
   width: 9cqi;
   height: 4.6cqi;
-  background: transparent;
   border: 1px solid var(--sf-rule);
+  transition: border-color var(--sf-medium) var(--sf-ease-out);
 }
 
 .veilStat[data-on="true"] {
   border-color: var(--sf-violet-text);
-}
-
-/* The sky in the art window: its stars come in with the related cards, its figure is drawn after. */
-.working .sky {
-  opacity: 0.15;
-  transition: opacity 900ms var(--sf-ease-out);
-}
-
-.working .sky[data-drawn="true"] {
-  opacity: 1;
-}
-
-.working .figure {
-  stroke-dashoffset: 1;
-  transition: stroke-dashoffset 1600ms var(--sf-ease-out);
-}
-
-.working .sky[data-drawn="true"] .figure {
-  stroke-dashoffset: 0;
-}
-
-/* At the art step the window takes a violet exposure that grows from the centre. */
-.working .art::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgb(139 61 255 / 0.22);
-  clip-path: circle(0% at 50% 50%);
-  transition: clip-path 1800ms var(--sf-ease-out);
-}
-
-.working .art[data-filling="true"]::after {
-  clip-path: circle(75% at 50% 50%);
-}
-
-/* The scan line of validation and revision: one cyan hairline crossing the window. */
-.scan {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 1px;
-  background: var(--sf-cyan);
-  animation: scan 1.8s var(--sf-ease-out) infinite;
-}
-
-@keyframes scan {
-  from {
-    transform: translateY(0);
-    opacity: 1;
-  }
-  to {
-    transform: translateY(64cqi);
-    opacity: 0.2;
-  }
-}
-
-.runes {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  transform: translateX(-50%);
-  pointer-events: none;
-}
-
-.runes canvas {
-  display: block;
-  max-width: 88cqi;
-  height: auto;
 }
 
 /* Finished: the frame breathes once in violet. */
@@ -353,37 +322,21 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scan,
   .working[data-state="done"] .frame {
     animation: none;
   }
 
-  .scan {
-    top: 50%;
-  }
-
-  .working .sky,
-  .working .figure,
-  .working .art::after,
-  .veil,
-  .veilCost {
+  .pips > span,
+  .rarityMark {
     transition: none;
   }
 }
 
-:global([data-reduced-motion="true"]) .scan,
 :global([data-reduced-motion="true"]) .working[data-state="done"] .frame {
   animation: none;
 }
 
-:global([data-reduced-motion="true"]) .scan {
-  top: 50%;
-}
-
-:global([data-reduced-motion="true"]) .working .sky,
-:global([data-reduced-motion="true"]) .working .figure,
-:global([data-reduced-motion="true"]) .working .art::after,
-:global([data-reduced-motion="true"]) .veil,
-:global([data-reduced-motion="true"]) .veilCost {
+:global([data-reduced-motion="true"]) .pips > span,
+:global([data-reduced-motion="true"]) .rarityMark {
   transition: none;
 }

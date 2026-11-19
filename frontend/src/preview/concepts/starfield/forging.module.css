@@ -1,0 +1,256 @@
+/* Concept E "Starfield" (tasks.md T251): runes written in starlight and the constellation of the art window. The
+   motion runs only inside a card being forged (data-forging); a finished card shows both at rest. */
+
+/* ---- Runes. ---- */
+
+.runeLine {
+  display: block;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  overflow: visible;
+  --ink: #b98eff;
+  --flare: #c8f0ff;
+  filter: drop-shadow(0 0 1.5px rgb(139 61 255 / 0.85));
+}
+
+.runeLine[data-hand="name"] {
+  --ink: #dcc8ff;
+  filter: drop-shadow(0 0 2.5px rgb(139 61 255 / 0.9));
+}
+
+.runeLine[data-hand="type"] {
+  --ink: #8fdcff;
+  filter: drop-shadow(0 0 1.5px rgb(91 210 254 / 0.7));
+}
+
+.rune {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 0.62;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+[data-forging="true"] .rune {
+  animation: write 460ms var(--sf-ease-out) var(--d) both;
+}
+
+/* Each rune is drawn by a white-hot pen that cools through starlight to its ink. */
+@keyframes write {
+  0% {
+    stroke-dashoffset: 1;
+    stroke: #ffffff;
+  }
+  45% {
+    stroke: var(--flare);
+  }
+  100% {
+    stroke-dashoffset: 0;
+    stroke: var(--ink);
+  }
+}
+
+/* Validation: a slow shimmer runs through the writing, rune after rune. */
+[data-forging="true"][data-state="step-3"] .rune,
+[data-forging="true"][data-state="step-4"] .rune {
+  animation:
+    write 460ms var(--sf-ease-out) var(--d) both,
+    shimmer 2.4s ease-in-out calc(var(--i) * 12ms) infinite;
+}
+
+@keyframes shimmer {
+  0%,
+  70%,
+  100% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 0.45;
+  }
+}
+
+/* Revision: a few runes of the text are unwritten and written again. */
+[data-forging="true"][data-state="step-4"] .rune[data-revise="true"] {
+  animation: rewrite 1400ms var(--sf-ease-out) calc(var(--i) * 6ms) both;
+}
+
+@keyframes rewrite {
+  0% {
+    stroke-dashoffset: 0;
+    stroke: var(--ink);
+  }
+  40% {
+    stroke-dashoffset: -1;
+    stroke: var(--ink);
+  }
+  41% {
+    stroke-dashoffset: 1;
+    stroke: #ffffff;
+  }
+  70% {
+    stroke: var(--flare);
+  }
+  100% {
+    stroke-dashoffset: 0;
+    stroke: var(--ink);
+  }
+}
+
+/* ---- The sky of the art window. ---- */
+
+.sky {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.figure {
+  filter: drop-shadow(0 0 1px rgb(91 210 254 / 0.55));
+}
+
+.figureLine {
+  stroke: #5bd2fe;
+  stroke-opacity: 0.6;
+  stroke-width: 0.32;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+/* Forged: the dust and the field wait faint; the figure's stars come on one by one, then its lines are traced. */
+[data-forging="true"] .dust {
+  opacity: 0.35;
+  transition: opacity 1800ms var(--sf-ease-out);
+}
+
+[data-forging="true"] .field {
+  opacity: 0.45;
+  transition: opacity 1200ms var(--sf-ease-out);
+}
+
+[data-forging="true"] .sky[data-drawn="true"] .field {
+  opacity: 1;
+}
+
+[data-forging="true"] .sky[data-drawn="true"] .dust {
+  opacity: 0.7;
+}
+
+/* The art step: the dust gathers to its full light. */
+[data-forging="true"][data-state="step-5"] .sky .dust,
+[data-forging="true"][data-state="done"] .sky .dust {
+  opacity: 1;
+}
+
+[data-forging="true"] .figureStar {
+  opacity: 0;
+  transition: opacity 520ms var(--sf-ease-out) var(--d);
+}
+
+[data-forging="true"] .sky[data-drawn="true"] .figureStar {
+  opacity: 1;
+}
+
+[data-forging="true"] .figureLine {
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 520ms ease-in-out var(--d);
+}
+
+[data-forging="true"] .sky[data-drawn="true"] .figureLine {
+  stroke-dashoffset: 0;
+}
+
+[data-forging="true"] .twinkle {
+  animation: twinkle 3.6s ease-in-out var(--t) infinite;
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.mote {
+  opacity: 0;
+}
+
+[data-forging="true"] .mote {
+  animation: drift 7.8s ease-in-out var(--t) infinite;
+}
+
+@keyframes drift {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  30% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(5px, -9px);
+  }
+}
+
+/* Finished: the figure glows once. */
+[data-forging="true"][data-state="done"] .figure {
+  animation: kindle 1800ms var(--sf-ease-out) 1;
+}
+
+@keyframes kindle {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 1px rgb(91 210 254 / 0.55)) drop-shadow(0 0 0 rgb(139 61 255 / 0));
+  }
+  35% {
+    filter: drop-shadow(0 0 2.4px rgb(200 240 255 / 0.95)) drop-shadow(0 0 6px rgb(139 61 255 / 0.7));
+  }
+}
+
+/* Without motion everything is shown already written and drawn. */
+@media (prefers-reduced-motion: reduce) {
+  [data-forging="true"] .rune,
+  [data-forging="true"] .twinkle,
+  [data-forging="true"] .figure,
+  [data-forging="true"][data-state] .rune {
+    animation: none;
+  }
+
+  [data-forging="true"] .mote {
+    animation: none;
+    opacity: 0;
+  }
+
+  [data-forging="true"] .dust,
+  [data-forging="true"] .field,
+  [data-forging="true"] .figureStar,
+  [data-forging="true"] .figureLine {
+    transition: none;
+  }
+}
+
+:global([data-reduced-motion="true"]) [data-forging="true"] .rune,
+:global([data-reduced-motion="true"]) [data-forging="true"] .twinkle,
+:global([data-reduced-motion="true"]) [data-forging="true"] .figure,
+:global([data-reduced-motion="true"]) [data-forging="true"][data-state] .rune {
+  animation: none;
+}
+
+:global([data-reduced-motion="true"]) [data-forging="true"] .mote {
+  animation: none;
+  opacity: 0;
+}
+
+:global([data-reduced-motion="true"]) [data-forging="true"] .dust,
+:global([data-reduced-motion="true"]) [data-forging="true"] .field,
+:global([data-reduced-motion="true"]) [data-forging="true"] .figureStar,
+:global([data-reduced-motion="true"]) [data-forging="true"] .figureLine {
+  transition: none;
+}

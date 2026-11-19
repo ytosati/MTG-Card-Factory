@@ -179,6 +179,7 @@
 .layer {
   position: absolute;
   inset: 0;
+  isolation: isolate;
   animation: layer-in 280ms var(--sf-ease-out) backwards;
   transition: opacity 320ms var(--sf-ease-out);
 }

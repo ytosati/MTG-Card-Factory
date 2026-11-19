@@ -18,7 +18,7 @@ import ready from "./ready.module.css";
 import request from "./request.module.css";
 import { AdvancedFields, ArtPicker, BaseCardPicker, missingOf, type Patch } from "./RequestScreen";
 import result from "./result.module.css";
-import { PowerDial, UsageTable, Validation, type ResultExtras } from "./ResultScreen";
+import { Comparables, PowerLine, UsageTable, Validation, type ResultExtras } from "./ResultScreen";
 import { STAR_REVEAL, sceneCopy } from "./scenes";
 import ui from "./screen.module.css";
 import { Shell } from "./Shell";
@@ -337,25 +337,19 @@ function RulesColumn({ entry, extras }: { entry: PreviewCard; extras: ResultExtr
   );
 }
 
-/** The verdicts on the right: the validation, then the power indicator. */
-function VerdictColumn({ entry }: { entry: PreviewCard }) {
+/** The verdicts on the right: the validation, the power indicator, then the cards it was compared against. */
+function VerdictColumn({ entry, extras }: { entry: PreviewCard; extras: ResultExtras }) {
   const version = entry.current_version;
-  const powerId = useId();
   return (
     <>
       <Validation version={version} />
-      <section className={result.power} aria-labelledby={powerId}>
-        <h2 id={powerId} className={ui.label}>
-          {resultCopy.powerHeading}
-        </h2>
-        <PowerDial value={version.power_indicator} />
-        <p className={result.justification}>{version.power_justification || resultCopy.noJustification}</p>
-      </section>
+      <PowerLine version={version} />
+      <Comparables version={version} faces={extras.comparableFaces} />
     </>
   );
 }
 
-/** The design along the bottom: intent and rationale, notes, comparables and the text usage. */
+/** The design along the bottom: intent and rationale, the text usage and the notes. */
 function DesignRow({ entry, extras }: { entry: PreviewCard; extras: ResultExtras }) {
   const version = entry.current_version;
   return (
@@ -374,25 +368,9 @@ function DesignRow({ entry, extras }: { entry: PreviewCard; extras: ResultExtras
           </p>
         )}
       </Panel>
-      <Panel title={resultCopy.comparablesHeading}>
-        {() =>
-          version.comparables.length > 0 ? (
-            <ul className={result.comparables}>
-              {version.comparables.map((card) => (
-                <li key={card.oracle_id}>
-                  <span className={result.comparableName}>{card.name}</span>
-                  <span className={result.comparableRole}>{card.role}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className={result.quiet}>{resultCopy.noComparables}</p>
-          )
-        }
-      </Panel>
       <Panel title={resultCopy.usageHeading}>{() => (entry.usage.text.length > 0 ? <UsageTable entry={entry} /> : <p className={result.quiet}>{resultCopy.noUsage}</p>)}</Panel>
       {extras.notes.length > 0 ? (
-        <Panel title={sceneCopy.notesHeading} wide>
+        <Panel title={sceneCopy.notesHeading}>
           {() => (
             <ul className={result.notes}>
               {extras.notes.map((note) => (
@@ -625,7 +603,7 @@ export function StudioScreen(props: { phase?: StudioPhase; initial?: Partial<Req
                 />
               </section>
             ) : null}
-            {around === "result" ? <VerdictColumn entry={entry} /> : null}
+            {around === "result" ? <VerdictColumn entry={entry} extras={extras} /> : null}
           </div>
 
           <div className={styles.bottom} data-area="bottom" data-leaving={leaving ? "true" : "false"}>

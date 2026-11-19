@@ -42,6 +42,7 @@ export const sceneCopy = {
   artUsageHeading: "Art usage",
   artUsageImages: "Images",
   noArtUsage: "No art was generated for this card.",
+  powerLabel: "Power",
   powerScale: { too_weak: "Weak", in_range: "In range", too_strong: "Strong" },
   testConnection: "Test the connection",
   statusLede: "What Card Factory runs on: the providers it calls and the reference database it checks cards against.",

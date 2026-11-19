@@ -1506,7 +1506,8 @@ the start.
 
 Rules for every task of this milestone: frontend-only; the identity is
 original (no card frames, set symbols, fonts or art copied from Magic: The
-Gathering or any other product); fonts and images are local files of the
+Gathering or any other product), except the classic mana symbols, which are
+shown as the maintainer's chosen reference sheet; fonts and images are local files of the
 application; the Interface section of `specs/code-standards.md` applies, and
 this milestone may change it with the maintainer's approval.
 

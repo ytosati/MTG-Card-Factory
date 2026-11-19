@@ -1,0 +1,15 @@
+/* Concept D "Forge" (tasks.md T251): mana symbols sit on the dark ground with a thin dark edge. */
+.symbol {
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+  overflow: visible;
+  filter: drop-shadow(0 0 0.6px rgba(0, 0, 0, 0.85)) drop-shadow(0 1px 1.2px rgba(0, 0, 0, 0.45));
+}
+
+.cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.12em;
+  vertical-align: middle;
+}
